@@ -33,10 +33,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.provider.OpenableColumns
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
+import com.kuro.app.core.utils.formatBytes
 import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.AppSourceCard
 import com.kuro.app.ui.components.EmptyStateView
@@ -72,6 +77,8 @@ fun AddCloneScreen(
                 reduceMotion = reduceMotion,
                 onQuery = vm::setQuery,
                 onSelect = vm::selectApp,
+                onSourceType = vm::setSourceType,
+                onApkPicked = vm::setApkFile,
                 onRefresh = vm::refreshApps,
                 onContinue = { vm.goToOptions() }
             )
@@ -138,13 +145,74 @@ private fun SourceStep(
     reduceMotion: Boolean,
     onQuery: (String) -> Unit,
     onSelect: (String) -> Unit,
+    onSourceType: (CloneSourceType) -> Unit,
+    onApkPicked: (uriString: String, displayName: String, sizeBytes: Long?) -> Unit,
     onRefresh: () -> Unit,
     onContinue: () -> Unit
 ) {
+    val context = LocalContext.current
+    // Real system file picker (SAF). The picked file's real name + size come
+    // from the ContentResolver — nothing is copied or installed here.
+    val apkPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            var displayName = uri.lastPathSegment ?: "app.apk"
+            var sizeBytes: Long? = null
+            runCatching {
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (cursor.moveToFirst()) {
+                        if (nameIdx >= 0) displayName = cursor.getString(nameIdx)
+                        if (sizeIdx >= 0) sizeBytes = cursor.getLong(sizeIdx).takeIf { it >= 0 }
+                    }
+                }
+            }
+            onApkPicked(uri.toString(), displayName, sizeBytes)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Text(text = stringResource(R.string.add_clone_source_title), style = MaterialTheme.typography.titleLarge)
         Text(text = stringResource(R.string.add_clone_source_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Source type selector. Installed-apps path below is Stage 1 behavior.
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(modifier = Modifier.weight(1f)) {
+                SourceTypeCard(
+                    label = stringResource(R.string.clone_source_installed),
+                    selected = state.sourceType == CloneSourceType.INSTALLED,
+                    onClick = { onSourceType(CloneSourceType.INSTALLED) }
+                )
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                SourceTypeCard(
+                    label = stringResource(R.string.clone_source_apk),
+                    selected = state.sourceType == CloneSourceType.APK,
+                    onClick = { onSourceType(CloneSourceType.APK) }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (state.sourceType == CloneSourceType.APK) {
+            ApkSourceStep(
+                displayName = state.apkDisplayName,
+                sizeBytes = state.apkSizeBytes,
+                onPick = { apkPicker.launch(arrayOf("application/vnd.android.package-archive")) },
+                onContinue = onContinue
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            return
+        }
 
         if (state.engineStatus !is EngineStatus.Ready) {
             EngineNotReadyCard(status = state.engineStatus)
@@ -199,6 +267,68 @@ private fun SourceStep(
 }
 
 @Composable
+private fun SourceTypeCard(label: String, selected: Boolean, onClick: () -> Unit) {
+    androidx.compose.material3.Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.medium
+            )
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (selected)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            else MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ApkSourceStep(
+    displayName: String?,
+    sizeBytes: Long?,
+    onPick: () -> Unit,
+    onContinue: () -> Unit
+) {
+    KuroSecondaryButton(
+        label = stringResource(R.string.clone_apk_pick),
+        onClick = onPick
+    )
+    if (displayName != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        KuroCard(title = displayName, subtitle = sizeBytes?.let { formatBytes(it) }) {
+            Text(
+                text = stringResource(R.string.clone_apk_step7_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        KuroPrimaryButton(
+            label = stringResource(R.string.add_clone_continue),
+            onClick = onContinue,
+            enabled = true
+        )
+    }
+}
+
+@Composable
 private fun EngineNotReadyCard(status: EngineStatus) {
     val body = when (status) {
         is EngineStatus.Incompatible ->
@@ -220,6 +350,38 @@ private fun OptionsStep(
     onBack: () -> Unit,
     onCreate: () -> Unit
 ) {
+    // APK files have no install engine until Step 7: honest state, no Create.
+    if (state.sourceType == CloneSourceType.APK) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                KuroCard(
+                    title = state.apkDisplayName ?: stringResource(R.string.clone_source_apk),
+                    subtitle = state.apkSizeBytes?.let { formatBytes(it) }
+                ) {
+                    Text(
+                        text = stringResource(R.string.clone_apk_step7_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.clone_apk_step7_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            item {
+                KuroSecondaryButton(label = stringResource(R.string.add_clone_back), onClick = onBack)
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+        return
+    }
     LazyColumn(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)

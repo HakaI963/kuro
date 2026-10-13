@@ -28,11 +28,19 @@ import com.kuro.app.ui.components.KuroTopAppBar
 fun AppShell(
     current: BottomDestination,
     onSelect: (BottomDestination) -> Unit,
-    onNewClone: () -> Unit,
+    onClonesFab: () -> Unit,
+    onTerminalFab: () -> Unit,
     reduceMotion: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
+    // Step 4: contextual FAB — New Clone on Clones, Add distro on Terminal,
+    // hidden on System/Settings to avoid clutter.
+    val fabAction: (() -> Unit)? = when (current) {
+        BottomDestination.Clones -> onClonesFab
+        BottomDestination.Terminal -> onTerminalFab
+        else -> null
+    }
     Scaffold(
         modifier = modifier,
         bottomBar = {
@@ -42,11 +50,19 @@ fun AppShell(
             KuroBottomBar(current = current, onSelect = onSelect, reduceMotion = reduceMotion)
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNewClone, containerColor = MaterialTheme.colorScheme.primary) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.cd_new_clone)
-                )
+            if (fabAction != null) {
+                FloatingActionButton(
+                    onClick = fabAction,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = if (current == BottomDestination.Terminal)
+                            stringResource(R.string.cd_add_distro)
+                        else
+                            stringResource(R.string.cd_new_clone)
+                    )
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -59,15 +75,15 @@ fun AppShell(
         ) {
             KuroTopAppBar(
                 title = when (current) {
-                    BottomDestination.Home -> stringResource(R.string.app_name)
-                    BottomDestination.Library -> stringResource(R.string.library_title)
-                    BottomDestination.Activity -> stringResource(R.string.activity_title)
+                    BottomDestination.System -> stringResource(R.string.system_title)
+                    BottomDestination.Terminal -> stringResource(R.string.terminal_title)
+                    BottomDestination.Clones -> stringResource(R.string.clones_title)
                     BottomDestination.Settings -> stringResource(R.string.settings_title)
                 },
                 subtitle = when (current) {
-                    BottomDestination.Home -> stringResource(R.string.app_tagline)
-                    BottomDestination.Library -> stringResource(R.string.library_subtitle)
-                    BottomDestination.Activity -> stringResource(R.string.activity_subtitle)
+                    BottomDestination.System -> stringResource(R.string.system_subtitle)
+                    BottomDestination.Terminal -> stringResource(R.string.terminal_subtitle)
+                    BottomDestination.Clones -> stringResource(R.string.clones_subtitle)
                     BottomDestination.Settings -> stringResource(R.string.settings_subtitle)
                 }
             )
@@ -82,11 +98,20 @@ fun AppShell(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddCloneScaffold(onBack: () -> Unit, content: @Composable () -> Unit) {
+fun AddCloneScaffold(
+    onBack: () -> Unit,
+    content: @Composable () -> Unit,
+    title: String = ""
+) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.add_clone_title)) },
+                title = {
+                    Text(
+                        if (title.isNotBlank()) title
+                        else stringResource(R.string.add_clone_title)
+                    )
+                },
                 navigationIcon = {
                     androidx.compose.material3.IconButton(onClick = onBack) {
                         Icon(

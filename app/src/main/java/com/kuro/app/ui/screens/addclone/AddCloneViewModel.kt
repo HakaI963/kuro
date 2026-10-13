@@ -24,12 +24,19 @@ import kotlinx.coroutines.launch
 enum class AddCloneStep { SOURCE, OPTIONS, PROGRESS }
 enum class AddCloneStatus { IDLE, RUNNING, SUCCESS, ERROR }
 
+/** Step 4: second source type. Installed-apps behavior is unchanged. */
+enum class CloneSourceType { INSTALLED, APK }
+
 data class AddCloneUiState(
     val step: AddCloneStep = AddCloneStep.SOURCE,
     val query: String = "",
     val installedApps: List<InstalledApp> = emptyList(),
     val appsLoading: Boolean = true,
     val selectedAppPackage: String? = null,
+    val sourceType: CloneSourceType = CloneSourceType.INSTALLED,
+    val apkUriString: String? = null,
+    val apkDisplayName: String? = null,
+    val apkSizeBytes: Long? = null,
     val cloneName: String = "",
     val labelColor: Long = 0xFF7C6CFF,
     val status: AddCloneStatus = AddCloneStatus.IDLE,
@@ -45,7 +52,8 @@ data class AddCloneUiState(
             it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
         }
     val engineReady: Boolean get() = engineStatus is EngineStatus.Ready
-    val canCreate: Boolean get() = engineReady && selectedAppPackage != null
+    val canCreate: Boolean
+        get() = engineReady && sourceType == CloneSourceType.INSTALLED && selectedAppPackage != null
 }
 
 class AddCloneViewModel : ViewModel() {
@@ -83,6 +91,20 @@ class AddCloneViewModel : ViewModel() {
 
     fun setQuery(v: String) { _ui.update { it.copy(query = v) } }
     fun selectApp(pkg: String) { _ui.update { it.copy(selectedAppPackage = pkg) } }
+    fun setSourceType(t: CloneSourceType) { _ui.update { it.copy(sourceType = t) } }
+    fun setApkFile(uriString: String, displayName: String, sizeBytes: Long?) {
+        _ui.update {
+            it.copy(
+                sourceType = CloneSourceType.APK,
+                apkUriString = uriString,
+                apkDisplayName = displayName,
+                apkSizeBytes = sizeBytes
+            )
+        }
+    }
+    fun clearApkFile() {
+        _ui.update { it.copy(apkUriString = null, apkDisplayName = null, apkSizeBytes = null) }
+    }
     fun setName(v: String) { _ui.update { it.copy(cloneName = v) } }
     fun setColor(v: Long) { _ui.update { it.copy(labelColor = v) } }
 
@@ -96,10 +118,22 @@ class AddCloneViewModel : ViewModel() {
 
     fun goToOptions(): Boolean {
         val s = _ui.value
-        if (s.selectedAppPackage == null) return false
+        // Installed-apps path is byte-for-byte the Stage 1 behavior.
+        if (s.sourceType == CloneSourceType.INSTALLED) {
+            if (s.selectedAppPackage == null) return false
+            if (s.cloneName.isBlank()) {
+                val app = s.installedApps.firstOrNull { it.packageName == s.selectedAppPackage }
+                _ui.update { it.copy(step = AddCloneStep.OPTIONS, cloneName = app?.label ?: "") }
+            } else {
+                _ui.update { it.copy(step = AddCloneStep.OPTIONS) }
+            }
+            return true
+        }
+        // APK path: review the real file, then show the honest Step 7 state.
+        if (s.apkUriString == null) return false
         if (s.cloneName.isBlank()) {
-            val app = s.installedApps.firstOrNull { it.packageName == s.selectedAppPackage }
-            _ui.update { it.copy(step = AddCloneStep.OPTIONS, cloneName = app?.label ?: "") }
+            val base = s.apkDisplayName?.removeSuffix(".apk") ?: ""
+            _ui.update { it.copy(step = AddCloneStep.OPTIONS, cloneName = base) }
         } else {
             _ui.update { it.copy(step = AddCloneStep.OPTIONS) }
         }
@@ -119,6 +153,17 @@ class AddCloneViewModel : ViewModel() {
 
     fun startCreation() {
         val s = _ui.value
+        // APK installs have no engine until Step 7 — never fake progress here.
+        if (s.sourceType == CloneSourceType.APK) {
+            _ui.update {
+                it.copy(
+                    step = AddCloneStep.PROGRESS,
+                    status = AddCloneStatus.ERROR,
+                    errorMessage = "APK install engine arrives in Step 7"
+                )
+            }
+            return
+        }
         val app = selectedApp() ?: return
         if (s.engineStatus !is EngineStatus.Ready) {
             _ui.update {

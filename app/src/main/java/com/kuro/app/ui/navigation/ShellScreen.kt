@@ -18,10 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
-import com.kuro.app.ui.screens.activity.ActivityScreen
-import com.kuro.app.ui.screens.home.HomeScreen
-import com.kuro.app.ui.screens.library.LibraryScreen
+import com.kuro.app.ui.screens.clones.ClonesScreen
 import com.kuro.app.ui.screens.settings.SettingsScreen
+import com.kuro.app.ui.screens.system.SystemScreen
+import com.kuro.app.ui.screens.terminal.TerminalScreen
 import com.kuro.app.ui.theme.MotionTokens
 
 @Composable
@@ -37,14 +37,16 @@ fun ShellScreen(
     AppShell(
         current = tab,
         onSelect = vm::select,
-        onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+        onClonesFab = { navController.navigate(Routes.ADD_CLONE) },
+        onTerminalFab = { navController.navigate(Routes.ADD_DISTRO) },
         reduceMotion = reduceMotion,
         modifier = modifier
     ) {
-        // Step 3c: never cross-fade tabs. Old tab is removed the same frame
-        // (plain when, no AnimatedContent). Only the entering content animates:
-        // alpha 0->1 + translationX 24dp from navigation direction, 160-200ms,
-        // M3 emphasized easing, graphicsLayer only. Opaque root, zero blended frames.
+        // Step 3c contract (unchanged): never cross-fade tabs. Old tab is
+        // removed the same frame (plain when, no AnimatedContent). Only the
+        // entering content animates: alpha 0->1 + translationX 24dp from the
+        // navigation direction, 160-200ms, M3 emphasized easing, graphicsLayer
+        // only. Opaque root, zero blended frames.
         TabEnterContent(
             tab = tab,
             direction = direction,
@@ -52,26 +54,24 @@ fun ShellScreen(
         ) { current ->
             val animateIn = vm.shouldAnimateList(current)
             when (current) {
-                BottomDestination.Home -> HomeScreen(
+                BottomDestination.System -> SystemScreen(
+                    listState = vm.listStateFor(BottomDestination.System),
+                    animateListIn = animateIn,
+                    onListShown = { vm.markListSeen(BottomDestination.System) }
+                )
+                BottomDestination.Terminal -> TerminalScreen(
+                    onAddDistro = { navController.navigate(Routes.ADD_DISTRO) },
+                    onOpenSession = { navController.navigate(Routes.terminalSession(it)) },
+                    listState = vm.listStateFor(BottomDestination.Terminal),
+                    animateListIn = animateIn,
+                    onListShown = { vm.markListSeen(BottomDestination.Terminal) }
+                )
+                BottomDestination.Clones -> ClonesScreen(
                     onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
                     onNewClone = { navController.navigate(Routes.ADD_CLONE) },
-                    onImportApk = { },
-                    onViewLibrary = { vm.select(BottomDestination.Library) },
-                    listState = vm.listStateFor(BottomDestination.Home),
+                    listState = vm.listStateFor(BottomDestination.Clones),
                     animateListIn = animateIn,
-                    onListShown = { vm.markListSeen(BottomDestination.Home) }
-                )
-                BottomDestination.Library -> LibraryScreen(
-                    onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
-                    onNewClone = { navController.navigate(Routes.ADD_CLONE) },
-                    listState = vm.listStateFor(BottomDestination.Library),
-                    animateListIn = animateIn,
-                    onListShown = { vm.markListSeen(BottomDestination.Library) }
-                )
-                BottomDestination.Activity -> ActivityScreen(
-                    listState = vm.listStateFor(BottomDestination.Activity),
-                    animateListIn = animateIn,
-                    onListShown = { vm.markListSeen(BottomDestination.Activity) }
+                    onListShown = { vm.markListSeen(BottomDestination.Clones) }
                 )
                 BottomDestination.Settings -> SettingsScreen(
                     onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) },

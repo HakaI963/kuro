@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class ShellViewModel : ViewModel() {
-    private val _currentTab = MutableStateFlow(BottomDestination.Home)
+    private val _currentTab = MutableStateFlow(BottomDestination.System)
     val currentTab: StateFlow<BottomDestination> = _currentTab.asStateFlow()
 
     // Step 3c: navigation direction for enter-only tab slide (+1 forward, -1 back).

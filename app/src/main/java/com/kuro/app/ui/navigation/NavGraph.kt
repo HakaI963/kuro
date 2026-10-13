@@ -3,6 +3,7 @@ package com.kuro.app.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,6 +14,8 @@ import com.kuro.app.ui.screens.addclone.AddCloneScreen
 import com.kuro.app.ui.screens.details.CloneDetailsScreen
 import com.kuro.app.ui.screens.diagnostics.DiagnosticsScreen
 import com.kuro.app.ui.screens.intro.OrbitalIntro
+import com.kuro.app.ui.screens.terminal.AddDistroScreen
+import com.kuro.app.ui.screens.terminal.TerminalSessionScreen
 import com.kuro.app.ui.theme.MotionTokens
 
 @Composable
@@ -72,6 +75,27 @@ fun KuroNavGraph(
                     )
                 }
             )
+        }
+        composable(Routes.ADD_DISTRO) {
+            AddCloneScaffold(
+                onBack = { navController.popBackStack() },
+                title = stringResource(com.kuro.app.R.string.distro_title),
+                content = {
+                    AddDistroScreen(
+                        onDone = { navController.popBackStack() },
+                        reduceMotion = reduceMotion
+                    )
+                }
+            )
+        }
+        composable(
+            Routes.TERMINAL_SESSION,
+            arguments = listOf(navArgument("containerId") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("containerId") ?: ""
+            DetailsScaffold(onBack = { navController.popBackStack() }) {
+                TerminalSessionScreen(containerId = id)
+            }
         }
         composable(
             Routes.CLONE_DETAILS,

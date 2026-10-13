@@ -36,7 +36,7 @@ only the entering content animates: alpha 0->1 + translationX 24dp from the
 navigation direction, 180ms, `Emphasized`, via `graphicsLayer` only.
 **No scale anywhere in tab transitions. Zero blended frames.**
 Direction is `ShellViewModel.direction` (+1 forward / -1 back) derived from
-`BottomDestination.ordinal` comparison, so Home → Settings slides right-to-left
+`BottomDestination.ordinal` comparison, so System → Settings slides right-to-left
 and back. Reduce motion: 100ms alpha only, no slide.
 
 Tab state survival (D1):
@@ -70,8 +70,8 @@ translationX via `graphicsLayer`, tween 200ms (100ms under reduce motion).
 Selected icon/label use primary-toned contrast. Bar is `surfaceContainer` with a
 1dp `outlineVariant` hairline top border. No per-tab backgrounds toggling on/off.
 
-### FAB
-Always "New Clone".
+### FAB (Step 4: contextual)
+New Clone on Clones, Add distro on Terminal, hidden on System/Settings.
 
 ## Layer discipline
 
@@ -89,9 +89,9 @@ Always "New Clone".
 Everything collapses to 100ms alpha-only fades (tabs fade only, push/pop fade only,
 dialogs fade only, list fades instant, presses instant with scale 1.0).
 
-## Home engine chip (FROZEN — vendor-neutral)
+## Engine status chip (FROZEN — vendor-neutral)
 
-Home header shows a small static chip reflecting engine state (Ready / Error /
-Not compatible / Not initialized; "Loading" only while `init()` is actually running),
-with a 150ms fade on change. No permanent spinner anywhere in the app.
-UI must not name the engine vendor.
+Engine state (Ready / Error / Not compatible / Not initialized) surfaces in
+the Settings engine card and the System tab Clones summary, with a 150ms fade
+on change. "Loading" only while `init()` is actually running. No permanent
+spinner anywhere in the app. UI must not name the engine vendor.
