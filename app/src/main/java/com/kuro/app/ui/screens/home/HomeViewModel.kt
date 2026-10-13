@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.CloneProfile
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -44,7 +44,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            delay(400)
+            cloneRepo.clones.first()
             _isLoading.value = false
         }
     }
@@ -55,7 +55,7 @@ class HomeViewModel : ViewModel() {
         _loadFailed.value = false
         _isLoading.value = true
         viewModelScope.launch {
-            delay(400)
+            cloneRepo.clones.first()
             _isLoading.value = false
         }
     }

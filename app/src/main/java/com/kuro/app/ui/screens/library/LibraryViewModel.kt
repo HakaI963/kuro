@@ -52,7 +52,7 @@ class LibraryViewModel : ViewModel() {
             val c = cloneRepo.getClone(id)
             if (c != null) {
                 val engineResult = ServiceLocator.virtualEngine.remove(
-                    com.kuro.engine.CloneHandle(c.id, c.sourceAppId)
+                    com.kuro.engine.CloneHandle(c.id, c.sourceAppId, c.engineUserId)
                 )
                 if (engineResult.isFailure) {
                     _message.value = engineResult.exceptionOrNull()?.message

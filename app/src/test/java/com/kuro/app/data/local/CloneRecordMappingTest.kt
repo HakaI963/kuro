@@ -9,35 +9,39 @@ import org.junit.Test
 class CloneRecordMappingTest {
 
     @Test
-    fun `record maps to ACTIVE profile`() {
+    fun `engine-confirmed record maps to ACTIVE profile`() {
         val rec = CloneRecord(
             packageName = "com.example.notes",
-            cloneId = "c1",
+            cloneId = "u1",
             cloneName = "Notes",
             colorTag = 0xFF7C6CFF,
             createdAt = 1_000L,
-            engineName = "blackbox-stage1",
+            engineName = "blackbox",
+            engineUserId = 1,
             lastLaunched = null
         )
-        val profile = rec.toProfile("Notes")
+        val profile = rec.toProfile("Notes", engineConfirmed = true)
         assertEquals(CloneStatus.ACTIVE, profile.status)
-        assertEquals("c1", profile.id)
+        assertEquals("u1", profile.id)
         assertEquals("Notes", profile.name)
+        assertEquals(1, profile.engineUserId)
         assertNull(profile.lastLaunchedMillis)
     }
 
     @Test
-    fun `record preserves launch timestamp`() {
+    fun `unconfirmed record maps to ERROR profile`() {
         val rec = CloneRecord(
             packageName = "com.example.browser",
-            cloneId = "c2",
+            cloneId = "u2",
             cloneName = "Browser",
             colorTag = 0xFF49D6C2,
             createdAt = 2_000L,
-            engineName = "blackbox-stage1",
+            engineName = "blackbox",
+            engineUserId = 2,
             lastLaunched = 3_000L
         )
-        val profile = rec.toProfile("Browser")
+        val profile = rec.toProfile("Browser", engineConfirmed = false)
+        assertEquals(CloneStatus.ERROR, profile.status)
         assertEquals(3_000L, profile.lastLaunchedMillis)
     }
 
@@ -45,14 +49,15 @@ class CloneRecordMappingTest {
     fun `profile roundtrips through record`() {
         val rec = CloneRecord(
             packageName = "com.example.files",
-            cloneId = "c3",
+            cloneId = "u3",
             cloneName = "Files",
             colorTag = 0xFF3DDC97,
             createdAt = 5_000L,
-            engineName = "blackbox-stage1",
+            engineName = "blackbox",
+            engineUserId = 3,
             lastLaunched = 6_000L
         )
-        val roundtripped = rec.toProfile("Files").toRecord("blackbox-stage1")
+        val roundtripped = rec.toProfile("Files", engineConfirmed = true).toRecord("blackbox")
         assertEquals(rec, roundtripped)
     }
 
@@ -60,16 +65,16 @@ class CloneRecordMappingTest {
     fun `activity record roundtrips`() {
         val event = com.kuro.app.domain.models.ActivityEvent(
             id = "99",
-            cloneId = "c1",
+            cloneId = "u1",
             cloneName = "Notes",
             type = ActivityType.LAUNCHED,
             timestampMillis = 7_000L,
-            detail = "Launched inside Kuro space"
+            detail = "Launched by engine"
         )
         val rec = event.toRecord()
         assertEquals("LAUNCHED", rec.type)
         val back = rec.copy(uid = 99).toEvent()
         assertEquals(ActivityType.LAUNCHED, back.type)
-        assertEquals("c1", back.cloneId)
+        assertEquals("u1", back.cloneId)
     }
 }

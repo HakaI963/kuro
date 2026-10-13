@@ -54,8 +54,6 @@ class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
     }
 }
 
-private const val RUNNING_WINDOW_MILLIS = 10 * 60 * 1_000L
-
 @Composable
 fun CloneDetailsScreen(
     cloneId: String,
@@ -68,10 +66,8 @@ fun CloneDetailsScreen(
     val clone by vm.clone.collectAsState()
     val events by vm.relatedEvents.collectAsState()
     val showDelete by vm.showDelete.collectAsState()
-    val showOpened by vm.showOpened.collectAsState()
     val message by vm.message.collectAsState()
     val snackbar = remember { SnackbarHostState() }
-
     LaunchedEffect(message) {
         if (message != null) {
             snackbar.showSnackbar(message!!)
@@ -90,7 +86,6 @@ fun CloneDetailsScreen(
         )
         return
     }
-    val running = c.lastLaunchedMillis?.let { System.currentTimeMillis() - it < RUNNING_WINDOW_MILLIS } == true
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { _ ->
         LazyColumn(
@@ -112,17 +107,7 @@ fun CloneDetailsScreen(
                         Text(text = c.name, style = MaterialTheme.typography.headlineSmall)
                         Text(text = c.sourceAppName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            StatusBadge(status = c.status)
-                            if (running) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.details_running),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                        }
+                        StatusBadge(status = c.status)
                     }
                 }
             }
@@ -183,15 +168,6 @@ fun CloneDetailsScreen(
             dismissLabel = stringResource(R.string.details_confirm_delete_dismiss),
             onConfirm = { vm.confirmDelete(onDeleted) },
             onDismiss = vm::dismissDelete
-        )
-    }
-    if (showOpened) {
-        KuroDialog(
-            title = stringResource(R.string.details_opened_title),
-            body = stringResource(R.string.details_opened_body),
-            confirmLabel = stringResource(R.string.details_ok),
-            onConfirm = vm::dismissOpened,
-            onDismiss = vm::dismissOpened
         )
     }
 }

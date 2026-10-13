@@ -34,6 +34,7 @@ data class CloneProfile(
     val sourceAppId: String,
     val sourceAppName: String,
     val status: CloneStatus,
+    val engineUserId: Int,
     val createdAtMillis: Long,
     val lastLaunchedMillis: Long?,
     val labelColorArgb: Long,

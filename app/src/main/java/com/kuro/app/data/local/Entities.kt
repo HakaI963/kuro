@@ -11,6 +11,7 @@ data class CloneRecord(
     val colorTag: Long,
     val createdAt: Long,
     val engineName: String,
+    val engineUserId: Int,
     val lastLaunched: Long? = null
 )
 

@@ -148,6 +148,7 @@ class AddCloneViewModel : ViewModel() {
                         sourceAppId = app.packageName,
                         sourceAppName = app.label,
                         status = CloneStatus.ACTIVE,
+                        engineUserId = handle.userId,
                         createdAtMillis = System.currentTimeMillis(),
                         lastLaunchedMillis = null,
                         labelColorArgb = s.labelColor,

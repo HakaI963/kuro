@@ -50,11 +50,11 @@ object ServiceLocator {
         database = Room.databaseBuilder(app, KuroDatabase::class.java, "kuro.db")
             .fallbackToDestructiveMigration()
             .build()
+        virtualEngine = EngineProvider.provide(app)
         installedAppRepository = RealInstalledAppRepository(app)
-        cloneRepository = RoomCloneRepository(database, app, engineName = "blackbox-stage1")
+        cloneRepository = RoomCloneRepository(database, app, engineName = "blackbox", virtualEngine)
         activityRepository = RoomActivityRepository(database)
         settingsRepository = InMemorySettingsRepository()
-        virtualEngine = EngineProvider.provide(app)
         initialized = true
         scope.launch(Dispatchers.IO) {
             virtualEngine.status.collect { _engineStatus.value = it }

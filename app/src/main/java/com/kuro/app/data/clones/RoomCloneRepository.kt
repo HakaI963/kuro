@@ -6,6 +6,7 @@ import com.kuro.app.data.local.toProfile
 import com.kuro.app.data.local.toRecord
 import com.kuro.app.domain.models.CloneProfile
 import com.kuro.app.domain.repositories.CloneRepository
+import com.kuro.engine.VirtualEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +20,7 @@ class RoomCloneRepository(
     private val db: KuroDatabase,
     private val context: Context,
     private val engineName: String,
+    private val engine: VirtualEngine,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) : CloneRepository {
 
@@ -29,6 +31,13 @@ class RoomCloneRepository(
         scope.launch {
             db.cloneDao().observeAll().collect { records ->
                 val pm = context.packageManager
+                val confirmed = try {
+                    engine.listSpacePackages()
+                        .map { it.userId to it.packageName }
+                        .toSet()
+                } catch (_: Exception) {
+                    emptySet()
+                }
                 _clones.value = records.map { r ->
                     val label = try {
                         val info = pm.getApplicationInfo(r.packageName, 0)
@@ -36,7 +45,7 @@ class RoomCloneRepository(
                     } catch (_: Exception) {
                         r.cloneName
                     }
-                    r.toProfile(sourceLabel = label)
+                    r.toProfile(label, engineConfirmed = (r.engineUserId to r.packageName) in confirmed)
                 }
             }
         }
@@ -52,7 +61,13 @@ class RoomCloneRepository(
                 } catch (_: Exception) {
                     rec.cloneName
                 }
-                rec.toProfile(label)
+                val confirmed = try {
+                    engine.listSpacePackages()
+                        .any { it.userId == rec.engineUserId && it.packageName == rec.packageName }
+                } catch (_: Exception) {
+                    false
+                }
+                rec.toProfile(label, confirmed)
             }
     }
 

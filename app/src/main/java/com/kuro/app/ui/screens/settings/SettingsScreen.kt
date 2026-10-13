@@ -26,6 +26,7 @@ import com.kuro.app.ui.components.KuroSwitchRow
 
 @Composable
 fun SettingsScreen(
+    onOpenDiagnostics: () -> Unit,
     modifier: Modifier = Modifier,
     vm: SettingsViewModel = viewModel()
 ) {
@@ -64,6 +65,12 @@ fun SettingsScreen(
                 KuroSecondaryButton(
                     label = stringResource(R.string.settings_engine_retry),
                     onClick = vm::retryEngineInit
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                KuroSettingRow(
+                    title = stringResource(R.string.settings_engine_diagnostics),
+                    description = stringResource(R.string.settings_engine_diagnostics_desc),
+                    onClick = onOpenDiagnostics
                 )
             }
         }

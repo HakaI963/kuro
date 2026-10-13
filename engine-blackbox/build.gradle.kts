@@ -22,6 +22,7 @@ android {
 
 dependencies {
     implementation(project(":engine"))
+    implementation(project(":blackbox"))
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 }

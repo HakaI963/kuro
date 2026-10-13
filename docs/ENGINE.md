@@ -1,64 +1,92 @@
-# ENGINE.md — Kuro Stage 1 virtual engine
+# ENGINE.md — Kuro real BlackBox engine integration
 
-## Decision (recorded before integration)
+## Chosen engine
 
-| Option | Repo | License | Android range | Verdict |
-|---|---|---|---|---|
-| BlackBox (preferred) | `FBlackBox/BlackBox` | Apache License 2.0 (permissive; attribution only) | Android 5.0+ (API 21+); Kuro targets API 26–35 | **Chosen** |
-| VirtualApp (fallback) | `asLody/VirtualApp` | Community source is stale/limited; full latest source requires a purchased business license | Claims up to Android 14 in business version | **Rejected** — commercial-license gate makes it unsuitable for this repo, which carries no license purchase |
+| Field | Value |
+|---|---|
+| Primary repo | `FBlackBox/BlackBox` (upstream; content removed by its owner — README only) |
+| Maintained fork integrated | `ALEX5402/NewBlackbox` |
+| Upstream commit vendored | `89b59836c66f173756a4ae258cf379a957649820` |
+| License | Apache License 2.0 (`third_party/NewBlackbox/LICENSE`) |
+| Supported Android range | Android 5.0–14.0+ (API 21+), ARM64/ARMv7/x86 |
+| Kuro minSdk | 26, so the sub-26 `Incompatible` path is unreachable in practice |
 
-Kuro itself currently ships no `LICENSE` file, so vendoring Apache-2.0 code with
-attribution is compatible. No VirtualApp business-licensed code is used anywhere.
+Why this fork over VirtualApp (`asLody/VirtualApp`): the VirtualApp community
+source is stale and its full current source requires a purchased business license,
+which is incompatible with frictionless open-source integration. Kuro ships no
+`LICENSE` file of its own, so Apache-2.0 code with attribution is compatible.
+No VirtualApp code is used anywhere.
 
-## What is vendored
+## Vendoring layout (nothing rewritten, only compile patches)
 
-- Nothing is copied from upstream in this step. `:engine-blackbox` is Kuro's own
-  thin Stage 1 adapter implementing `:engine`'s `VirtualEngine` with a file-backed
-  virtual space (`filesDir/virtualspace/<cloneId>` holding `base_<i>_<name>.apk`
-  copies plus `clone.meta`). It is modified as little as possible *by construction*:
-  it contains only adapter logic, so a future native-core drop-in touches one module.
-- Upstream clone (for reference only, not vendored):
-  `git clone https://github.com/FBlackBox/BlackBox.git` (Apache-2.0, see its `LICENSE`).
+- `third_party/NewBlackbox/Bcore` → Gradle module `:blackbox` (core library:
+  Java + AIDL + native `cpp/` via `ndkBuild`, proxy manifest with stub components).
+- `third_party/NewBlackbox/black-reflection` → `:blackbox-reflection` (pure Java).
+- `third_party/NewBlackbox/compiler` → `:blackbox-compiler` (annotation processor).
+- Upstream sample `app/` is NOT vendored.
 
-## Supported Android versions
+Patches vs upstream (each marked `KURO-PATCH` in place):
+1. `Bcore/build.gradle`: `rootProject.ext` literals (`compileSdk 35`, `minSdk 21`),
+   Java 21 → 17 (no Java-21 APIs in the tree, verified by grep),
+   `ndkVersion` 29.0.13846066 → 27.0.12077973 (matches CI),
+   `lintOptions {}` → `lint {}` (removed in AGP 8),
+   `packagingOptions {}` → `packaging {}` (AGP 8 rename),
+   `:black-reflection`/`:compiler` → `:blackbox-reflection`/`:blackbox-compiler`.
+2. Nothing else. No Java/C++ source file is modified.
 
-- Upstream BlackBox: API 21+.
-- Kuro Stage 1 adapter: API 26–35 (Kuro `minSdk 26`, `compileSdk/targetSdk 35`).
-- Below API 26 the engine reports `EngineStatus.Incompatible` and the UI shows an
-  honest status card: “Engine not compatible with Android X on this device”.
-  The rest of the app stays fully usable.
+## Initialization (mirrors the engine's own sample app)
 
-## Known limits (expected behavior)
+Upstream sample (`App.kt` → `AppManager` → `BlackBoxLoader`):
+`BlackBoxCore.get().doAttachBaseContext(context, ClientConfiguration {
+getHostPackageName() = packageName, ... })` in `attachBaseContext`,
+`BlackBoxCore.get().doCreate()` in `onCreate`.
 
-- Apps that detect virtualization may refuse to run. This is expected and surfaced
-  as an honest launch failure, never a fake success.
-- Stage 1 executes installs/copies, integrity-checked launch validation
-  (`getPackageArchiveInfo` + package-name match), listing, and deletion.
-  Full in-process APK execution is the next swap (see below).
-- APK-file import (`CloneSource.ApkFile`) is defined in the interface but returns an
-  explicit “later stage” failure in Stage 1.
-- No root, no Xposed/LSPosed, no Magisk, no custom hooking framework, no
-  `QUERY_ALL_PACKAGES`, no work profile / device admin anywhere.
+Kuro does exactly this in `KuroApplication` via flavor-resolved `EngineBootstrap`
+(`app/src/virtual/...` delegates to `BlackBoxBootstrap` in `:engine-blackbox`;
+`app/src/stub/...` is a no-op), including the sample's `closeCodeInit()` call.
+Failures are captured, never crash, and surface as `EngineStatus.Error`.
 
-## How to swap the engine behind `VirtualEngine` later
+## Adapter (`BlackBoxEngine : VirtualEngine`, `:engine-blackbox`)
 
-1. Add the new backend as a sibling module (e.g. `:engine-cedric`) implementing
-   `com.kuro.engine.VirtualEngine` from `:engine`. Keep all backend imports inside
-   that module — app UI must never import backend classes directly.
-2. Point the `virtual` flavor at it: change `app/src/virtual/.../EngineProvider.kt`
-   to return the new implementation. `stub` keeps returning `NoOpEngine`.
-3. If the backend needs native code, add its `CMakeLists.txt` inside its own module
-   and set `ndkVersion` there — never in `:app`. The workflow already installs and
-   caches the NDK/CMake (see `.github/workflows/android-build.yml`).
-4. Keep `CloneSource`, `CloneHandle`, `InstallEvent`, `LaunchResult`, and
-   `EngineStatus` shapes stable; extend with new sealed variants instead of
-   changing existing ones so Room records and UI keep working.
-5. Update this file's decision table and the Settings card constants
-   (`settings_engine_name/version/range`) in the same PR.
+The only place UI meets the engine. One Kuro clone = one engine user slot
+(`allocateUserSlot` skips slot 0; `cloneId` is `"u<userId>"`; Room stores the
+mapping in `CloneRecord.engineUserId` — metadata only).
+
+- `installIntoSpace(InstalledApp)`: `createUser(slot)` →
+  `BlackBoxCore.installPackageAsUser(packageName, slot)` (reads the host
+  `ApplicationInfo.sourceDir` itself) → verify `isInstalled` → `Done`.
+  Progress events fire at these real checkpoints; there are no timers.
+  `ApkFile` honestly fails as a later stage.
+- `launch`: `BlackBoxCore.launchApk(package, slot)` → `Started` opens the guest
+  UI with nothing intercepting it; `false`/exception → `Failed` with the real
+  outcome, shown in a snackbar.
+- `listSpacePackages`: `getUsers()` + `getInstalledPackages(0, user)` — the
+  source of truth for ACTIVE (present) vs ERROR (Room record without engine
+  backing). Room reconciliation happens in `RoomCloneRepository`.
+- `remove`: `uninstallPackageAsUser` + `deleteUser`, verified by `isInstalled`.
 
 ## Flavors
 
-- `stub`: `:engine` only (`NoOpEngine`, status `Uninitialized`). Always builds,
-  even without any backend. Use for CI smoke and incompatible devices.
-- `virtual`: `:engine` + `:engine-blackbox` (Stage 1 file-backed adapter).
-  This is the Stage 1 product. Both flavors are built in CI.
+- `stub`: no `:blackbox` dependency; `NoOpEngine` with honest `Incompatible`
+  status; Create disabled; diagnostics explains the stub.
+- `virtual`: `:blackbox` + real adapter. CI builds and uploads both APKs.
+
+## Known limits (expected behavior)
+
+- Apps with virtualization/root detection may refuse to run inside the engine.
+- Guest apps needing Google Play Services need GMS installation (not bundled).
+- Some games/heavy apps may crash; engine behavior varies by Android version
+  (fork targets 14.0+, best effort on 15).
+- The `:blackbox` manifest merges ~150 proxy components (activities/services/
+  providers in `:p0`… processes) plus baseline permissions (no
+  `QUERY_ALL_PACKAGES`); this is how the engine hosts guests.
+- Force-stopping Kuro kills guest processes (they are Kuro `:pN` processes).
+
+## Device verification (definition of done)
+
+1. Clone a test app: system Settings → Apps must NOT list it; only Kuro's storage
+   grows (~APK size, visible in Settings → Engine Diagnostics).
+2. Open: the guest app's real UI launches; no Kuro dialog intercepts.
+3. Force-stop Kuro: the running clone dies with it.
+4. Diagnostics lists the clone as reported by `getUsers`/`getInstalledPackages`.
+5. Delete: engine space removed, storage freed, engine list empty.

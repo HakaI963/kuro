@@ -134,11 +134,7 @@ fun HomeScreen(
             }
 
             item {
-                val windowMs = 10 * 60 * 1_000L
-                val now = System.currentTimeMillis()
-                val active = state.clones.filter {
-                    it.status == CloneStatus.ACTIVE && it.lastLaunchedMillis?.let { t -> now - t < windowMs } == true
-                }
+                val active = state.clones.filter { it.status == CloneStatus.ACTIVE }
                 KuroCard(
                     title = stringResource(R.string.home_active_now),
                     subtitle = if (active.isEmpty()) stringResource(R.string.home_empty_title) else "${active.size} ${stringResource(R.string.home_storage_profiles)}"

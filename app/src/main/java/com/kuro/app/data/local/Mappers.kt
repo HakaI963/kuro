@@ -5,17 +5,19 @@ import com.kuro.app.domain.models.ActivityType
 import com.kuro.app.domain.models.CloneProfile
 import com.kuro.app.domain.models.CloneStatus
 
-fun CloneRecord.toProfile(sourceLabel: String): CloneProfile = CloneProfile(
-    id = cloneId,
-    name = cloneName,
-    sourceAppId = packageName,
-    sourceAppName = sourceLabel,
-    status = CloneStatus.ACTIVE,
-    createdAtMillis = createdAt,
-    lastLaunchedMillis = lastLaunched,
-    labelColorArgb = colorTag,
-    iconLetter = cloneName.firstOrNull()?.uppercase() ?: "?"
-)
+fun CloneRecord.toProfile(sourceLabel: String, engineConfirmed: Boolean): CloneProfile =
+    CloneProfile(
+        id = cloneId,
+        name = cloneName,
+        sourceAppId = packageName,
+        sourceAppName = sourceLabel,
+        status = if (engineConfirmed) CloneStatus.ACTIVE else CloneStatus.ERROR,
+        engineUserId = engineUserId,
+        createdAtMillis = createdAt,
+        lastLaunchedMillis = lastLaunched,
+        labelColorArgb = colorTag,
+        iconLetter = cloneName.firstOrNull()?.uppercase() ?: "?"
+    )
 
 fun CloneProfile.toRecord(engineName: String): CloneRecord = CloneRecord(
     cloneId = id,
@@ -24,6 +26,7 @@ fun CloneProfile.toRecord(engineName: String): CloneRecord = CloneRecord(
     colorTag = labelColorArgb,
     createdAt = createdAtMillis,
     engineName = engineName,
+    engineUserId = engineUserId,
     lastLaunched = lastLaunchedMillis
 )
 

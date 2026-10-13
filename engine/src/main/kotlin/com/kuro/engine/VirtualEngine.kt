@@ -19,8 +19,16 @@ sealed interface CloneSource {
 
 data class CloneHandle(
     val cloneId: String,
-    val packageName: String
+    val packageName: String,
+    val userId: Int = -1
 )
+
+/** Smallest non-negative engine user slot not in [used]. Slot 0 is the owner slot. */
+fun allocateUserSlot(used: Set<Int>): Int {
+    var candidate = 1
+    while (candidate in used) candidate++
+    return candidate
+}
 
 sealed interface InstallEvent {
     data class Progress(val fraction: Float, val message: String) : InstallEvent
@@ -49,13 +57,14 @@ interface VirtualEngine {
 }
 
 class NoOpEngine(
-    private val reason: String = "Engine backend not available in this build"
+    private val reason: String = "Engine backend not available in this build",
+    private val fixedStatus: EngineStatus? = null
 ) : VirtualEngine {
     private val state = MutableStateFlow<EngineStatus>(EngineStatus.Uninitialized)
     override val status: Flow<EngineStatus> = state.asStateFlow()
 
     override suspend fun init(): EngineStatus {
-        state.value = EngineStatus.Uninitialized
+        state.value = fixedStatus ?: EngineStatus.Uninitialized
         return state.value
     }
 

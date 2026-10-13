@@ -72,6 +72,7 @@ dependencies {
     implementation(project(":engine"))
 
     "virtualImplementation"(project(":engine-blackbox"))
+    "virtualImplementation"(project(":blackbox"))
 
     ksp(libs.androidx.room.compiler)
 

@@ -23,9 +23,6 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
     private val _showDelete = MutableStateFlow(false)
     val showDelete: StateFlow<Boolean> = _showDelete
 
-    private val _showOpened = MutableStateFlow(false)
-    val showOpened: StateFlow<Boolean> = _showOpened
-
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
@@ -48,7 +45,9 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
         viewModelScope.launch {
             val c = cloneRepo.getClone(cloneId)
             if (c != null) {
-                val engineResult = ServiceLocator.virtualEngine.remove(CloneHandle(c.id, c.sourceAppId))
+                val engineResult = ServiceLocator.virtualEngine.remove(
+                    CloneHandle(c.id, c.sourceAppId, c.engineUserId)
+                )
                 if (engineResult.isFailure) {
                     _message.value = engineResult.exceptionOrNull()?.message
                 }
@@ -62,7 +61,7 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
                         cloneName = c.name,
                         type = ActivityType.DELETED,
                         timestampMillis = System.currentTimeMillis(),
-                        detail = "Deleted from details"
+                        detail = "Removed from engine"
                     )
                 )
             }
@@ -74,7 +73,9 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
     fun openClone() {
         viewModelScope.launch {
             val c = cloneRepo.getClone(cloneId) ?: return@launch
-            when (val r = ServiceLocator.virtualEngine.launch(CloneHandle(c.id, c.sourceAppId))) {
+            when (val r = ServiceLocator.virtualEngine.launch(
+                CloneHandle(c.id, c.sourceAppId, c.engineUserId)
+            )) {
                 is LaunchResult.Started -> {
                     val now = System.currentTimeMillis()
                     (cloneRepo as? RoomCloneRepository)?.markLaunched(c.id, now)
@@ -86,16 +87,13 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
                             cloneName = c.name,
                             type = ActivityType.LAUNCHED,
                             timestampMillis = now,
-                            detail = "Launched inside Kuro space"
+                            detail = "Launched by engine"
                         )
                     )
-                    _showOpened.value = true
                 }
                 is LaunchResult.NotReady -> _message.value = r.message
                 is LaunchResult.Failed -> _message.value = r.message
             }
         }
     }
-
-    fun dismissOpened() { _showOpened.value = false }
 }

@@ -17,6 +17,7 @@ import com.kuro.app.di.ServiceLocator
 import com.kuro.app.ui.screens.activity.ActivityScreen
 import com.kuro.app.ui.screens.addclone.AddCloneScreen
 import com.kuro.app.ui.screens.details.CloneDetailsScreen
+import com.kuro.app.ui.screens.diagnostics.DiagnosticsScreen
 import com.kuro.app.ui.screens.home.HomeScreen
 import com.kuro.app.ui.screens.library.LibraryScreen
 import com.kuro.app.ui.screens.onboarding.OnboardingScreen
@@ -105,7 +106,12 @@ fun KuroNavGraph(
                 onSelect = { navigateBottom(navController, it) },
                 onNewClone = { navController.navigate(Routes.ADD_CLONE) }
             ) {
-                SettingsScreen()
+                SettingsScreen(onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) })
+            }
+        }
+        composable(Routes.DIAGNOSTICS) {
+            DetailsScaffold(onBack = { navController.popBackStack() }) {
+                DiagnosticsScreen()
             }
         }
         composable(Routes.ADD_CLONE) {
