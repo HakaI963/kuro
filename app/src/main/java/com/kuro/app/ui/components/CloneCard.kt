@@ -1,6 +1,8 @@
 package com.kuro.app.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,8 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,30 +36,37 @@ import com.kuro.app.R
 import com.kuro.app.core.utils.formatRelative
 import com.kuro.app.domain.models.CloneProfile
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CloneCard(
     clone: CloneProfile,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    reduceMotion: Boolean = false
+    reduceMotion: Boolean = false,
+    sharedScope: SharedTransitionScope? = null,
+    animScope: AnimatedVisibilityScope? = null,
+    sharedKey: String? = null
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val targetScale = if (pressed && !reduceMotion) 0.97f else 1f
-    val scale by animateFloatAsState(targetValue = targetScale, label = "press-scale")
+    val scale by pressScaleValue(interaction, reduceMotion)
+    val tonal by pressTonalColor(MaterialTheme.colorScheme.surfaceContainer, pressed, reduceMotion)
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
             .clickable(
                 interactionSource = interaction,
                 indication = null,
                 onClick = onClick
             ),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(containerColor = tonal.value)
     ) {
         Row(
             modifier = Modifier
@@ -69,7 +78,13 @@ fun CloneCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color(clone.labelColorArgb).copy(alpha = 0.2f)),
+                    .background(Color(clone.labelColorArgb).copy(alpha = 0.2f))
+                    .then(
+                        sharedElementModifier(
+                            sharedScope, animScope,
+                            sharedKey?.let { "$it-icon" }
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -85,7 +100,11 @@ fun CloneCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = sharedElementModifier(
+                        sharedScope, animScope,
+                        sharedKey?.let { "$it-title" }
+                    )
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -110,5 +129,21 @@ fun CloneCard(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun sharedElementModifier(
+    sharedScope: SharedTransitionScope?,
+    animScope: AnimatedVisibilityScope?,
+    key: String?
+): Modifier {
+    if (sharedScope == null || animScope == null || key == null) return Modifier
+    return with(sharedScope) {
+        Modifier.sharedElement(
+            sharedScope.rememberSharedContentState(key = key),
+            animatedVisibilityScope = animScope
+        )
     }
 }

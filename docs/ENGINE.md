@@ -15,6 +15,9 @@ Why this fork over VirtualApp (`asLody/VirtualApp`): the VirtualApp community
 source is stale and its full current source requires a purchased business license,
 which is incompatible with frictionless open-source integration. Kuro ships no
 `LICENSE` file of its own, so Apache-2.0 code with attribution is compatible.
+Vendor attribution lives in this file only until project completion, when it
+moves to a dedicated in-app About screen; user-facing UI must not name the
+engine vendor in the meantime.
 No VirtualApp code is used anywhere.
 
 ## Vendoring layout (nothing rewritten, only compile patches)

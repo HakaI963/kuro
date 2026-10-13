@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import com.kuro.app.ui.theme.KuroMotion
+import com.kuro.app.ui.theme.MotionTokens
 
 @Composable
 fun LoadingSkeleton(
@@ -61,7 +61,7 @@ private fun ShimmerBlock(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(KuroMotion.SHIMMER_MS),
+            animation = tween(1200),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmer-offset"

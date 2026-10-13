@@ -1,11 +1,12 @@
 package com.kuro.app.ui.navigation
 
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,129 +20,134 @@ import com.kuro.app.ui.screens.addclone.AddCloneScreen
 import com.kuro.app.ui.screens.details.CloneDetailsScreen
 import com.kuro.app.ui.screens.diagnostics.DiagnosticsScreen
 import com.kuro.app.ui.screens.home.HomeScreen
+import com.kuro.app.ui.screens.intro.OrbitalIntro
 import com.kuro.app.ui.screens.library.LibraryScreen
-import com.kuro.app.ui.screens.onboarding.OnboardingScreen
 import com.kuro.app.ui.screens.settings.SettingsScreen
-import com.kuro.app.ui.screens.splash.SplashScreen
+import com.kuro.app.ui.theme.MotionTokens
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun KuroNavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    reduceMotion: Boolean = false
+    reduceMotion: Boolean = false,
+    showIntro: Boolean = true,
+    onIntroConsumed: () -> Unit = {}
 ) {
-    val enterT = if (reduceMotion) fadeIn(tween(0)) else fadeIn(tween(250)) +
-        slideInHorizontally(tween(250)) { it / 6 }
-    val exitT = if (reduceMotion) fadeOut(tween(0)) else fadeOut(tween(200))
+    val density = LocalDensity.current
+    val slidePx = with(density) { MotionTokens.NAV_ENTER_SLIDE.roundToPx() }
+    fun homeRoute(): String {
+        val def = ServiceLocator.settingsRepository.settings.value.defaultToLibrary
+        return if (def) Routes.LIBRARY else Routes.HOME
+    }
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.SPLASH,
-        modifier = modifier,
-        enterTransition = { enterT },
-        exitTransition = { exitT },
-        popEnterTransition = { fadeIn(tween(if (reduceMotion) 0 else 200)) },
-        popExitTransition = { fadeOut(tween(if (reduceMotion) 0 else 200)) }
-    ) {
-        composable(Routes.SPLASH) {
-            SplashScreen(reduceMotion = reduceMotion, onDone = { completed ->
-                if (completed) {
-                    val def = ServiceLocator.settingsRepository.settings.value.defaultToLibrary
-                    navController.navigate(if (def) Routes.LIBRARY else Routes.HOME) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
-                    }
-                } else {
-                    navController.navigate(Routes.ONBOARDING) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
+    SharedTransitionLayout(modifier = modifier) {
+        NavHost(
+            navController = navController,
+            startDestination = if (showIntro) Routes.INTRO else homeRoute(),
+            enterTransition = { MotionTokens.navEnter(reduceMotion, slidePx) },
+            exitTransition = { MotionTokens.navExit(reduceMotion) },
+            popEnterTransition = { MotionTokens.navEnter(reduceMotion, slidePx) },
+            popExitTransition = { MotionTokens.navExit(reduceMotion) }
+        ) {
+            composable(Routes.INTRO) {
+                OrbitalIntro(reduceMotion = reduceMotion) {
+                    onIntroConsumed()
+                    navController.navigate(homeRoute()) {
+                        popUpTo(Routes.INTRO) { inclusive = true }
                     }
                 }
-            })
-        }
-        composable(Routes.ONBOARDING) {
-            OnboardingScreen(onFinish = {
-                val def = ServiceLocator.settingsRepository.settings.value.defaultToLibrary
-                navController.navigate(if (def) Routes.LIBRARY else Routes.HOME) {
-                    popUpTo(Routes.ONBOARDING) { inclusive = true }
-                }
-            })
-        }
-        composable(Routes.HOME) {
-            AppShell(
-                current = BottomDestination.Home,
-                onSelect = { navigateBottom(navController, it) },
-                onNewClone = { navController.navigate(Routes.ADD_CLONE) }
-            ) {
-                HomeScreen(
-                    onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
+            }
+            composable(Routes.HOME) {
+                AppShell(
+                    current = BottomDestination.Home,
+                    onSelect = { navigateBottom(navController, it) },
                     onNewClone = { navController.navigate(Routes.ADD_CLONE) },
-                    onImportApk = { },
-                    onViewLibrary = { navController.navigate(Routes.LIBRARY) }
-                )
-            }
-        }
-        composable(Routes.LIBRARY) {
-            AppShell(
-                current = BottomDestination.Library,
-                onSelect = { navigateBottom(navController, it) },
-                onNewClone = { navController.navigate(Routes.ADD_CLONE) }
-            ) {
-                LibraryScreen(
-                    onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
-                    onNewClone = { navController.navigate(Routes.ADD_CLONE) }
-                )
-            }
-        }
-        composable(Routes.ACTIVITY) {
-            AppShell(
-                current = BottomDestination.Activity,
-                onSelect = { navigateBottom(navController, it) },
-                onNewClone = { navController.navigate(Routes.ADD_CLONE) }
-            ) {
-                ActivityScreen()
-            }
-        }
-        composable(Routes.SETTINGS) {
-            AppShell(
-                current = BottomDestination.Settings,
-                onSelect = { navigateBottom(navController, it) },
-                onNewClone = { navController.navigate(Routes.ADD_CLONE) }
-            ) {
-                SettingsScreen(onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) })
-            }
-        }
-        composable(Routes.DIAGNOSTICS) {
-            DetailsScaffold(onBack = { navController.popBackStack() }) {
-                DiagnosticsScreen()
-            }
-        }
-        composable(Routes.ADD_CLONE) {
-            AddCloneScaffold(
-                onBack = { navController.popBackStack() },
-                content = {
-                    AddCloneScreen(
-                        onDone = { navController.popBackStack() },
-                        onOpenClone = {
-                            navController.navigate(Routes.cloneDetails(it)) {
-                                popUpTo(Routes.ADD_CLONE) { inclusive = true }
-                            }
-                        }
+                    reduceMotion = reduceMotion
+                ) {
+                    HomeScreen(
+                        onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
+                        onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+                        onImportApk = { },
+                        onViewLibrary = { navController.navigate(Routes.LIBRARY) },
+                        sharedScope = if (reduceMotion) null else this@SharedTransitionLayout,
+                        animScope = if (reduceMotion) null else this@composable
                     )
                 }
-            )
-        }
-        composable(
-            Routes.CLONE_DETAILS,
-            arguments = listOf(navArgument("cloneId") { type = NavType.StringType })
-        ) { backStack ->
-            val id = backStack.arguments?.getString("cloneId") ?: ""
-            DetailsScaffold(onBack = { navController.popBackStack() }) {
-                CloneDetailsScreen(
-                    cloneId = id,
+            }
+            composable(Routes.LIBRARY) {
+                AppShell(
+                    current = BottomDestination.Library,
+                    onSelect = { navigateBottom(navController, it) },
+                    onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+                    reduceMotion = reduceMotion
+                ) {
+                    LibraryScreen(
+                        onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
+                        onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+                        reduceMotion = reduceMotion,
+                        sharedScope = if (reduceMotion) null else this@SharedTransitionLayout,
+                        animScope = if (reduceMotion) null else this@composable
+                    )
+                }
+            }
+            composable(Routes.ACTIVITY) {
+                AppShell(
+                    current = BottomDestination.Activity,
+                    onSelect = { navigateBottom(navController, it) },
+                    onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+                    reduceMotion = reduceMotion
+                ) {
+                    ActivityScreen()
+                }
+            }
+            composable(Routes.SETTINGS) {
+                AppShell(
+                    current = BottomDestination.Settings,
+                    onSelect = { navigateBottom(navController, it) },
+                    onNewClone = { navController.navigate(Routes.ADD_CLONE) },
+                    reduceMotion = reduceMotion
+                ) {
+                    SettingsScreen(onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) })
+                }
+            }
+            composable(Routes.DIAGNOSTICS) {
+                DetailsScaffold(onBack = { navController.popBackStack() }) {
+                    DiagnosticsScreen()
+                }
+            }
+            composable(Routes.ADD_CLONE) {
+                AddCloneScaffold(
                     onBack = { navController.popBackStack() },
-                    onDeleted = {
-                        navController.popBackStack()
+                    content = {
+                        AddCloneScreen(
+                            onDone = { navController.popBackStack() },
+                            onOpenClone = {
+                                navController.navigate(Routes.cloneDetails(it)) {
+                                    popUpTo(Routes.ADD_CLONE) { inclusive = true }
+                                }
+                            }
+                        )
                     }
                 )
+            }
+            composable(
+                Routes.CLONE_DETAILS,
+                arguments = listOf(navArgument("cloneId") { type = NavType.StringType })
+            ) { backStack ->
+                val id = backStack.arguments?.getString("cloneId") ?: ""
+                DetailsScaffold(onBack = { navController.popBackStack() }) {
+                    CloneDetailsScreen(
+                        cloneId = id,
+                        onBack = { navController.popBackStack() },
+                        onDeleted = {
+                            navController.popBackStack()
+                        },
+                        reduceMotion = reduceMotion,
+                        sharedScope = if (reduceMotion) null else this@SharedTransitionLayout,
+                        animScope = if (reduceMotion) null else this@composable
+                    )
+                }
             }
         }
     }
@@ -170,3 +176,6 @@ fun currentBottomDestination(nav: NavHostController): BottomDestination {
         else -> BottomDestination.Home
     }
 }
+
+typealias KuroSharedScope = SharedTransitionScope
+typealias KuroAnimScope = AnimatedVisibilityScope

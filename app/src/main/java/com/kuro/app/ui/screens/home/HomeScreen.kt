@@ -1,7 +1,12 @@
 package com.kuro.app.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -27,9 +32,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,9 +47,15 @@ import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.LoadingSkeleton
+import com.kuro.app.ui.components.OrbitMark
 import com.kuro.app.ui.components.SectionHeader
+import com.kuro.app.ui.components.pressScaleValue
+import com.kuro.app.ui.components.pressTonalColor
+import com.kuro.app.ui.components.rememberStagger
+import com.kuro.app.ui.components.staggerFade
 import java.util.Calendar
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     onOpenClone: (String) -> Unit,
@@ -50,14 +63,18 @@ fun HomeScreen(
     onImportApk: () -> Unit,
     onViewLibrary: () -> Unit,
     modifier: Modifier = Modifier,
-    vm: HomeViewModel = viewModel()
+    vm: HomeViewModel = viewModel(),
+    sharedScope: SharedTransitionScope? = null,
+    animScope: AnimatedVisibilityScope? = null
 ) {
     val state by vm.uiState.collectAsState()
     val reduceMotion by vm.reduceMotion.collectAsState(initial = false)
+    val stagger = rememberStagger("home", reduceMotion)
 
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -76,6 +93,7 @@ fun HomeScreen(
                     desc = stringResource(R.string.home_action_new_clone_desc),
                     icon = { Icon(Icons.Filled.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     onClick = onNewClone,
+                    reduceMotion = reduceMotion,
                     modifier = Modifier.weight(1f)
                 )
                 QuickAction(
@@ -83,6 +101,7 @@ fun HomeScreen(
                     desc = stringResource(R.string.home_action_import_apk_desc),
                     icon = { Icon(Icons.Filled.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     onClick = {},
+                    reduceMotion = reduceMotion,
                     modifier = Modifier.weight(1f),
                     enabled = false
                 )
@@ -91,6 +110,7 @@ fun HomeScreen(
                     desc = stringResource(R.string.home_action_view_library_desc),
                     icon = { Icon(Icons.Filled.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
                     onClick = onViewLibrary,
+                    reduceMotion = reduceMotion,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -128,8 +148,18 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(state.filtered.take(4), key = { it.id }) { clone ->
-                    CloneCard(clone = clone, onClick = { onOpenClone(clone.id) }, reduceMotion = reduceMotion)
+                itemsIndexed(state.filtered.take(4), key = { _, c -> c.id }) { index, clone ->
+                    CloneCard(
+                        clone = clone,
+                        onClick = { onOpenClone(clone.id) },
+                        reduceMotion = reduceMotion,
+                        sharedScope = sharedScope,
+                        animScope = animScope,
+                        sharedKey = clone.id,
+                        modifier = Modifier
+                            .staggerFade(stagger.delayFor(index), reduceMotion)
+                            .animateItem()
+                    )
                 }
             }
 
@@ -198,17 +228,20 @@ private fun GreetingHeader() {
         in 12..17 -> R.string.home_greeting_afternoon
         else -> R.string.home_greeting_evening
     }
-    Column {
-        Text(
-            text = stringResource(res),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = stringResource(R.string.home_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(res),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = stringResource(R.string.home_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        OrbitMark()
     }
 }
 
@@ -219,16 +252,25 @@ private fun QuickAction(
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    reduceMotion: Boolean = false,
     enabled: Boolean = true
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by pressScaleValue(interaction, reduceMotion)
+    val tonal by pressTonalColor(
+        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (enabled) 1f else 0.5f),
+        pressed, reduceMotion
+    )
     Card(
-        modifier = modifier.then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
+            .then(if (enabled) Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(
-                alpha = if (enabled) 1f else 0.5f
-            )
-        )
+        colors = CardDefaults.cardColors(containerColor = tonal.value)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             icon()

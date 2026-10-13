@@ -1,5 +1,8 @@
 package com.kuro.app.ui.screens.details
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +49,7 @@ import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroDialog
 import com.kuro.app.ui.components.KuroOutlineButton
 import com.kuro.app.ui.components.StatusBadge
+import com.kuro.app.ui.components.sharedElementModifier
 
 class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -54,12 +58,16 @@ class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CloneDetailsScreen(
     cloneId: String,
     onBack: () -> Unit,
     onDeleted: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reduceMotion: Boolean = false,
+    sharedScope: SharedTransitionScope? = null,
+    animScope: AnimatedVisibilityScope? = null
 ) {
     val factory = remember(cloneId) { DetailsVmFactory(cloneId) }
     val vm: CloneDetailsViewModel = viewModel(factory = factory, key = "details-$cloneId")
@@ -89,7 +97,10 @@ fun CloneDetailsScreen(
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { _ ->
         LazyColumn(
-            modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -97,14 +108,19 @@ fun CloneDetailsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Box(
                         modifier = Modifier.size(64.dp).clip(CircleShape)
-                            .background(Color(c.labelColorArgb).copy(alpha = 0.18f)),
+                            .background(Color(c.labelColorArgb).copy(alpha = 0.18f))
+                            .then(sharedElementModifier(sharedScope, animScope, "$cloneId-icon")),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = c.iconLetter, style = MaterialTheme.typography.headlineMedium, color = Color(c.labelColorArgb))
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = c.name, style = MaterialTheme.typography.headlineSmall)
+                        Text(
+                            text = c.name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = sharedElementModifier(sharedScope, animScope, "$cloneId-title")
+                        )
                         Text(text = c.sourceAppName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(6.dp))
                         StatusBadge(status = c.status)
@@ -167,7 +183,8 @@ fun CloneDetailsScreen(
             confirmLabel = stringResource(R.string.details_confirm_delete_confirm),
             dismissLabel = stringResource(R.string.details_confirm_delete_dismiss),
             onConfirm = { vm.confirmDelete(onDeleted) },
-            onDismiss = vm::dismissDelete
+            onDismiss = vm::dismissDelete,
+            reduceMotion = reduceMotion
         )
     }
 }

@@ -3,9 +3,7 @@ package com.kuro.app.ui.navigation
 enum class BottomDestination { Home, Library, Activity, Settings }
 
 object Routes {
-    const val SPLASH = "splash"
-    const val ONBOARDING = "onboarding"
-    const val SHELL = "shell"
+    const val INTRO = "intro"
     const val HOME = "home"
     const val LIBRARY = "library"
     const val ACTIVITY = "activity"

@@ -54,8 +54,7 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val reduceMotion: Boolean = false,
-    val defaultToLibrary: Boolean = false,
-    val onboardingCompleted: Boolean = false
+    val defaultToLibrary: Boolean = false
 )
 
 enum class ThemeMode { SYSTEM, DARK, LIGHT }

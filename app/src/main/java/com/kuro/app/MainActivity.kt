@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ServiceLocator.init(this)
         enableEdgeToEdge()
+        val coldStart = savedInstanceState == null && !ColdStartGate.introShown
         setContent {
             val settings by ServiceLocator.settingsRepository.settings.collectAsState()
             val themeMode = settings.themeMode
@@ -31,9 +32,18 @@ class MainActivity : ComponentActivity() {
             KuroTheme(themeMode = themeMode, dynamicColor = dynamic) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val nav = rememberNavController()
-                    KuroNavGraph(navController = nav, reduceMotion = reduceMotion)
+                    KuroNavGraph(
+                        navController = nav,
+                        reduceMotion = reduceMotion,
+                        showIntro = coldStart,
+                        onIntroConsumed = { ColdStartGate.introShown = true }
+                    )
                 }
             }
         }
     }
+}
+
+private object ColdStartGate {
+    var introShown: Boolean = false
 }

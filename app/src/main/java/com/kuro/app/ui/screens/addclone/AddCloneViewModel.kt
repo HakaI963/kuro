@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -51,9 +52,14 @@ class AddCloneViewModel : ViewModel() {
     private val cloneRepo = ServiceLocator.cloneRepository
     private val activityRepo = ServiceLocator.activityRepository
     private val appRepo = ServiceLocator.installedAppRepository
+    private val settingsRepo = ServiceLocator.settingsRepository
 
     private val _ui = MutableStateFlow(AddCloneUiState())
     val ui: StateFlow<AddCloneUiState> = _ui.asStateFlow()
+
+    val reduceMotion = settingsRepo.settings
+        .combine(appRepo.apps) { s, _ -> s.reduceMotion }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val apps = appRepo.apps.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

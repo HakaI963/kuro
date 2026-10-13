@@ -4,21 +4,7 @@
     <string name="app_tagline">Isolated app spaces</string>
 
     <!-- Splash -->
-    <string name="splash_title">Kuro</string>
-    <string name="splash_subtitle">Isolated app spaces</string>
     <string name="cd_app_logo">Kuro logo</string>
-
-    <!-- Onboarding -->
-    <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_next">Next</string>
-    <string name="onboarding_get_started">Get started</string>
-    <string name="onboarding_page1_title">Create isolated clones</string>
-    <string name="onboarding_page1_body">Install copies of your apps into Kuro\'s own virtual space. Each clone keeps its own private files inside Kuro.</string>
-    <string name="onboarding_page2_title">Manage clones with clarity</string>
-    <string name="onboarding_page2_body">Launch or delete clones. See status and recent activity at a glance.</string>
-    <string name="onboarding_page3_title">Launch inside Kuro</string>
-    <string name="onboarding_page3_body">Open clones from Kuro and run them inside Kuro\'s virtual space.</string>
-    <string name="onboarding_note">Clones live inside Kuro — no system install</string>
 
     <!-- Nav -->
     <string name="nav_home">Home</string>
@@ -133,9 +119,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Appearance and engine</string>
     <string name="settings_section_engine">Virtual engine</string>
-    <string name="settings_engine_name">BlackBox</string>
-    <string name="settings_engine_version">4.0.0 (NewBlackbox 89b5983)</string>
-    <string name="settings_engine_range">Android 5.0–14.0+ (API 21+)</string>
+    <string name="settings_engine_title">Engine status</string>
     <string name="settings_engine_status_ready">Ready</string>
     <string name="settings_engine_status_uninitialized">Not initialized</string>
     <string name="settings_engine_status_incompatible">Not compatible</string>

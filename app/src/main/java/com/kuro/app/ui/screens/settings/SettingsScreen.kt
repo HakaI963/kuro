@@ -1,5 +1,6 @@
 package com.kuro.app.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +37,7 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -45,8 +47,8 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_section_engine), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             KuroCard(
-                title = stringResource(R.string.settings_engine_name),
-                subtitle = "${stringResource(R.string.settings_engine_version)} • ${stringResource(R.string.settings_engine_range)}"
+                title = stringResource(R.string.settings_engine_title),
+                subtitle = null
             ) {
                 val (label, detail) = when (val st = engineStatus) {
                     is EngineStatus.Ready -> stringResource(R.string.settings_engine_status_ready) to null
@@ -66,12 +68,14 @@ fun SettingsScreen(
                     label = stringResource(R.string.settings_engine_retry),
                     onClick = vm::retryEngineInit
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                KuroSettingRow(
-                    title = stringResource(R.string.settings_engine_diagnostics),
-                    description = stringResource(R.string.settings_engine_diagnostics_desc),
-                    onClick = onOpenDiagnostics
-                )
+                if (com.kuro.app.BuildConfig.DEBUG) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    KuroSettingRow(
+                        title = stringResource(R.string.settings_engine_diagnostics),
+                        description = stringResource(R.string.settings_engine_diagnostics_desc),
+                        onClick = onOpenDiagnostics
+                    )
+                }
             }
         }
 

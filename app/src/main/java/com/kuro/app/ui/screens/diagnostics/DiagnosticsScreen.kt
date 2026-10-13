@@ -1,5 +1,6 @@
 package com.kuro.app.ui.screens.diagnostics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +29,7 @@ fun DiagnosticsScreen(
     val state by vm.ui.collectAsState()
 
     LazyColumn(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
