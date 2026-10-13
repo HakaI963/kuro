@@ -2,15 +2,17 @@
 
 ## Stage 1: in-app cloning (this step) — DONE
 
-- In-app virtual space under `filesDir/virtualspace/<cloneId>` (no system install,
-  no work profile, no root).
+- Real BlackBox engine (`ALEX5402/NewBlackbox` @ `89b5983`, Apache-2.0) vendored
+  as `:blackbox` (Java + AIDL + native `libblackbox.so` via ndkBuild);
+  thin `BlackBoxEngine` adapter behind `VirtualEngine` (no engine rewrites).
 - Sources: installed apps only (`PackageManager` LAUNCHER visibility).
 - Options: clone name + color tag only.
-- Operations: install into space (real byte-copy progress), launch validation,
-  list, delete. Room metadata `CloneRecord(cloneId, packageName, cloneName,
-  colorTag, createdAt, engineName)`.
-- Honest `Incompatible` status card on unsupported Android versions.
-- Flavors: `stub` (NoOp) + `virtual` (BlackBox Stage 1 adapter).
+- Operations: real `installPackageAsUser` (engine-staged progress), `launchApk`,
+  `getInstalledPackages` list, `uninstallPackageAsUser` + slot delete.
+  Room metadata `CloneRecord(cloneId, packageName, cloneName, colorTag,
+  createdAt, engineName, engineUserId)`; the engine is the source of truth.
+- Honest `Incompatible`/`Error` status; stub flavor stays NoOp.
+- Flavors: `stub` (NoOp) + `virtual` (real engine).
 
 ## Stage 2: execution depth — PLACEHOLDER
 

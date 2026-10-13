@@ -15,16 +15,17 @@ product plan; this step is intentionally minimal and extensible.
   (`status`, `init`, `installIntoSpace`, `launch`, `listSpacePackages`, `remove`;
   `CloneSource = InstalledApp | ApkFile`, APK-file staged for later).
   UI talks only to this interface. `NoOpEngine` keeps the app crash-free.
-- `:engine-blackbox` thin Stage 1 adapter (BlackBox-style, Apache-2.0 upstream —
-  nothing copied): file-backed space at `filesDir/virtualspace/<cloneId>`,
-  real byte-copy progress, `getPackageArchiveInfo` launch validation, delete.
+- `:engine-blackbox` thin adapter on the vendored BlackBox core (Apache-2.0
+  upstream — only build-system patches, no source rewrites): one Kuro clone =
+  one engine user slot; real `installPackageAsUser` / `launchApk` /
+  `getInstalledPackages` / `uninstallPackageAsUser` calls.
 - Room metadata `CloneRecord(cloneId, packageName, cloneName, colorTag, createdAt,
   engineName)` + activity log.
 - UI in Step 1 design language: Home (real clones, running state), New clone
   (Source = real apps; Options = name + color only; Create = real engine progress),
   tap = launch, long-press = Delete only, Settings engine card (name, version,
   supported range, status).
-- Flavors: `stub` (NoOp, always builds) + `virtual` (Stage 1 adapter).
+- Flavors: `stub` (NoOp, always builds) + `virtual` (real BlackBox engine).
 - Unit tests for engine gating and record mapping.
 
 ## Tech

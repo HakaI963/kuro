@@ -8,13 +8,14 @@
    over VirtualApp (full source gated behind a purchased business license).
    Nothing is copied from upstream in this step; `:engine-blackbox` is Kuro's own
    thin adapter. See `docs/ENGINE.md`.
-3. **Stage 1 execution scope**: install = real APK byte-copy into
-   `filesDir/virtualspace/<cloneId>` with real progress; launch = real integrity
-   validation (`getPackageArchiveInfo` + package match) + `lastLaunched` running
-   state. Full in-process APK execution plugs in behind `VirtualEngine` later.
+3. **Stage 2b execution scope**: install = real `BlackBoxCore.installPackageAsUser`
+   into a dedicated engine user slot with engine-staged progress (no timers);
+   launch = real `launchApk` (guest UI opens, nothing intercepts); status and
+   listing derived from `getInstalledPackages`; delete = real `uninstallPackageAsUser`
+   + slot delete. Full detail in `docs/ENGINE.md`.
 4. **No wrapper jar**: repo ships `gradle-wrapper.properties` only. CI installs
    Gradle 8.10.2 plus cached NDK/CMake directly.
-5. **Flavors**: `stub` (NoOp, always green) + `virtual` (Stage 1 adapter). CI builds
+5. **Flavors**: `stub` (NoOp, always green) + `virtual` (real engine). CI builds
    and uploads both APKs.
 6. **Fresh installs are empty**: Room starts empty; no seed data anywhere.
 7. **Copy**: “inside Kuro” / “Kuro space” / “virtual space”. Never claims full
