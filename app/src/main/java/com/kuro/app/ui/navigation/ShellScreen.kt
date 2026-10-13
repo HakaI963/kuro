@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.launch
 import com.kuro.app.ui.screens.activity.ActivityScreen
 import com.kuro.app.ui.screens.home.HomeScreen
 import com.kuro.app.ui.screens.library.LibraryScreen
