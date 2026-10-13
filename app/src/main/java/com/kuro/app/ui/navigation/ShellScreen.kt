@@ -113,7 +113,7 @@ private fun TabEnterContent(
             alpha.snapTo(0f)
             offsetX.snapTo(direction * slidePx)
             // Parallel enter: fade + directional slide, emphasized easing.
-            kotlinx.coroutines.launch {
+            launch {
                 alpha.animateTo(
                     1f,
                     animationSpec = tween(
