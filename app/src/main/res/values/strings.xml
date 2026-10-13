@@ -179,6 +179,22 @@
     <string name="activity_launched">Opened</string>
     <string name="activity_deleted">Deleted</string>
 
+    <!-- Stage 2 tabs -->
+    <string name="nav_system">System</string>
+    <string name="nav_terminal">Terminal</string>
+    <string name="nav_clones">Clones</string>
+    <string name="cd_nav_system">System</string>
+    <string name="cd_nav_terminal">Terminal</string>
+    <string name="cd_nav_clones">Clones</string>
+    <string name="system_title">System</string>
+    <string name="system_subtitle">Device and spaces at a glance</string>
+    <string name="terminal_title">Terminal</string>
+    <string name="terminal_subtitle">Linux containers and sessions</string>
+    <string name="clones_title">Clones</string>
+    <string name="clones_subtitle">Apps running in Kuro space</string>
+    <string name="action_add_distro">Add distro</string>
+    <string name="cd_add_distro">Add Linux container</string>
+
     <!-- Misc -->
     <string name="close">Close</string>
     <string name="cancel">Cancel</string>
@@ -186,4 +202,121 @@
     <string name="cd_back">Back</string>
     <string name="cd_clone_icon">Clone icon</string>
     <string name="cd_search_clear">Clear search</string>
+
+    <!-- System tab -->
+    <string name="system_section_metrics">System metrics</string>
+    <string name="system_metric_ram">RAM</string>
+    <string name="system_metric_cpu">CPU load</string>
+    <string name="system_metric_temp">CPU temp</string>
+    <string name="system_metric_gpu">GPU</string>
+    <string name="system_metric_storage">Storage</string>
+    <string name="system_metric_kuro_storage">Kuro data</string>
+    <string name="system_metric_kernel">Kernel</string>
+    <string name="system_metric_uptime">Uptime</string>
+    <string name="system_value_unavailable">−</string>
+    <string name="system_section_containers">Containers</string>
+    <string name="system_containers_empty">No containers yet</string>
+    <string name="system_containers_empty_body">Add a Linux distro from the Terminal tab. Each container gets its own isolated filesystem.</string>
+    <string name="system_installed_count">Installed</string>
+    <string name="system_running_count">Running</string>
+    <string name="system_section_clones">Clones</string>
+    <string name="system_clones_empty">No clones yet</string>
+    <string name="system_engine_ready">Engine ready</string>
+    <string name="system_section_events">Recent events</string>
+    <string name="system_events_empty">No events yet</string>
+    <string name="system_events_empty_body">Clone activity will appear here.</string>
+
+    <!-- Terminal tab -->
+    <string name="terminal_section_sessions">Containers</string>
+    <string name="terminal_empty_title">No containers yet</string>
+    <string name="terminal_empty_body">Add a Linux distro to get a terminal and optional GUI. Nothing downloads until the container engine lands.</string>
+    <string name="terminal_action_open">Open terminal</string>
+    <string name="terminal_action_stop">Stop</string>
+    <string name="terminal_action_gui">Add Kuro View</string>
+    <string name="terminal_action_delete">Delete</string>
+    <string name="terminal_status_running">Running</string>
+    <string name="terminal_status_stopped">Stopped</string>
+    <string name="terminal_type_proot">proot</string>
+    <string name="terminal_type_chroot">chroot</string>
+
+    <!-- Add distro wizard -->
+    <string name="distro_title">Add distro</string>
+    <string name="distro_step_type">Type</string>
+    <string name="distro_step_distro">Distro</string>
+    <string name="distro_step_options">Options</string>
+    <string name="distro_step_create">Create</string>
+    <string name="distro_type_title">Choose container type</string>
+    <string name="distro_type_subtitle">Proot runs without root. Chroot needs root via KernelSU.</string>
+    <string name="distro_proot_title">Proot</string>
+    <string name="distro_proot_desc">No root needed. Runs in Kuro private data.</string>
+    <string name="distro_chroot_title">Chroot</string>
+    <string name="distro_chroot_desc">Requires root. Requested via KernelSU when creating.</string>
+    <string name="distro_chroot_path_note">Path preview</string>
+    <string name="distro_chroot_root_note">Root will be requested via KernelSU when creating.</string>
+    <string name="distro_pick_title">Pick a distro</string>
+    <string name="distro_pick_subtitle">Images download when the container engine lands.</string>
+    <string name="distro_arch">aarch64</string>
+    <string name="distro_source">Source</string>
+    <string name="distro_options_title">Container options</string>
+    <string name="distro_name_label">Container name</string>
+    <string name="distro_name_hint">e.g. kali-mobile</string>
+    <string name="distro_bridge_title">Kuro Bridge</string>
+    <string name="distro_bridge_desc">Control Kuro clones from inside this distro via the kuro command</string>
+    <string name="distro_interface_label">Interface mode</string>
+    <string name="distro_interface_terminal">Terminal only</string>
+    <string name="distro_interface_gui">Terminal + GUI (Kuro View)</string>
+    <string name="distro_keep_alive">Keep session alive in background</string>
+    <string name="distro_keep_alive_desc">Sessions persist via foreground service until you stop them</string>
+    <string name="distro_wakelock">Wake lock while running</string>
+    <string name="distro_wakelock_desc">Keep the CPU awake during sessions</string>
+    <string name="distro_shell_label">Default shell</string>
+    <string name="distro_storage_line_proot">Storage: Kuro private data</string>
+    <string name="distro_storage_line_chroot">Storage: /data/local/kuro/…</string>
+    <string name="distro_isolation_note">Every container gets its own isolated filesystem.</string>
+    <string name="distro_summary_title">Review and create</string>
+    <string name="distro_create">Create container</string>
+    <string name="distro_step5_title">Container engine not here yet</string>
+    <string name="distro_step5_body">Container engine integration lands in the next build stage (Step 5). Your choices are kept on this screen; nothing was downloaded.</string>
+    <string name="distro_got_it">Got it</string>
+    <string name="distro_continue">Continue</string>
+
+    <!-- Terminal session -->
+    <string name="session_title_fallback">Terminal</string>
+    <string name="session_no_session_title">No session running</string>
+    <string name="session_no_session_body">Sessions connect when the container engine lands in Step 5.</string>
+    <string name="session_stop">Stop session</string>
+    <string name="session_keyboard">Toggle keyboard</string>
+
+    <!-- Clones APK source -->
+    <string name="clone_source_installed">Installed app</string>
+    <string name="clone_source_apk">APK file</string>
+    <string name="clone_apk_pick">Choose APK file</string>
+    <string name="clone_apk_step7_title">APK install arrives in Step 7</string>
+    <string name="clone_apk_step7_body">The APK you picked is shown below with its real name and size. Installing from APK files lands with Kuro Bridge in Step 7 — nothing was installed.</string>
+
+    <!-- Settings additions -->
+    <string name="settings_section_root">Root access</string>
+    <string name="settings_root_title">KernelSU status</string>
+    <string name="settings_root_granted">Root granted</string>
+    <string name="settings_root_not_granted">Root not granted</string>
+    <string name="settings_root_not_detected">Root not detected</string>
+    <string name="settings_root_checking">Checking…</string>
+    <string name="settings_root_desc">Checked silently on every app open. Root is only requested when you ask.</string>
+    <string name="settings_root_request">Request root access</string>
+    <string name="settings_section_sessions">Sessions</string>
+    <string name="settings_sessions_title">Session behavior</string>
+    <string name="settings_sessions_desc">Sessions persist via a foreground service until you stop them manually.</string>
+    <string name="settings_sessions_stop_all">Stop all sessions</string>
+    <string name="settings_sessions_none">No sessions running</string>
+    <string name="settings_section_storage">Storage</string>
+    <string name="settings_storage_proot">Proot data</string>
+    <string name="settings_storage_chroot">Chroot data</string>
+    <string name="settings_storage_free">Free on device</string>
+    <string name="settings_storage_none">No containers yet</string>
+    <string name="settings_section_bridge">Kuro Bridge</string>
+    <string name="settings_bridge_title">Bridge service</string>
+    <string name="settings_bridge_desc">Lets distro containers control Kuro clones via the kuro command. Full service lands in Step 7.</string>
+    <string name="settings_bridge_port">Localhost port</string>
+    <string name="settings_bridge_token">Token</string>
+    <string name="settings_bridge_placeholder_note">Values below are static placeholders until Step 7.</string>
 </resources>

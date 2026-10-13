@@ -17,9 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,10 +56,12 @@ fun KuroBottomBar(
     modifier: Modifier = Modifier,
     reduceMotion: Boolean = false
 ) {
+    // Step 4 (Stage 2): System | Terminal | Clones | Settings.
+    // Pill math is cell-agnostic (barWidth/4), so 4 cells stay centered.
     val tabs = listOf(
-        Tab(BottomDestination.Home, Icons.Filled.Home, R.string.nav_home, R.string.cd_nav_home),
-        Tab(BottomDestination.Library, Icons.Filled.ViewModule, R.string.nav_library, R.string.cd_nav_library),
-        Tab(BottomDestination.Activity, Icons.Filled.Timeline, R.string.nav_activity, R.string.cd_nav_activity),
+        Tab(BottomDestination.System, Icons.Filled.Memory, R.string.nav_system, R.string.cd_nav_system),
+        Tab(BottomDestination.Terminal, Icons.Filled.Terminal, R.string.nav_terminal, R.string.cd_nav_terminal),
+        Tab(BottomDestination.Clones, Icons.Filled.ViewModule, R.string.nav_clones, R.string.cd_nav_clones),
         Tab(BottomDestination.Settings, Icons.Filled.Settings, R.string.nav_settings, R.string.cd_nav_settings)
     )
     val selectedIndex = tabs.indexOfFirst { it.dest == current }.coerceAtLeast(0)

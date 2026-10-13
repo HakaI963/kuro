@@ -15,11 +15,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
+import com.kuro.app.core.root.RootChecker
+import com.kuro.app.core.root.RootStatus
+import com.kuro.app.core.system.BridgeInfo
+import com.kuro.app.core.system.StoragePaths
+import com.kuro.app.core.system.SystemMetricsReader
+import com.kuro.app.core.utils.formatBytes
+import com.kuro.app.data.containers.ContainerStore
+import com.kuro.app.data.containers.ContainerStatus
 import com.kuro.app.domain.models.ThemeMode
 import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.KuroCard
@@ -27,6 +39,9 @@ import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.KuroSettingRow
 import com.kuro.app.ui.components.KuroSwitchRow
 import com.kuro.app.ui.components.firstLoadFade
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -39,6 +54,21 @@ fun SettingsScreen(
 ) {
     val s by vm.settings.collectAsState()
     val engineStatus by vm.engineStatus.collectAsState()
+    val rootStatus by RootChecker.status.collectAsState()
+    val containers by ContainerStore.containers.collectAsState()
+    val context = LocalContext.current
+
+    // Storage sizes are read once off-main; no polling here.
+    var prootSize by remember { mutableStateOf<String?>(null) }
+    var kuroDataSize by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val filesDir = context.filesDir
+        val proot = StoragePaths.prootBase(filesDir)
+        val prootBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSize(proot) }
+        val kuroBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSize(filesDir) }
+        prootSize = formatBytes(prootBytes)
+        kuroDataSize = formatBytes(kuroBytes)
+    }
 
     LaunchedEffect(animateListIn) {
         if (!animateListIn) onListShown()
@@ -88,6 +118,119 @@ fun SettingsScreen(
                         onClick = onOpenDiagnostics
                     )
                 }
+            }
+        }
+
+        item {
+            Text(text = stringResource(R.string.settings_section_root), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            KuroCard(title = stringResource(R.string.settings_root_title)) {
+                val (rootLabel, rootColor) = when (rootStatus) {
+                    is RootStatus.Granted -> stringResource(R.string.settings_root_granted) to MaterialTheme.colorScheme.primary
+                    is RootStatus.NotGranted -> stringResource(R.string.settings_root_not_granted) to MaterialTheme.colorScheme.error
+                    is RootStatus.NotDetected -> stringResource(R.string.settings_root_not_detected) to MaterialTheme.colorScheme.onSurfaceVariant
+                    is RootStatus.Checking -> stringResource(R.string.settings_root_checking) to MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Text(text = rootLabel, style = MaterialTheme.typography.titleMedium, color = rootColor)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_root_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // User-initiated only: this is what pops the KernelSU grant UI.
+                KuroSecondaryButton(
+                    label = stringResource(R.string.settings_root_request),
+                    onClick = { RootChecker.requestRoot() }
+                )
+            }
+        }
+
+        item {
+            val running = containers.count { it.status == ContainerStatus.RUNNING }
+            Text(text = stringResource(R.string.settings_section_sessions), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            KuroCard(title = stringResource(R.string.settings_sessions_title)) {
+                Text(
+                    text = stringResource(R.string.settings_sessions_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (running == 0) stringResource(R.string.settings_sessions_none)
+                    else "$running ${stringResource(R.string.system_running_count)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                KuroSecondaryButton(
+                    label = stringResource(R.string.settings_sessions_stop_all),
+                    onClick = { ContainerStore.stopAll() },
+                    enabled = running > 0
+                )
+            }
+        }
+
+        item {
+            Text(text = stringResource(R.string.settings_section_storage), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            KuroCard {
+                KuroSettingRow(
+                    title = stringResource(R.string.settings_storage_proot),
+                    description = StoragePaths.prootBase(context.filesDir).absolutePath +
+                        " • " + (prootSize ?: "…")
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                KuroSettingRow(
+                    title = stringResource(R.string.settings_storage_chroot),
+                    description = StoragePaths.CHROOT_DIR + " • " +
+                        stringResource(R.string.settings_storage_free) + ": " +
+                        StoragePaths.deviceFreeLabel()
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                if (containers.isEmpty()) {
+                    KuroSettingRow(
+                        title = stringResource(R.string.settings_storage_none),
+                        description = "Kuro data: " + (kuroDataSize ?: "…")
+                    )
+                } else {
+                    containers.forEach { c ->
+                        KuroSettingRow(
+                            title = c.name,
+                            description = StoragePaths.containerSizeLabel(null)
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(text = stringResource(R.string.settings_section_bridge), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            KuroCard(title = stringResource(R.string.settings_bridge_title)) {
+                Text(
+                    text = stringResource(R.string.settings_bridge_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.settings_bridge_placeholder_note),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                KuroSettingRow(
+                    title = stringResource(R.string.settings_bridge_port),
+                    description = "${BridgeInfo.LOOPBACK}:${BridgeInfo.PLACEHOLDER_PORT}"
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                KuroSettingRow(
+                    title = stringResource(R.string.settings_bridge_token),
+                    description = BridgeInfo.PLACEHOLDER_TOKEN
+                )
             }
         }
 

@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
+import com.kuro.app.core.root.RootChecker
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.ui.navigation.KuroNavGraph
 import com.kuro.app.ui.theme.KuroTheme
@@ -21,6 +22,9 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         ServiceLocator.init(this)
+        // Step 4: silent root availability check on every app open.
+        // Background only — no UI, no dialogs, never blocks start.
+        RootChecker.refreshSilent()
         enableEdgeToEdge()
         val coldStart = savedInstanceState == null && !ColdStartGate.introShown
         setContent {
