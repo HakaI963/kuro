@@ -22,9 +22,11 @@ object MotionTokens {
     const val REDUCED_MS = 100
     const val INTRO_TOTAL_MS = 1500
 
-    const val TAB_MS = 220
-    const val TAB_SLIDE_DP = 20
-    const val PUSH_ENTER_MS = 300
+    // Step 3c: tab enter-only, 160-200ms, 24dp slide, emphasized easing.
+    const val TAB_MS = 180
+    const val TAB_SLIDE_DP = 24
+    const val INDICATOR_MS = 200
+    const val PUSH_ENTER_MS = 250
     const val PUSH_EXIT_MS = 250
     const val POP_ENTER_MS = 250
     const val POP_EXIT_MS = 275
@@ -51,9 +53,10 @@ object MotionTokens {
             slideInVertically(tween(PUSH_ENTER_MS, easing = Standard)) { slidePx }
     }
 
+    // Step 3c: exits are instant (old screen removed same frame) so push/pop
+    // never blend two screens. Only the entering content animates.
     fun pushExit(reduceMotion: Boolean): ExitTransition {
-        if (reduceMotion) return fadeOut(tween(REDUCED_MS))
-        return fadeOut(tween(PUSH_EXIT_MS, easing = Standard))
+        return ExitTransition.None
     }
 
     fun popEnter(reduceMotion: Boolean): EnterTransition {
@@ -62,9 +65,7 @@ object MotionTokens {
     }
 
     fun popExit(reduceMotion: Boolean, slidePx: Int): ExitTransition {
-        if (reduceMotion) return fadeOut(tween(REDUCED_MS))
-        return fadeOut(tween(POP_EXIT_MS, easing = Standard)) +
-            slideOutVertically(tween(POP_EXIT_MS, easing = Standard)) { slidePx }
+        return ExitTransition.None
     }
 
     fun dialogScale(reduceMotion: Boolean): FiniteAnimationSpec<Float> =

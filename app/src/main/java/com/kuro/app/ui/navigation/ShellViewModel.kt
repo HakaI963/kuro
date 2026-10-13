@@ -10,12 +10,20 @@ class ShellViewModel : ViewModel() {
     private val _currentTab = MutableStateFlow(BottomDestination.Home)
     val currentTab: StateFlow<BottomDestination> = _currentTab.asStateFlow()
 
+    // Step 3c: navigation direction for enter-only tab slide (+1 forward, -1 back).
+    // Used by ShellScreen to slide new content from the navigation direction.
+    private val _direction = MutableStateFlow(1)
+    val direction: StateFlow<Int> = _direction.asStateFlow()
+
     private val seenTabs = mutableSetOf<BottomDestination>()
 
     private val listStates = mutableMapOf<BottomDestination, LazyListState>()
 
     fun select(tab: BottomDestination) {
-        _currentTab.value = tab
+        if (tab != _currentTab.value) {
+            _direction.value = if (tab.ordinal > _currentTab.value.ordinal) 1 else -1
+            _currentTab.value = tab
+        }
     }
 
     fun listStateFor(tab: BottomDestination): LazyListState =

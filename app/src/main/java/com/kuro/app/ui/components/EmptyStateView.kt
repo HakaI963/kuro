@@ -1,12 +1,14 @@
 package com.kuro.app.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Icon
@@ -28,10 +30,12 @@ fun EmptyStateView(
     onAction: (() -> Unit)? = null,
     icon: ImageVector = Icons.Filled.SearchOff
 ) {
+    // Step 3c compact empty state: 48dp icon, 12dp gap, title, 4dp, body,
+    // 16dp, button (max width 220dp centered).
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(24.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -48,7 +52,7 @@ fun EmptyStateView(
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
@@ -57,7 +61,18 @@ fun EmptyStateView(
         )
         if (actionLabel != null && onAction != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            KuroOutlineButton(label = actionLabel, onClick = onAction)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                KuroOutlineButton(
+                    label = actionLabel,
+                    onClick = onAction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 220.dp)
+                )
+            }
         }
     }
 }

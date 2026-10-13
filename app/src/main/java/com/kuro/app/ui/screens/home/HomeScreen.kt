@@ -1,6 +1,7 @@
 package com.kuro.app.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -16,7 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -46,6 +47,7 @@ import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
+import com.kuro.app.ui.components.KuroPrimaryButton
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.LoadingSkeleton
 import com.kuro.app.ui.components.SectionHeader
@@ -82,17 +84,18 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .firstLoadFade(animate = animateListIn, reduceMotion = reduceMotion, onShown = onListShown)
             .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         item {
-            Spacer(modifier = Modifier.height(4.dp))
+            // Step 3c: screen top = 16dp below app bar; all tab headers align.
+            Spacer(modifier = Modifier.height(16.dp))
             GreetingHeader(engineStatus = engineStatus, engineInitializing = engineInitializing)
             Spacer(modifier = Modifier.height(12.dp))
             KuroSearchBar(value = state.query, onValueChange = vm::onQueryChange)
         }
         item {
             SectionHeader(title = stringResource(R.string.home_quick_actions))
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickAction(
                     title = stringResource(R.string.home_action_new_clone),
@@ -125,41 +128,43 @@ fun HomeScreen(
         if (state.isLoading) {
             item { LoadingSkeleton(reduceMotion = reduceMotion) }
         } else {
+            // Recent clones section: title -> content 12dp, list rows 12dp.
             item {
                 SectionHeader(
                     title = stringResource(R.string.home_recent_clones),
                     actionLabel = stringResource(R.string.home_view_all),
                     onAction = onViewLibrary
                 )
-            }
-            if (state.filtered.isEmpty() && state.clones.isNotEmpty()) {
-                item {
+                Spacer(modifier = Modifier.height(12.dp))
+                if (state.filtered.isEmpty() && state.clones.isNotEmpty()) {
                     EmptyStateView(
                         title = stringResource(R.string.home_no_results_title),
                         body = stringResource(R.string.home_no_results_body)
                     )
-                }
-            } else if (state.filtered.isEmpty()) {
-                item {
+                } else if (state.filtered.isEmpty()) {
                     KuroCard(
                         title = stringResource(R.string.home_empty_title),
                         subtitle = stringResource(R.string.home_empty_body)
                     ) {
-                        androidx.compose.material3.Button(
+                        KuroPrimaryButton(
+                            label = stringResource(R.string.home_empty_action),
                             onClick = onNewClone,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.home_empty_action))
+                            reduceMotion = reduceMotion
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        state.filtered.take(4).forEach { clone ->
+                            CloneCard(
+                                clone = clone,
+                                onClick = { onOpenClone(clone.id) },
+                                reduceMotion = reduceMotion
+                            )
                         }
                     }
-                }
-            } else {
-                itemsIndexed(state.filtered.take(4), key = { _, c -> c.id }) { _, clone ->
-                    CloneCard(
-                        clone = clone,
-                        onClick = { onOpenClone(clone.id) },
-                        reduceMotion = reduceMotion
-                    )
                 }
             }
 
@@ -174,7 +179,7 @@ fun HomeScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
+                                    .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
@@ -294,6 +299,8 @@ private fun QuickAction(
     reduceMotion: Boolean = false,
     enabled: Boolean = true
 ) {
+    // Step 3c: surfaceContainer + 1dp outlineVariant border + icon in a
+    // 40dp tonal circle; press scale 0.98. No flat low-contrast slabs.
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by pressScaleValue(interaction, reduceMotion)
@@ -307,13 +314,26 @@ private fun QuickAction(
                 scaleX = scale
                 scaleY = scale
             }
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
+                shape = MaterialTheme.shapes.medium
+            )
             .then(if (enabled) Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = tonal)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            icon()
-            Spacer(modifier = Modifier.height(10.dp))
+        Column(modifier = Modifier.padding(16.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center
+            ) {
+                icon()
+            }
+            Spacer(modifier = Modifier.height(12.dp))
             Text(text = title, style = MaterialTheme.typography.labelLarge)
             Text(
                 text = desc,
