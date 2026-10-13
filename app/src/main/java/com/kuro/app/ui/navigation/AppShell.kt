@@ -1,23 +1,25 @@
 package com.kuro.app.ui.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -28,13 +30,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.kuro.app.R
-import com.kuro.app.ui.components.KuroBottomBar
 import com.kuro.app.ui.components.KuroTopAppBar
+import com.kuro.app.ui.components.bottomBarPillOffset
+import com.kuro.app.ui.components.bottomBarPillOffset
 import com.kuro.app.ui.theme.MotionTokens
 
 @Composable
@@ -43,46 +47,26 @@ fun AppShell(
     onSelect: (BottomDestination) -> Unit,
     onNewClone: () -> Unit,
     reduceMotion: Boolean = false,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val fabInteraction = remember { MutableInteractionSource() }
-    val fabPressed by fabInteraction.collectIsPressedAsState()
-    val fabScale by animateFloatAsState(
-        targetValue = if (fabPressed && !reduceMotion) MotionTokens.PRESS_SCALE else 1f,
+    val pillOffset by animateDpAsState(
+        targetValue = bottomBarPillOffset(current),
         animationSpec = if (reduceMotion) tween(MotionTokens.REDUCED_MS)
         else MotionTokens.interactiveSpring(),
-        label = "fab-press"
+        label = "bottom-pill"
     )
     Scaffold(
-        bottomBar = { KuroBottomBar(current = current, onSelect = onSelect, reduceMotion = reduceMotion) },
+        modifier = modifier,
+        bottomBar = {
+            KuroBottomBar(current = current, onSelect = onSelect, pillOffset = pillOffset, reduceMotion = reduceMotion)
+        },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNewClone,
-                containerColor = MaterialTheme.colorScheme.primary,
-                interactionSource = fabInteraction
-            ) {
-                AnimatedContent(
-                    targetState = current,
-                    transitionSpec = {
-                        (fadeIn(MotionTokens.dialogAlpha(reduceMotion)) +
-                            scaleIn(MotionTokens.dialogScale(reduceMotion), initialScale = 0.8f))
-                            .togetherWith(
-                                fadeOut(MotionTokens.dialogAlpha(reduceMotion)) +
-                                    scaleOut(MotionTokens.dialogScale(reduceMotion), targetScale = 0.8f)
-                            )
-                    },
-                    label = "fab-icon"
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = stringResource(R.string.cd_new_clone),
-                        modifier = Modifier.graphicsLayer {
-                            scaleX = fabScale
-                            scaleY = fabScale
-                            rotationZ = if (it == BottomDestination.Home) 0f else 90f
-                        }
-                    )
-                }
+            FloatingActionButton(onClick = onNewClone, containerColor = MaterialTheme.colorScheme.primary) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.cd_new_clone)
+                )
             }
         },
         containerColor = MaterialTheme.colorScheme.background

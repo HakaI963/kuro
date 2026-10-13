@@ -1,68 +1,88 @@
 # MOTION.md — Kuro motion system (single source of truth)
 
-All animation in the app goes through `MotionTokens` (`ui/theme/Motion.kt`).
-Do not invent one-off durations, easings, or transition specs in screens.
+All animation goes through `MotionTokens` (`ui/theme/Motion.kt`). No one-off durations,
+easings, or transition specs in screens.
 
 ## Token table
 
 | Token | Value | Use |
 |---|---|---|
-| `FAST_MS` | 150ms | Exits, small fades, icon cross-fades |
-| `MEDIUM_MS` | 300ms | Screen enters, dialog scale, stagger item fade |
-| `SLOW_MS` | 450ms | Reserved for large celebratory motion |
+| `FAST_MS` | 150ms | Small fades, exit carries, chip fades |
+| `MEDIUM_MS` | 300ms | Push enters |
+| `SLOW_MS` | 450ms | Reserved (not currently used by any transition) |
 | `REDUCED_MS` | 100–120ms | Every animation under Reduce motion |
-| `INTRO_TOTAL_MS` | 1500ms | Cold-start orbital intro cap (skippable on tap) |
-| `STAGGER_STEP_MS` | 12ms/item, max 12 items | One-time list entrance |
-| `PRESS_SCALE` | 0.98 | Card/FAB press |
+| `TAB_MS` | 220ms | Tab switches |
+| `TAB_SLIDE_DP` | 20dp | Tab switch slide (navigation direction) |
+| `PUSH_ENTER_MS` | 300ms | Detail / Add-clone enter |
+| `PUSH_EXIT_MS` | 250ms | Detail / Add-clone exit |
+| `POP_ENTER_MS` | 250ms | Pop enter |
+| `POP_EXIT_MS` | 275ms | Pop exit |
+| `DIALOG_MS` | 180ms | Dialogs |
+| `LIST_FADE_MS` | 120ms | First-load whole-list fade (whole list only) |
+| `PRESS_SCALE` | 0.98 | Card / quick-action press |
 | `DIALOG_ENTER_SCALE` | 0.92 → 1.0 | Dialogs |
-| `NAV_ENTER_SCALE` | 0.98 → 1.0 | Screen enters |
-| `NAV_ENTER_SLIDE` | 24dp upward | Screen enters |
+| `PUSH_ENTER_SLIDE` | 24dp | Detail push slide-up |
 | `Standard` | cubic(0.2, 0, 0, 1.0) | General movement |
-| `Emphasized` / `EmphasizedDecelerate` | cubic(0.05, 0.7, 0.1, 1.0) | Entrances, sheets |
-| `interactiveSpring()` | spring(0.75, 350) | Press/release, bottom-bar pill, FAB |
-| `placementSpring()` | no-bounce spring | `animateItem()` reorders |
+| `Emphasized` | cubic(0.05, 0.7, 0.1, 1.0) | Tab slide, sheet motion |
+| `interactiveSpring()` | spring(0.75, 350) | Bottom-bar pill, press feedback |
+| `pressSpring()` | spring(0.8, 700) | Card / button press-release |
 
-## Transition contract (applies to every destination)
+## Transition contract
 
-- Enter = fade + 24dp upward slide + scale 0.98 → 1.0 (`MotionTokens.navEnter`).
-- Exit = fade + scale to 0.98 (`MotionTokens.navExit`).
-- Never a plain full-screen cross-fade: the entering screen always carries
-  directional motion, and exits run fast (150ms) so two screens never sit blended.
-- Every screen root paints an opaque background (`background` on the root layout
-  plus opaque Scaffold containers), so the previous screen can never show through.
-- Reduce motion: everything collapses to ≤120ms fades or instant.
+### Tabs
+`ShellScreen` keeps **one** `AnimatedContent` around the tab host (tabs are not
+separate NavHost destinations). Spec: horizontal slide of 20dp in the navigation
+direction + fade, 220ms, `Emphasized`, via `slideInHorizontally` / `slideOutHorizontally`
+(translationX + alpha; layer-backed). **No scale anywhere in tab transitions.**
+Direction is derived from `BottomDestination.ordinal` comparison, so Home → Settings
+slides right-to-left and back.
 
-## Layer discipline (the jitter fix)
+Tab state survival (D1):
+- Each tab’s `LazyListState` is owned by `ShellViewModel` (`listStateFor`), so scroll
+  position and scroll context survive tab switches instantly.
+- Each tab’s data/filters live in its own ViewModel; revisiting a tab never reloads
+  Room or PackageManager, and app icons come from the repository LRU cache.
+- The per-tab first-load fade (120ms, whole list, once) is gated by `seenTabs` in
+  `ShellViewModel`, so returning to a visited tab replays nothing.
+- **No per-item stagger and no `animateItemPlacement` anywhere.** Replays and fling
+  jumps both traced to those; they are removed.
 
-- Animate only `alpha`, `translation` (translationY/offset), and `scale`, always
-  through `graphicsLayer` (or `Modifier.scale`, which is layer-backed).
-- No layout-affecting animation during transitions or scroll: no size/padding/
-  arrangement tweens, no `AnimatedVisibility` expand/shrink in lists.
-- Scroll-linked effects (if added later) must use `derivedStateOf` +
-  `graphicsLayer` offsets only. App icons are LRU-cached and keyed by package,
-  so nothing reloads during fling.
+### Push / pop (Add Clone, Details, Diagnostics)
+Enter = fade + 24dp slide up, 300ms, `Standard`. Exit = fade 250ms. Pop reverses.
+No shared elements, no matched geometry, no morphing bounds anywhere in the codebase
+(D2): clone cards and detail headers render identical letter/color avatars
+independently, so nothing flies.
 
-## Shared elements
+### Dialogs and sheets
+- `KuroDialog` = `Dialog` + `Card` with scale 0.92 → 1 + fade, 180ms.
+- `KuroBottomSheet` = Material 3 `ModalBottomSheet` built-in emphasized slide + scrim.
 
-- Clone/app icon + title morph from list card into the detail header via the
-  Compose shared-transition API (`SharedTransitionLayout` in `NavGraph`,
-  `sharedElementModifier` helper), keyed `"${cloneId}-icon"` / `"${cloneId}-title"`.
-- Skipped entirely under Reduce motion (scopes stay null).
-- The nav fade/slide already provides continuity, so shared elements are
-  progressive enhancement, not a load-bearing transition.
+### Bottom bar
+One pill instance is drawn in `KuroBottomBar`; its x offset is animated in `AppShell`
+with `interactiveSpring` (`bottomBarPillOffset`). Icon/label cross-fade with slight
+scale inside `AnimatedContent`. No per-tab backgrounds toggling on/off.
 
-## Lists
+### FAB
+Always "New Clone"; spring press-scale (see `AppShell`) with icon cross-fade retained.
 
-- One-time staggered entrance (12ms/item, alpha + 14dp rise, graphicsLayer only)
-  on first visit per screen (`rememberStagger` + `staggerFade`). Never re-stagger
-  on scroll back. `animateItem()` with the placement spring handles reorders.
+## Layer discipline
 
-## Components
+- Only `alpha` and `translation` (translationX/translationY) animate during navigation,
+  tab switches, and scroll. `scale` only on press feedback and dialogs.
+- Never animate layout offsets, padding, size, or arrangement during motion — that is a
+  blocking defect (D3).
+- Every screen root paints an opaque `background` color (root layout + Scaffold +
+  AppShell content Box), so two screens can never blend during or after a transition.
+- App icons: `RealInstalledAppRepository` holds an `LruCache` (120 entries), and
+  `RealAppIcon` loads through it during composition, so fling never touches disk.
 
-- Bottom bar: custom bar; the indicator pill glides between tabs on the
-  interactive spring; icon/label cross-fade with slight scale.
-- FAB: spring press-scale; icon cross-fades on destination change.
-- Cards: press = scale 0.98 + tonal shift to `surfaceContainerHigh`, spring release.
-- Dialogs (`KuroDialog`): scale 0.92 → 1 + fade on show.
-- Bottom sheets (`KuroBottomSheet`): Material 3 `ModalBottomSheet` built-in
-  emphasized slide + scrim fade; no custom spec to avoid fighting the framework.
+## Reduce motion
+
+Everything collapses to ≤120ms fades (tabs fade only, push/pop fade only, dialogs fade
+only, list fades instant, presses instant).
+
+## Home engine chip
+
+Home header shows a small static chip reflecting engine state (Ready / Error /
+Not compatible / Not initialized; "Loading" only while `init()` is actually running),
+with a 150ms fade on change. No permanent spinner anywhere in the app.

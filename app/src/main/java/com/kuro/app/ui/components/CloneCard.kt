@@ -1,8 +1,5 @@
 package com.kuro.app.ui.components
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,17 +33,13 @@ import com.kuro.app.R
 import com.kuro.app.core.utils.formatRelative
 import com.kuro.app.domain.models.CloneProfile
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CloneCard(
     clone: CloneProfile,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    reduceMotion: Boolean = false,
-    sharedScope: SharedTransitionScope? = null,
-    animScope: AnimatedVisibilityScope? = null,
-    sharedKey: String? = null
+    reduceMotion: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -78,13 +71,7 @@ fun CloneCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color(clone.labelColorArgb).copy(alpha = 0.2f))
-                    .then(
-                        sharedElementModifier(
-                            sharedScope, animScope,
-                            sharedKey?.let { "$it-icon" }
-                        )
-                    ),
+                    .background(Color(clone.labelColorArgb).copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -101,10 +88,7 @@ fun CloneCard(
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = sharedElementModifier(
-                        sharedScope, animScope,
-                        sharedKey?.let { "$it-title" }
-                    )
+                    modifier = Modifier
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -129,21 +113,5 @@ fun CloneCard(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun sharedElementModifier(
-    sharedScope: SharedTransitionScope?,
-    animScope: AnimatedVisibilityScope?,
-    key: String?
-): Modifier {
-    if (sharedScope == null || animScope == null || key == null) return Modifier
-    return with(sharedScope) {
-        Modifier.sharedElement(
-            sharedScope.rememberSharedContentState(key = key),
-            animatedVisibilityScope = animScope
-        )
     }
 }

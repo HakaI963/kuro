@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -35,18 +36,28 @@ import com.kuro.app.domain.models.ActivityType
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.LoadingSkeleton
+import com.kuro.app.ui.components.firstLoadFade
 
 @Composable
 fun ActivityScreen(
     modifier: Modifier = Modifier,
-    vm: ActivityViewModel = viewModel()
+    vm: ActivityViewModel = viewModel(),
+    listState: LazyListState = LazyListState(),
+    animateListIn: Boolean = false,
+    onListShown: () -> Unit = {}
 ) {
     val state by vm.uiState.collectAsState()
 
+    LaunchedEffect(animateListIn) {
+        if (!animateListIn) onListShown()
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
+            .firstLoadFade(animate = animateListIn, reduceMotion = false, onShown = onListShown)
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {

@@ -1,8 +1,5 @@
 package com.kuro.app.ui.screens.library
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.MaterialTheme
@@ -38,10 +35,8 @@ import com.kuro.app.ui.components.KuroListItem
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.RealAppIcon
 import com.kuro.app.ui.components.SectionHeader
-import com.kuro.app.ui.components.rememberStagger
-import com.kuro.app.ui.components.staggerFade
+import com.kuro.app.ui.components.firstLoadFade
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun LibraryScreen(
     onOpenClone: (String) -> Unit,
@@ -49,14 +44,14 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     vm: LibraryViewModel = viewModel(),
     reduceMotion: Boolean = false,
-    sharedScope: SharedTransitionScope? = null,
-    animScope: AnimatedVisibilityScope? = null
+    listState: LazyListState = LazyListState(),
+    animateListIn: Boolean = false,
+    onListShown: () -> Unit = {}
 ) {
     val state by vm.uiState.collectAsState()
     val sheetFor by vm.showSheetFor.collectAsState()
     val sources by vm.sources.collectAsState(initial = emptyList())
     val snackbar = remember { SnackbarHostState() }
-    val stagger = rememberStagger("library", reduceMotion)
 
     LaunchedEffect(state.message) {
         if (state.message != null) {
@@ -66,10 +61,16 @@ fun LibraryScreen(
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { _ ->
+        LaunchedEffect(animateListIn) {
+            if (!animateListIn) onListShown()
+        }
+
         LazyColumn(
+            state = listState,
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .firstLoadFade(animate = animateListIn, reduceMotion = reduceMotion, onShown = onListShown)
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -89,18 +90,12 @@ fun LibraryScreen(
                     )
                 }
             } else {
-                itemsIndexed(state.filtered, key = { _, c -> c.id }) { index, clone ->
+                items(state.filtered, key = { it.id }) { clone ->
                     CloneCard(
                         clone = clone,
                         onClick = { onOpenClone(clone.id) },
                         onLongClick = { vm.openSheet(clone.id) },
-                        reduceMotion = reduceMotion,
-                        sharedScope = sharedScope,
-                        animScope = animScope,
-                        sharedKey = clone.id,
-                        modifier = Modifier
-                            .staggerFade(stagger.delayFor(index), reduceMotion)
-                            .animateItem()
+                        reduceMotion = reduceMotion
                     )
                 }
             }

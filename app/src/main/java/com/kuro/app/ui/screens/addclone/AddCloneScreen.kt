@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,8 +46,6 @@ import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.ProgressPanel
 import com.kuro.app.ui.components.ProgressStep
-import com.kuro.app.ui.components.rememberStagger
-import com.kuro.app.ui.components.staggerFade
 
 private val labelColors = listOf(0xFF7C6CFF, 0xFF49D6C2, 0xFF5DB2FF, 0xFF3DDC97, 0xFFFFC861, 0xFFFF6B6B)
 
@@ -143,7 +141,6 @@ private fun SourceStep(
     onRefresh: () -> Unit,
     onContinue: () -> Unit
 ) {
-    val stagger = rememberStagger("addclone-source", reduceMotion)
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Text(text = stringResource(R.string.add_clone_source_title), style = MaterialTheme.typography.titleLarge)
         Text(text = stringResource(R.string.add_clone_source_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -181,15 +178,12 @@ private fun SourceStep(
             )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
-                itemsIndexed(list, key = { _, a -> a.packageName }) { index, app ->
+                items(list, key = { it.packageName }) { app ->
                     AppSourceCard(
                         app = app,
                         selected = state.selectedAppPackage == app.packageName,
                         onClick = { onSelect(app.packageName) },
-                        reduceMotion = reduceMotion,
-                        modifier = Modifier
-                            .staggerFade(stagger.delayFor(index), reduceMotion)
-                            .animateItem()
+                        reduceMotion = reduceMotion
                     )
                 }
             }

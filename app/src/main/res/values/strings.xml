@@ -120,6 +120,7 @@
     <string name="settings_subtitle">Appearance and engine</string>
     <string name="settings_section_engine">Virtual engine</string>
     <string name="settings_engine_title">Engine status</string>
+    <string name="engine_chip_loading">Loading</string>
     <string name="settings_engine_status_ready">Ready</string>
     <string name="settings_engine_status_uninitialized">Not initialized</string>
     <string name="settings_engine_status_incompatible">Not compatible</string>

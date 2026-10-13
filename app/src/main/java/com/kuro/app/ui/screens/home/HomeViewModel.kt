@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.CloneProfile
+import com.kuro.engine.EngineStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,23 @@ class HomeViewModel : ViewModel() {
     val reduceMotion = settingsRepo.settings
         .combine(_query) { s, _ -> s.reduceMotion }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val engineStatus: StateFlow<EngineStatus> = ServiceLocator.engineStatus
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EngineStatus.Uninitialized)
+
+    val engineInitializing = MutableStateFlow(true)
+
+    init {
+        viewModelScope.launch {
+            ServiceLocator.engineStatus.collect { status ->
+                if (status !is EngineStatus.Uninitialized) engineInitializing.value = false
+            }
+        }
+        viewModelScope.launch {
+            cloneRepo.clones.first()
+            _isLoading.value = false
+        }
+    }
 
     val uiState: StateFlow<HomeUiState> = combine(
         cloneRepo.clones, _query, _isLoading, _loadFailed

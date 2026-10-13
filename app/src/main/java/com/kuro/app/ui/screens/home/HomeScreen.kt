@@ -1,8 +1,5 @@
 package com.kuro.app.ui.screens.home
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,32 +28,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
+import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.CloneStatus
+import com.kuro.app.engine.EngineStatus
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.LoadingSkeleton
-import com.kuro.app.ui.components.OrbitMark
 import com.kuro.app.ui.components.SectionHeader
+import com.kuro.app.ui.components.firstLoadFade
 import com.kuro.app.ui.components.pressScaleValue
 import com.kuro.app.ui.components.pressTonalColor
-import com.kuro.app.ui.components.rememberStagger
-import com.kuro.app.ui.components.staggerFade
 import java.util.Calendar
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     onOpenClone: (String) -> Unit,
@@ -64,23 +63,31 @@ fun HomeScreen(
     onViewLibrary: () -> Unit,
     modifier: Modifier = Modifier,
     vm: HomeViewModel = viewModel(),
-    sharedScope: SharedTransitionScope? = null,
-    animScope: AnimatedVisibilityScope? = null
+    listState: LazyListState = LazyListState(),
+    animateListIn: Boolean = false,
+    onListShown: () -> Unit = {}
 ) {
     val state by vm.uiState.collectAsState()
     val reduceMotion by vm.reduceMotion.collectAsState(initial = false)
-    val stagger = rememberStagger("home", reduceMotion)
+    val engineStatus by vm.engineStatus.collectAsState(initial = EngineStatus.Uninitialized)
+    val engineInitializing by vm.engineInitializing.collectAsState(initial = false)
+
+    LaunchedEffect(animateListIn) {
+        if (!animateListIn) onListShown()
+    }
 
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
+            .firstLoadFade(animate = animateListIn, reduceMotion = reduceMotion, onShown = onListShown)
             .padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Spacer(modifier = Modifier.height(4.dp))
-            GreetingHeader()
+            GreetingHeader(engineStatus = engineStatus, engineInitializing = engineInitializing)
             Spacer(modifier = Modifier.height(12.dp))
             KuroSearchBar(value = state.query, onValueChange = vm::onQueryChange)
         }
@@ -148,17 +155,11 @@ fun HomeScreen(
                     }
                 }
             } else {
-                itemsIndexed(state.filtered.take(4), key = { _, c -> c.id }) { index, clone ->
+                itemsIndexed(state.filtered.take(4), key = { _, c -> c.id }) { _, clone ->
                     CloneCard(
                         clone = clone,
                         onClick = { onOpenClone(clone.id) },
-                        reduceMotion = reduceMotion,
-                        sharedScope = sharedScope,
-                        animScope = animScope,
-                        sharedKey = clone.id,
-                        modifier = Modifier
-                            .staggerFade(stagger.delayFor(index), reduceMotion)
-                            .animateItem()
+                        reduceMotion = reduceMotion
                     )
                 }
             }
@@ -221,7 +222,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun GreetingHeader() {
+private fun GreetingHeader(
+    engineStatus: EngineStatus,
+    engineInitializing: Boolean
+) {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     val res = when (hour) {
         in 5..11 -> R.string.home_greeting_morning
@@ -241,7 +245,43 @@ private fun GreetingHeader() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        OrbitMark()
+        EngineChip(status = engineStatus, initializing = engineInitializing)
+    }
+}
+
+@Composable
+private fun EngineChip(status: EngineStatus, initializing: Boolean) {
+    val labelRes = when {
+        initializing -> R.string.engine_chip_loading
+        status is EngineStatus.Ready -> R.string.settings_engine_status_ready
+        status is EngineStatus.Error -> R.string.settings_engine_status_error
+        status is EngineStatus.Incompatible -> R.string.settings_engine_status_incompatible
+        else -> R.string.settings_engine_status_uninitialized
+    }
+    val color = when {
+        initializing -> MaterialTheme.colorScheme.onSurfaceVariant
+        status is EngineStatus.Ready -> MaterialTheme.colorScheme.primary
+        status is EngineStatus.Error -> MaterialTheme.colorScheme.error
+        status is EngineStatus.Incompatible -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val alpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.tween(150),
+        label = "engine-chip-fade"
+    )
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(color.copy(alpha = 0.14f))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .alpha(alpha)
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = color
+        )
     }
 }
 

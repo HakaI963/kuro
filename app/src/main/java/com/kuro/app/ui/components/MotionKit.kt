@@ -17,7 +17,6 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import com.kuro.app.ui.theme.MotionTokens
-import kotlinx.coroutines.delay
 
 @Composable
 fun pressScaleValue(
@@ -29,7 +28,7 @@ fun pressScaleValue(
     return animateFloatAsState(
         targetValue = target,
         animationSpec = if (reduceMotion) tween(MotionTokens.REDUCED_MS)
-        else MotionTokens.interactiveSpring(),
+        else MotionTokens.pressSpring(),
         label = "press-scale"
     )
 }
@@ -46,52 +45,32 @@ fun pressTonalColor(
     return androidx.compose.animation.animateColorAsState(
         targetValue = target,
         animationSpec = if (reduceMotion) tween(MotionTokens.REDUCED_MS)
-        else tween(MotionTokens.FAST_MS, easing = MotionTokens.Standard),
+        else MotionTokens.pressSpring(),
         label = "press-tonal"
     )
 }
 
-class StaggerController internal constructor(
-    private val seen: androidx.compose.runtime.State<Boolean>,
-    private val reduceMotion: Boolean
-) {
-    fun delayFor(index: Int): Int =
-        if (seen.value || reduceMotion) 0 else MotionTokens.staggerDelayMs(index)
-}
-
-@Composable
-fun rememberStagger(key: String, reduceMotion: Boolean): StaggerController {
-    val seen = remember(key) { mutableStateOf(false) }
-    LaunchedEffect(key) { seen.value = true }
-    return remember(key, reduceMotion) { StaggerController(seen, reduceMotion) }
-}
-
-fun Modifier.staggerFade(delayMs: Int, reduceMotion: Boolean): Modifier = composed {
-    var shown by remember(delayMs) { mutableStateOf(delayMs == 0) }
-    LaunchedEffect(delayMs) {
-        if (delayMs > 0) {
-            delay(delayMs.toLong())
+fun Modifier.firstLoadFade(
+    animate: Boolean,
+    reduceMotion: Boolean,
+    onShown: () -> Unit
+): Modifier = composed {
+    var shown by remember { mutableStateOf(!animate) }
+    LaunchedEffect(animate) {
+        if (animate && !shown) {
             shown = true
+            onShown()
         }
     }
     val alpha by animateFloatAsState(
         targetValue = if (shown) 1f else 0f,
         animationSpec = tween(
-            if (reduceMotion) MotionTokens.REDUCED_MS else MotionTokens.MEDIUM_MS,
+            if (reduceMotion) MotionTokens.REDUCED_MS else MotionTokens.LIST_FADE_MS,
             easing = MotionTokens.Standard
         ),
-        label = "stagger-alpha"
-    )
-    val offsetY by animateFloatAsState(
-        targetValue = if (shown) 0f else 14f,
-        animationSpec = tween(
-            if (reduceMotion) MotionTokens.REDUCED_MS else MotionTokens.MEDIUM_MS,
-            easing = MotionTokens.Standard
-        ),
-        label = "stagger-offset"
+        label = "list-fade"
     )
     this.graphicsLayer {
         this.alpha = alpha
-        translationY = offsetY
     }
 }

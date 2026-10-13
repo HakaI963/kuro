@@ -1,8 +1,5 @@
 package com.kuro.app.ui.screens.details
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,7 +46,6 @@ import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroDialog
 import com.kuro.app.ui.components.KuroOutlineButton
 import com.kuro.app.ui.components.StatusBadge
-import com.kuro.app.ui.components.sharedElementModifier
 
 class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -58,16 +54,13 @@ class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CloneDetailsScreen(
     cloneId: String,
     onBack: () -> Unit,
     onDeleted: () -> Unit,
     modifier: Modifier = Modifier,
-    reduceMotion: Boolean = false,
-    sharedScope: SharedTransitionScope? = null,
-    animScope: AnimatedVisibilityScope? = null
+    reduceMotion: Boolean = false
 ) {
     val factory = remember(cloneId) { DetailsVmFactory(cloneId) }
     val vm: CloneDetailsViewModel = viewModel(factory = factory, key = "details-$cloneId")
@@ -108,8 +101,7 @@ fun CloneDetailsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     Box(
                         modifier = Modifier.size(64.dp).clip(CircleShape)
-                            .background(Color(c.labelColorArgb).copy(alpha = 0.18f))
-                            .then(sharedElementModifier(sharedScope, animScope, "$cloneId-icon")),
+                        .background(Color(c.labelColorArgb).copy(alpha = 0.18f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = c.iconLetter, style = MaterialTheme.typography.headlineMedium, color = Color(c.labelColorArgb))
@@ -119,7 +111,7 @@ fun CloneDetailsScreen(
                         Text(
                             text = c.name,
                             style = MaterialTheme.typography.headlineSmall,
-                            modifier = sharedElementModifier(sharedScope, animScope, "$cloneId-title")
+                            modifier = Modifier
                         )
                         Text(text = c.sourceAppName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(6.dp))
