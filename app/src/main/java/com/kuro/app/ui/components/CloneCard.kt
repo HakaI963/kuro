@@ -89,8 +89,12 @@ fun CloneCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+                val sub = if (clone.storageBytes > 0)
+                    clone.sourceAppName + " • " + formatBytes(clone.storageBytes)
+                else
+                    clone.sourceAppName
                 Text(
-                    text = clone.sourceAppName + " • " + formatBytes(clone.storageBytes),
+                    text = sub,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

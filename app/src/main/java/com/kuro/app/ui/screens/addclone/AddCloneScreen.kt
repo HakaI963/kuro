@@ -20,29 +20,35 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
 import com.kuro.app.domain.models.IsolationMode
+import com.kuro.app.domain.models.ProvisioningState
+import com.kuro.app.engine.ProvisioningManager
 import com.kuro.app.ui.components.AppSourceCard
 import com.kuro.app.ui.components.EmptyStateView
+import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroPrimaryButton
+import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.KuroSwitchRow
 import com.kuro.app.ui.components.ProgressPanel
@@ -54,10 +60,17 @@ private val labelColors = listOf(0xFF7C6CFF, 0xFF49D6C2, 0xFF5DB2FF, 0xFF3DDC97,
 fun AddCloneScreen(
     onDone: () -> Unit,
     onOpenClone: (String) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     vm: AddCloneViewModel = viewModel()
 ) {
     val state by vm.ui.collectAsState()
+    val context = LocalContext.current
+
+    // Keep provisioning state in sync with the device. Runs on device only; CI compile is unaffected.
+    LaunchedEffect(Unit) {
+        vm.refreshProvisioningWith(ProvisioningManager.currentState(context))
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         StepIndicator(step = state.step)
@@ -65,12 +78,12 @@ fun AddCloneScreen(
         when (state.step) {
             AddCloneStep.SOURCE -> SourceStep(
                 state = state,
-                onTab = vm::setTab,
+                onQuery = vm::setQuery,
                 onSelect = vm::selectApp,
-                onContinue = {
-                    val ok = vm.goToOptions()
-                    if (!ok) { /* handled via disabled button */ }
-                }
+                onRefresh = vm::refreshApps,
+                onContinue = { vm.goToOptions() },
+                provisioning = state.provisioning,
+                onOpenSettings = onOpenSettings
             )
             AddCloneStep.OPTIONS -> OptionsStep(
                 state = state,
@@ -82,15 +95,14 @@ fun AddCloneScreen(
                 onHidden = vm::setHidden,
                 onBiometric = vm::setBiometric,
                 onBack = vm::backToSource,
-                onCreate = { vm.startCreation(false) }
+                onCreate = vm::startCreation
             )
             AddCloneStep.PROGRESS -> ProgressStepUi(
                 state = state,
                 onBack = vm::backToOptions,
                 onRetry = vm::retry,
                 onDone = onDone,
-                onOpen = onOpenClone,
-                onSimulateError = { vm.startCreation(true) }
+                onOpen = onOpenClone
             )
         }
     }
@@ -138,38 +150,68 @@ private fun StepIndicator(step: AddCloneStep) {
 @Composable
 private fun SourceStep(
     state: AddCloneUiState,
-    onTab: (Int) -> Unit,
+    onQuery: (String) -> Unit,
     onSelect: (String) -> Unit,
-    onContinue: () -> Unit
+    onRefresh: () -> Unit,
+    onContinue: () -> Unit,
+    provisioning: ProvisioningState,
+    onOpenSettings: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Text(text = stringResource(R.string.add_clone_source_title), style = MaterialTheme.typography.titleLarge)
         Text(text = stringResource(R.string.add_clone_source_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(12.dp))
-        TabRow(selectedTabIndex = state.sourceTab) {
-            Tab(selected = state.sourceTab == 0, onClick = { onTab(0) }, text = { Text(stringResource(R.string.add_clone_tab_installed)) })
-            Tab(selected = state.sourceTab == 1, onClick = { onTab(1) }, text = { Text(stringResource(R.string.add_clone_tab_apk)) })
+
+        if (provisioning !is ProvisioningState.Active) {
+            KuroCard(
+                title = stringResource(R.string.add_clone_setup_required_title),
+                subtitle = stringResource(R.string.add_clone_setup_required_body)
+            ) {
+                KuroPrimaryButton(
+                    label = stringResource(R.string.add_clone_setup_required_action),
+                    onClick = onOpenSettings
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.weight(1f)) {
+                KuroSearchBar(value = state.query, onValueChange = onQuery)
+            }
+            IconButton(onClick = onRefresh, modifier = Modifier.size(48.dp)) {
+                Icon(imageVector = Icons.Filled.Refresh, contentDescription = stringResource(R.string.add_clone_refresh))
+            }
         }
         Spacer(modifier = Modifier.height(12.dp))
-        val list = if (state.sourceTab == 0) state.installedApps else state.apkApps
-        if (state.sourceTab == 1) {
+        if (state.appsLoading) {
             Text(
-                text = stringResource(R.string.add_clone_apk_body),
+                text = stringResource(R.string.state_loading),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
-            items(list, key = { it.id }) { app ->
-                AppSourceCard(app = app, selected = state.selectedAppId == app.id, onClick = { onSelect(app.id) })
+        val list = state.filteredApps
+        if (!state.appsLoading && list.isEmpty()) {
+            EmptyStateView(
+                title = stringResource(R.string.add_clone_no_apps_title),
+                body = stringResource(R.string.add_clone_no_apps_body),
+                actionLabel = stringResource(R.string.add_clone_refresh),
+                onAction = onRefresh
+            )
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                items(list, key = { it.packageName }) { app ->
+                    AppSourceCard(app = app, selected = state.selectedAppPackage == app.packageName, onClick = { onSelect(app.packageName) })
+                }
             }
         }
         Spacer(modifier = Modifier.height(12.dp))
         KuroPrimaryButton(
             label = stringResource(R.string.add_clone_continue),
             onClick = onContinue,
-            enabled = state.selectedAppId != null
+            enabled = state.selectedAppPackage != null
         )
         Spacer(modifier = Modifier.height(12.dp))
     }
@@ -278,12 +320,23 @@ private fun OptionsStep(
             }
         }
         item {
+            if (state.provisioning !is ProvisioningState.Active) {
+                KuroCard(
+                    title = stringResource(R.string.add_clone_setup_required_title),
+                    subtitle = stringResource(R.string.add_clone_setup_required_body)
+                ) { }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
                     KuroSecondaryButton(label = stringResource(R.string.add_clone_back), onClick = onBack)
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    KuroPrimaryButton(label = stringResource(R.string.add_clone_create), onClick = onCreate)
+                    KuroPrimaryButton(
+                        label = stringResource(R.string.add_clone_create),
+                        onClick = onCreate,
+                        enabled = state.canCreate
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -326,20 +379,20 @@ private fun ProgressStepUi(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onDone: () -> Unit,
-    onOpen: (String) -> Unit,
-    onSimulateError: () -> Unit
+    onOpen: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         when (state.status) {
             AddCloneStatus.RUNNING, AddCloneStatus.IDLE -> {
                 ProgressPanel(
                     title = stringResource(R.string.add_clone_creating_title),
-                    subtitle = stringResource(R.string.add_clone_creating_subtitle),
+                    subtitle = if (state.progressMessage.isNotBlank()) state.progressMessage
+                    else stringResource(R.string.add_clone_creating_subtitle),
                     progress = state.progress,
                     steps = listOf(
-                        ProgressStep(stringResource(R.string.add_clone_step_prepare), done = state.progressStep > 0, active = state.progressStep == 0),
-                        ProgressStep(stringResource(R.string.add_clone_step_isolate), done = state.progressStep > 1, active = state.progressStep == 1),
-                        ProgressStep(stringResource(R.string.add_clone_step_finish), done = false, active = state.progressStep == 2)
+                        ProgressStep(stringResource(R.string.add_clone_step_prepare), done = state.progress > 0.33f, active = state.progress <= 0.33f),
+                        ProgressStep(stringResource(R.string.add_clone_step_isolate), done = state.progress > 0.66f, active = state.progress in 0.33f..0.66f),
+                        ProgressStep(stringResource(R.string.add_clone_step_finish), done = false, active = state.progress > 0.66f)
                     )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -362,7 +415,7 @@ private fun ProgressStepUi(
             AddCloneStatus.ERROR -> {
                 EmptyStateView(
                     title = stringResource(R.string.add_clone_error_title),
-                    body = stringResource(R.string.add_clone_error_body),
+                    body = state.errorMessage ?: stringResource(R.string.add_clone_error_body),
                     actionLabel = stringResource(R.string.add_clone_retry),
                     onAction = onRetry,
                     icon = Icons.Filled.ErrorOutline

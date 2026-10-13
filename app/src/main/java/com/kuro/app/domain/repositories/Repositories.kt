@@ -8,20 +8,21 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface InstalledAppRepository {
     val apps: StateFlow<List<InstalledApp>>
+    suspend fun refresh()
+    fun getIcon(packageName: String): android.graphics.drawable.Drawable?
 }
 
 interface CloneRepository {
     val clones: StateFlow<List<CloneProfile>>
-    fun getClone(id: String): CloneProfile?
-    fun addClone(clone: CloneProfile)
-    fun updateClone(clone: CloneProfile)
-    fun deleteClone(id: String)
-    fun setAll(clones: List<CloneProfile>)
+    suspend fun getClone(id: String): CloneProfile?
+    suspend fun addClone(clone: CloneProfile)
+    suspend fun updateClone(clone: CloneProfile)
+    suspend fun deleteClone(id: String)
 }
 
 interface ActivityRepository {
     val events: StateFlow<List<ActivityEvent>>
-    fun addEvent(event: ActivityEvent)
+    suspend fun addEvent(event: ActivityEvent)
 }
 
 interface SettingsRepository {

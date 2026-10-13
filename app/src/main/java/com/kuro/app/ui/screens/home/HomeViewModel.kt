@@ -44,7 +44,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            delay(700)
+            delay(400)
             _isLoading.value = false
         }
     }
@@ -55,7 +55,7 @@ class HomeViewModel : ViewModel() {
         _loadFailed.value = false
         _isLoading.value = true
         viewModelScope.launch {
-            delay(600)
+            delay(400)
             _isLoading.value = false
         }
     }

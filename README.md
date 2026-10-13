@@ -1,32 +1,36 @@
-# Kuro — Step 1: Modern UI Foundation
+# Kuro — Step 2: Real Work-Profile Engine Foundation
 
-Kuro is a modern app-cloner / sandbox-style utility concept. Step 1 builds a complete,
-production-quality UI foundation with mock data only.
+Kuro is a modern app-cloner utility. Step 2 removes all Step 1 placeholder data and
+replaces the mock layer with a real, legitimate clone engine based on Android managed
+work profiles (same mechanism as Island and Shelter).
 
-> No real cloning, virtualization, APK injection, package manipulation, root, exploits,
-> or runtime behavior is implemented in this step. All flows are simulated with in-memory data.
+> Clones are real installs inside the isolated space (work profile). No virtualization,
+> hooks, reflection, Xposed, or root. See `docs/STEP_2_ENGINE.md`.
 
-## What Step 1 includes
+## What Step 2 includes
 
-- Premium dark-first Material 3 design system (`KuroTheme`, tokens, spacing, motion)
-- App shell with bottom navigation (Home, Library, Activity, Settings) + FAB (New Clone)
-- Splash with animated entry
-- 3-page onboarding (skip / get started)
-- Home dashboard: greeting, search, quick actions, recent clones, active status, storage summary
-- Add Clone multi-step mock flow: Source → Options → Progress/Success/Error
-- Clone details: header, status, actions (Open mock, Freeze, Settings, Delete), overview, activity preview
-- Library: search, filter chips (All/Running/Frozen/Private), long-press action sheet
-- Activity: timeline feed (mock)
-- Settings: appearance, behavior, security (mock), about
-- Reusable components, empty/loading/error states, skeleton shimmer, reduce-motion support
-- Manual DI via `ServiceLocator`, `StateFlow` + `ViewModel`, Navigation Compose
+- Zero placeholder clones or fake apps. Fresh installs show polished empty states.
+- Real installed-app list via `PackageManager.queryIntentActivities` (LAUNCHER) + `<queries>` block.
+  No `QUERY_ALL_PACKAGES`. Icons cached in an in-memory LRU cache, loaded off-main with Flow + IO.
+- Work-profile provisioning: `KuroDeviceAdminReceiver` + `ProvisioningManager`
+  (NotSetup / ProfileExistsNotOwner / Active / Blocked with clear UI states).
+- `CloneEngine` with `WorkProfileCloneEngine` (PackageInstaller sessions, `setPackagesSuspended`,
+  `setApplicationHidden`, badged labels) and `UnavailableCloneEngine` safe no-op.
+- Minimal strongly-typed cross-profile bridge (`CrossProfileBridge` + `CloneCommandReceiver`).
+- Room persistence: `CloneRecord`, `ActivityRecord`, DAOs, `KuroDatabase`. All in-memory state replaced.
+- Real install progress from `PackageInstaller` byte-copy + result broadcast. No fake timers.
+- UI wiring: Home/Library/Activity from Room; Add Clone with real search + gated Create;
+  Details with real Open/Freeze/Hide/Delete + snackbars; Settings engine status card + explainer.
+- Unit tests for provisioning state machine and record mapping.
+- Docs: `docs/STEP_2_ENGINE.md` (limitations + manual + adb steps).
 
 ## Tech
 
 - Kotlin 2.0.21, AGP 8.7.3, Gradle 8.10.2, Java 17
 - compileSdk 35, targetSdk 35, minSdk 26
 - Jetpack Compose (BOM 2024.11.00), Material 3, Navigation Compose 2.8.4
-- No Hilt, Room, KSP, WorkManager, Firebase, ads, analytics, backend
+- Room 2.6.1 (KSP 2.0.21-1.0.25), Coroutines 1.8.1, JUnit 4
+- No Firebase, ads, analytics, backend. No `QUERY_ALL_PACKAGES`.
 
 ## How to build (local)
 
@@ -34,11 +38,10 @@ production-quality UI foundation with mock data only.
 # Requires Android SDK + JDK 17
 gradle assembleDebug
 # APK: app/build/outputs/apk/debug/app-debug.apk
+gradle testDebugUnitTest
 ```
 
-If you have the Gradle wrapper jar, `./gradlew assembleDebug` also works.
-This repo ships only `gradle-wrapper.properties` (no binary) to keep the repo clean;
-CI installs Gradle directly.
+CI installs Gradle directly (no wrapper binary in repo).
 
 ## How to run workflow
 
@@ -46,18 +49,17 @@ CI installs Gradle directly.
 2. Workflow (`/.github/workflows/android-build.yml`):
    - `ubuntu-latest`, checkout, JDK 17 (Temurin), Android SDK setup
    - Installs platform 35 + build-tools 35.0.0
-   - Installs Gradle 8.10.2 directly (no wrapper binary needed)
+   - Installs Gradle 8.10.2 directly
    - Runs `gradle assembleDebug`
-   - Uploads `kuro-debug-apk` artifact
+   - Uploads `kuro-debug-apk` artifact (compile only; engine needs a device)
 
 ## Current scope
 
-- UI/UX foundation only, mock repositories in `data/mock/`
-- All buttons navigate, change state, or show a polished mock response
-- Strings in `res/values/strings.xml`, no lorem ipsum, no TODO/FIXME
+- Real engine foundation, Room-backed, work-profile gated. Unavailable features show
+  explicit disabled / setup-required states. Never fakes success or data.
 
-## Next steps (Step 2+)
+## Roadmap
 
-- Real data layer, persistence, clone execution contracts
-- Runtime isolation design, security review
-- Instrumentation, accessibility audit, performance pass
+- Step 3: harden cross-profile transport (`setCrossProfilePackages` / provider),
+  badged icons in lists, profile-pause handling, backup rules.
+- Security review, accessibility audit, performance pass.

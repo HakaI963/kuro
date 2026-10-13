@@ -52,7 +52,7 @@ fun ActivityScreen(
         item {
             Spacer(modifier = Modifier.height(4.dp))
             KuroCard(
-                title = stringResource(R.string.activity_mock_banner),
+                title = stringResource(R.string.activity_banner),
                 subtitle = stringResource(R.string.activity_subtitle)
             ) {
             }
@@ -118,6 +118,8 @@ private fun activityLabel(type: ActivityType): String = when (type) {
     ActivityType.LAUNCHED -> stringResource(R.string.activity_launched)
     ActivityType.FROZEN -> stringResource(R.string.activity_frozen)
     ActivityType.UNFROZEN -> stringResource(R.string.activity_unfrozen)
+    ActivityType.HIDDEN -> stringResource(R.string.activity_hidden)
+    ActivityType.UNHIDDEN -> stringResource(R.string.activity_unhidden)
     ActivityType.DELETED -> stringResource(R.string.activity_deleted)
 }
 
@@ -128,6 +130,8 @@ private fun dotColor(type: ActivityType): androidx.compose.ui.graphics.Color {
         ActivityType.LAUNCHED -> MaterialTheme.colorScheme.secondary
         ActivityType.FROZEN -> MaterialTheme.colorScheme.tertiary
         ActivityType.UNFROZEN -> MaterialTheme.colorScheme.tertiary
+        ActivityType.HIDDEN -> MaterialTheme.colorScheme.secondary
+        ActivityType.UNHIDDEN -> MaterialTheme.colorScheme.secondary
         ActivityType.DELETED -> MaterialTheme.colorScheme.error
     }
 }

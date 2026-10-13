@@ -83,9 +83,10 @@ fun HomeScreen(
                 QuickAction(
                     title = stringResource(R.string.home_action_import_apk),
                     desc = stringResource(R.string.home_action_import_apk_desc),
-                    icon = { Icon(Icons.Filled.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
-                    onClick = onImportApk,
-                    modifier = Modifier.weight(1f)
+                    icon = { Icon(Icons.Filled.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    onClick = {},
+                    modifier = Modifier.weight(1f),
+                    enabled = false
                 )
                 QuickAction(
                     title = stringResource(R.string.home_action_view_library),
@@ -228,12 +229,17 @@ private fun QuickAction(
     desc: String,
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Card(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(
+                alpha = if (enabled) 1f else 0.5f
+            )
+        )
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             icon()

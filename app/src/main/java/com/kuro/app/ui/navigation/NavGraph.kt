@@ -20,6 +20,7 @@ import com.kuro.app.ui.screens.details.CloneDetailsScreen
 import com.kuro.app.ui.screens.home.HomeScreen
 import com.kuro.app.ui.screens.library.LibraryScreen
 import com.kuro.app.ui.screens.onboarding.OnboardingScreen
+import com.kuro.app.ui.screens.settings.EngineExplainerScreen
 import com.kuro.app.ui.screens.settings.SettingsScreen
 import com.kuro.app.ui.screens.splash.SplashScreen
 
@@ -73,7 +74,7 @@ fun KuroNavGraph(
                 HomeScreen(
                     onOpenClone = { navController.navigate(Routes.cloneDetails(it)) },
                     onNewClone = { navController.navigate(Routes.ADD_CLONE) },
-                    onImportApk = { navController.navigate(Routes.ADD_CLONE) },
+                    onImportApk = { },
                     onViewLibrary = { navController.navigate(Routes.LIBRARY) }
                 )
             }
@@ -105,7 +106,12 @@ fun KuroNavGraph(
                 onSelect = { navigateBottom(navController, it) },
                 onNewClone = { navController.navigate(Routes.ADD_CLONE) }
             ) {
-                SettingsScreen()
+                SettingsScreen(onOpenExplainer = { navController.navigate(Routes.ENGINE_EXPLAINER) })
+            }
+        }
+        composable(Routes.ENGINE_EXPLAINER) {
+            DetailsScaffold(onBack = { navController.popBackStack() }) {
+                EngineExplainerScreen()
             }
         }
         composable(Routes.ADD_CLONE) {
@@ -118,7 +124,8 @@ fun KuroNavGraph(
                             navController.navigate(Routes.cloneDetails(it)) {
                                 popUpTo(Routes.ADD_CLONE) { inclusive = true }
                             }
-                        }
+                        },
+                        onOpenSettings = { navController.navigate(Routes.SETTINGS) }
                     )
                 }
             )

@@ -1,5 +1,9 @@
 package com.kuro.app.ui.components
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,13 +21,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kuro.app.core.utils.formatBytes
+import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.InstalledApp
 
 @Composable
@@ -57,30 +63,18 @@ fun AppSourceCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color(app.accentArgb).copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = app.iconLetter,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(app.accentArgb)
-                )
-            }
+            RealAppIcon(packageName = app.packageName, fallbackLetter = app.iconLetter)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = app.name,
+                    text = app.label,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = app.packageName + " • " + formatBytes(app.sizeBytes),
+                    text = app.packageName + if (app.versionName.isNotBlank()) " • " + app.versionName else "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -88,5 +82,81 @@ fun AppSourceCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun RealAppIcon(
+    packageName: String,
+    fallbackLetter: String,
+    modifier: Modifier = Modifier
+) {
+    val drawable: Drawable? = remember(packageName) {
+        runCatching {
+            val locator = ServiceLocator.installedAppRepository
+            locator.getIcon(packageName)
+        }.getOrNull()
+    }
+    val bitmap: Bitmap? = remember(drawable) {
+        drawable?.toBitmapOrNull()
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier
+                .size(44.dp)
+                .clip(CircleShape)
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = fallbackLetter,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+private fun Drawable.toBitmapOrNull(): Bitmap? {
+    return try {
+        val w = intrinsicWidth.takeIf { it > 0 } ?: 96
+        val h = intrinsicHeight.takeIf { it > 0 } ?: 96
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        setBounds(0, 0, canvas.width, canvas.height)
+        draw(canvas)
+        bmp
+    } catch (_: Exception) {
+        null
+    }
+}
+
+@Composable
+fun CloneAvatar(
+    letter: String,
+    colorArgb: Long,
+    modifier: Modifier = Modifier,
+    sizeDp: Int = 48
+) {
+    Box(
+        modifier = modifier
+            .size(sizeDp.dp)
+            .clip(CircleShape)
+            .background(Color(colorArgb).copy(alpha = 0.2f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = letter,
+            style = MaterialTheme.typography.titleLarge,
+            color = Color(colorArgb)
+        )
     }
 }

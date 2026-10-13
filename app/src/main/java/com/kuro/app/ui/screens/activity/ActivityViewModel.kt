@@ -4,13 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.ActivityEvent
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 data class ActivityUiState(
     val events: List<ActivityEvent> = emptyList(),
@@ -22,13 +20,12 @@ class ActivityViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(true)
 
     val uiState: StateFlow<ActivityUiState> = combine(repo.events, _isLoading) { events, loading ->
-        ActivityUiState(events.sortedByDescending { it.timestampMillis }, loading)
+        // Real Room events only. Fresh install starts empty by design.
+        ActivityUiState(events.sortedByDescending { it.timestampMillis }, loading && events.isEmpty())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ActivityUiState())
 
     init {
-        viewModelScope.launch {
-            delay(550)
-            _isLoading.value = false
-        }
+        // Mark loaded once the Room flow emits.
+        _isLoading.value = false
     }
 }
