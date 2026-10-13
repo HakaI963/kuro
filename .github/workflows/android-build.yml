@@ -17,11 +17,10 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android platform and build tools
         run: |
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "ANDROID_HOME=$ANDROID_HOME"
           sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
           yes | sdkmanager --licenses || true
 
@@ -33,7 +32,7 @@ jobs:
           /opt/gradle-8.10.2/bin/gradle --version
 
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace --info
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
