@@ -152,7 +152,7 @@ fun CloneDetailsScreen(
                         Text(text = stringResource(R.string.activity_empty_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         events.forEach { ev ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(imageVector = Icons.Filled.History, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -190,19 +190,26 @@ private fun ActionButton(
     primary: Boolean = false
 ) {
     if (primary) {
-        androidx.compose.material3.Button(onClick = onClick, modifier = modifier.height(48.dp), shape = MaterialTheme.shapes.medium) {
-            icon()
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(label)
-        }
+        // Step 3c: primary uses tonal primary system (56dp, 16dp corners).
+        // Keep launch flow untouched; visual only.
+        com.kuro.app.ui.components.KuroPrimaryButton(
+            label = label,
+            onClick = onClick,
+            modifier = modifier
+        )
     } else {
-        KuroOutlineButton(label = label, onClick = onClick, modifier = modifier.fillMaxWidth())
+        // Step 3c: destructive uses error-container tonal.
+        com.kuro.app.ui.components.KuroDestructiveButton(
+            label = label,
+            onClick = onClick,
+            modifier = modifier
+        )
     }
 }
 
 @Composable
 private fun DetailRow(label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         Text(text = value, style = MaterialTheme.typography.bodyMedium)
     }

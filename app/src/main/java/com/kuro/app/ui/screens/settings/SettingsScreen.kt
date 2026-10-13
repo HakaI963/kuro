@@ -51,13 +51,13 @@ fun SettingsScreen(
             .background(MaterialTheme.colorScheme.background)
             .firstLoadFade(animate = animateListIn, reduceMotion = false, onShown = onListShown)
             .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        item { Spacer(modifier = Modifier.height(4.dp)) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
 
         item {
             Text(text = stringResource(R.string.settings_section_engine), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             KuroCard(
                 title = stringResource(R.string.settings_engine_title),
                 subtitle = null
@@ -93,7 +93,7 @@ fun SettingsScreen(
 
         item {
             Text(text = stringResource(R.string.settings_section_appearance), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             KuroCard {
                 KuroSettingRow(
                     title = stringResource(R.string.settings_theme),
@@ -131,7 +131,7 @@ fun SettingsScreen(
 
         item {
             Text(text = stringResource(R.string.settings_section_behavior), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             KuroCard {
                 KuroSwitchRow(
                     title = stringResource(R.string.settings_default_launch),
@@ -144,7 +144,7 @@ fun SettingsScreen(
 
         item {
             Text(text = stringResource(R.string.settings_section_about), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             KuroCard {
                 KuroSettingRow(
                     title = stringResource(R.string.settings_version),

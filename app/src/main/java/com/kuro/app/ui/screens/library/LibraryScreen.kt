@@ -8,9 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -72,15 +73,19 @@ fun LibraryScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .firstLoadFade(animate = animateListIn, reduceMotion = reduceMotion, onShown = onListShown)
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Step 3c: between sections 24dp; list rows 12dp inside sections.
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                Spacer(modifier = Modifier.height(4.dp))
+                // All tab headers align at the same y (16dp below app bar).
+                Spacer(modifier = Modifier.height(16.dp))
                 KuroSearchBar(value = state.query, onValueChange = vm::onQuery, hint = stringResource(R.string.library_search_hint))
             }
-            item { SectionHeader(title = stringResource(R.string.library_section_clones)) }
-            if (state.filtered.isEmpty()) {
-                item {
+            // Clones section: title -> content 12dp.
+            item {
+                SectionHeader(title = stringResource(R.string.library_section_clones))
+                Spacer(modifier = Modifier.height(12.dp))
+                if (state.filtered.isEmpty()) {
                     EmptyStateView(
                         title = stringResource(R.string.library_empty_title),
                         body = stringResource(R.string.library_empty_body),
@@ -88,28 +93,39 @@ fun LibraryScreen(
                         onAction = onNewClone,
                         icon = Icons.Filled.Inventory2
                     )
-                }
-            } else {
-                items(state.filtered, key = { it.id }) { clone ->
-                    CloneCard(
-                        clone = clone,
-                        onClick = { onOpenClone(clone.id) },
-                        onLongClick = { vm.openSheet(clone.id) },
-                        reduceMotion = reduceMotion
-                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        state.filtered.forEach { clone ->
+                            CloneCard(
+                                clone = clone,
+                                onClick = { onOpenClone(clone.id) },
+                                onLongClick = { vm.openSheet(clone.id) },
+                                reduceMotion = reduceMotion
+                            )
+                        }
+                    }
                 }
             }
+            // Sources section.
             item {
                 SectionHeader(title = stringResource(R.string.library_section_sources))
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-            items(sources.take(8), key = { it.packageName }) { app ->
-                RowWithIcon(
-                    title = app.label,
-                    subtitle = app.packageName,
-                    packageName = app.packageName,
-                    fallbackLetter = app.iconLetter
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    sources.take(8).forEach { app ->
+                        RowWithIcon(
+                            title = app.label,
+                            subtitle = app.packageName,
+                            packageName = app.packageName,
+                            fallbackLetter = app.iconLetter
+                        )
+                    }
+                }
             }
             item { Spacer(modifier = Modifier.height(90.dp)) }
         }
@@ -138,11 +154,13 @@ fun LibraryScreen(
 @Composable
 private fun RowWithIcon(title: String, subtitle: String, packageName: String, fallbackLetter: String) {
     androidx.compose.foundation.layout.Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         RealAppIcon(packageName = packageName, fallbackLetter = fallbackLetter)
-        Spacer(modifier = Modifier.padding(horizontal = 6.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

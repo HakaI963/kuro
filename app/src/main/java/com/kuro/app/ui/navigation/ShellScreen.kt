@@ -1,17 +1,18 @@
 package com.kuro.app.ui.navigation
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,8 +31,7 @@ fun ShellScreen(
     vm: ShellViewModel = viewModel()
 ) {
     val tab by vm.currentTab.collectAsState()
-    val density = LocalDensity.current
-    val slidePx = with(density) { MotionTokens.TAB_SLIDE_DP.dp.roundToPx() }
+    val direction by vm.direction.collectAsState()
 
     AppShell(
         current = tab,
@@ -40,27 +40,14 @@ fun ShellScreen(
         reduceMotion = reduceMotion,
         modifier = modifier
     ) {
-        AnimatedContent(
-            targetState = tab,
-            transitionSpec = {
-                if (reduceMotion) {
-                    fadeIn(tween(MotionTokens.REDUCED_MS))
-                        .togetherWith(fadeOut(tween(MotionTokens.REDUCED_MS)))
-                } else {
-                    val forward = targetState.ordinal > initialState.ordinal
-                    val dir = if (forward) 1 else -1
-                    (slideInHorizontally(
-                        tween(MotionTokens.TAB_MS, easing = MotionTokens.Emphasized)
-                    ) { dir * slidePx } + fadeIn(tween(MotionTokens.TAB_MS)))
-                        .togetherWith(
-                            slideOutHorizontally(
-                                tween(MotionTokens.TAB_MS, easing = MotionTokens.Emphasized)
-                            ) { -dir * slidePx } + fadeOut(tween(MotionTokens.TAB_MS))
-                        )
-                        .using(SizeTransform(clip = false))
-                }
-            },
-            label = "tabs"
+        // Step 3c: never cross-fade tabs. Old tab is removed the same frame
+        // (plain when, no AnimatedContent). Only the entering content animates:
+        // alpha 0->1 + translationX 24dp from navigation direction, 160-200ms,
+        // M3 emphasized easing, graphicsLayer only. Opaque root, zero blended frames.
+        TabEnterContent(
+            tab = tab,
+            direction = direction,
+            reduceMotion = reduceMotion
         ) { current ->
             val animateIn = vm.shouldAnimateList(current)
             when (current) {
@@ -93,5 +80,67 @@ fun ShellScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TabEnterContent(
+    tab: BottomDestination,
+    direction: Int,
+    reduceMotion: Boolean,
+    content: @Composable (BottomDestination) -> Unit
+) {
+    val density = LocalDensity.current
+    val slidePx = with(density) { MotionTokens.TAB_SLIDE_DP.dp.roundToPx() }.toFloat()
+
+    // Fresh animatables per tab so exit is instant (old content dropped same frame)
+    // and only the entering content animates.
+    val alpha = remember(tab) { Animatable(if (reduceMotion) 1f else 0f) }
+    val offsetX = remember(tab) {
+        Animatable(if (reduceMotion) 0f else direction * slidePx)
+    }
+
+    LaunchedEffect(tab) {
+        if (reduceMotion) {
+            // Reduce motion: 100ms alpha only, no slide.
+            alpha.snapTo(0f)
+            offsetX.snapTo(0f)
+            alpha.animateTo(
+                1f,
+                animationSpec = tween(MotionTokens.REDUCED_MS)
+            )
+        } else {
+            alpha.snapTo(0f)
+            offsetX.snapTo(direction * slidePx)
+            // Parallel enter: fade + directional slide, emphasized easing.
+            kotlinx.coroutines.launch {
+                alpha.animateTo(
+                    1f,
+                    animationSpec = tween(
+                        MotionTokens.TAB_MS,
+                        easing = MotionTokens.Emphasized
+                    )
+                )
+            }
+            offsetX.animateTo(
+                0f,
+                animationSpec = tween(
+                    MotionTokens.TAB_MS,
+                    easing = MotionTokens.Emphasized
+                )
+            )
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .graphicsLayer {
+                this.alpha = alpha.value
+                this.translationX = offsetX.value
+            }
+    ) {
+        content(tab)
     }
 }
