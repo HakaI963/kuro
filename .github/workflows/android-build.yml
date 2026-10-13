@@ -1,0 +1,42 @@
+name: Android Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          yes | sdkmanager --licenses || true
+
+      - name: Install Gradle 8.10.2
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
+          /opt/gradle-8.10.2/bin/gradle --version
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace --info
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuro-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
