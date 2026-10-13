@@ -41,9 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
-import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.CloneStatus
-import com.kuro.app.engine.EngineStatus
+import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
