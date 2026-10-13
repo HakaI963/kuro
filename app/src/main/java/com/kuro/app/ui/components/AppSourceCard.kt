@@ -52,8 +52,8 @@ fun AppSourceCard(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = scale
+                scaleY = scale
             }
             .border(
                 width = if (selected) 1.5.dp else 1.dp,

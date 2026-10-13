@@ -265,12 +265,12 @@ private fun QuickAction(
     Card(
         modifier = modifier
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = scale
+                scaleY = scale
             }
             .then(if (enabled) Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = tonal.value)
+        colors = CardDefaults.cardColors(containerColor = tonal)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             icon()

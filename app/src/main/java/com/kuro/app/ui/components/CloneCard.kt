@@ -57,8 +57,8 @@ fun CloneCard(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = scale
+                scaleY = scale
             }
             .clickable(
                 interactionSource = interaction,
@@ -66,7 +66,7 @@ fun CloneCard(
                 onClick = onClick
             ),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = tonal.value)
+        colors = CardDefaults.cardColors(containerColor = tonal)
     ) {
         Row(
             modifier = Modifier

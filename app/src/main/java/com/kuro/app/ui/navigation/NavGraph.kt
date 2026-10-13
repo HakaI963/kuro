@@ -51,12 +51,15 @@ fun KuroNavGraph(
             popExitTransition = { MotionTokens.navExit(reduceMotion) }
         ) {
             composable(Routes.INTRO) {
-                OrbitalIntro(reduceMotion = reduceMotion) {
-                    onIntroConsumed()
-                    navController.navigate(homeRoute()) {
-                        popUpTo(Routes.INTRO) { inclusive = true }
+                OrbitalIntro(
+                    reduceMotion = reduceMotion,
+                    onDone = {
+                        onIntroConsumed()
+                        navController.navigate(homeRoute()) {
+                            popUpTo(Routes.INTRO) { inclusive = true }
+                        }
                     }
-                }
+                )
             }
             composable(Routes.HOME) {
                 AppShell(
@@ -176,6 +179,3 @@ fun currentBottomDestination(nav: NavHostController): BottomDestination {
         else -> BottomDestination.Home
     }
 }
-
-typealias KuroSharedScope = SharedTransitionScope
-typealias KuroAnimScope = AnimatedVisibilityScope
