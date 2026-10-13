@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kuro.app.R
+import com.kuro.app.ui.components.KuroBottomBar
 import com.kuro.app.ui.components.KuroTopAppBar
 import com.kuro.app.ui.components.bottomBarPillOffset
 import com.kuro.app.ui.components.bottomBarPillOffset
