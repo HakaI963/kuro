@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory2
@@ -30,7 +29,6 @@ import com.kuro.app.R
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroBottomSheet
-import com.kuro.app.ui.components.KuroFilterChip
 import com.kuro.app.ui.components.KuroListItem
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.RealAppIcon
@@ -66,38 +64,6 @@ fun LibraryScreen(
                 Spacer(modifier = Modifier.height(4.dp))
                 KuroSearchBar(value = state.query, onValueChange = vm::onQuery, hint = stringResource(R.string.library_search_hint))
             }
-            item {
-                LazyRow(modifier = Modifier.fillMaxWidth()) {
-                    item {
-                        KuroFilterChip(
-                            label = stringResource(R.string.library_filter_all),
-                            selected = state.filter == LibraryFilter.ALL,
-                            onClick = { vm.onFilter(LibraryFilter.ALL) }
-                        )
-                    }
-                    item {
-                        KuroFilterChip(
-                            label = stringResource(R.string.library_filter_running),
-                            selected = state.filter == LibraryFilter.RUNNING,
-                            onClick = { vm.onFilter(LibraryFilter.RUNNING) }
-                        )
-                    }
-                    item {
-                        KuroFilterChip(
-                            label = stringResource(R.string.library_filter_frozen),
-                            selected = state.filter == LibraryFilter.FROZEN,
-                            onClick = { vm.onFilter(LibraryFilter.FROZEN) }
-                        )
-                    }
-                    item {
-                        KuroFilterChip(
-                            label = stringResource(R.string.library_filter_private),
-                            selected = state.filter == LibraryFilter.PRIVATE,
-                            onClick = { vm.onFilter(LibraryFilter.PRIVATE) }
-                        )
-                    }
-                }
-            }
             item { SectionHeader(title = stringResource(R.string.library_section_clones)) }
             if (state.filtered.isEmpty()) {
                 item {
@@ -122,7 +88,6 @@ fun LibraryScreen(
                 SectionHeader(title = stringResource(R.string.library_section_sources))
                 Spacer(modifier = Modifier.height(4.dp))
             }
-            // Real installed apps only. Fresh installs with no visible launchers show an empty row set.
             items(sources.take(8), key = { it.packageName }) { app ->
                 RowWithIcon(
                     title = app.label,
@@ -146,9 +111,6 @@ fun LibraryScreen(
                 })
                 KuroListItem(title = stringResource(R.string.library_action_details), subtitle = target.sourceAppName, onClick = {
                     vm.closeSheet(); onOpenClone(target.id)
-                })
-                KuroListItem(title = stringResource(R.string.library_action_freeze), subtitle = target.status.name, onClick = {
-                    vm.toggleFreeze(target.id)
                 })
                 KuroListItem(title = stringResource(R.string.library_action_delete), subtitle = target.name, onClick = {
                     vm.delete(target.id)

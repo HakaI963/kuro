@@ -5,17 +5,13 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "clones")
 data class CloneRecord(
-    @PrimaryKey val packageName: String,
+    @PrimaryKey val cloneId: String,
+    val packageName: String,
     val cloneName: String,
     val colorTag: Long,
     val createdAt: Long,
-    val frozen: Boolean,
-    val hidden: Boolean,
-    val lastLaunched: Long?,
-    val isolationMode: String,
-    val notificationsEnabled: Boolean,
-    val separateData: Boolean,
-    val biometricLock: Boolean
+    val engineName: String,
+    val lastLaunched: Long? = null
 )
 
 @Entity(tableName = "activity")

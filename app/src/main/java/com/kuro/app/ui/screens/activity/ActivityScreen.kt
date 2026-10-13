@@ -116,10 +116,6 @@ fun ActivityScreen(
 private fun activityLabel(type: ActivityType): String = when (type) {
     ActivityType.CREATED -> stringResource(R.string.activity_created)
     ActivityType.LAUNCHED -> stringResource(R.string.activity_launched)
-    ActivityType.FROZEN -> stringResource(R.string.activity_frozen)
-    ActivityType.UNFROZEN -> stringResource(R.string.activity_unfrozen)
-    ActivityType.HIDDEN -> stringResource(R.string.activity_hidden)
-    ActivityType.UNHIDDEN -> stringResource(R.string.activity_unhidden)
     ActivityType.DELETED -> stringResource(R.string.activity_deleted)
 }
 
@@ -128,10 +124,6 @@ private fun dotColor(type: ActivityType): androidx.compose.ui.graphics.Color {
     return when (type) {
         ActivityType.CREATED -> MaterialTheme.colorScheme.primary
         ActivityType.LAUNCHED -> MaterialTheme.colorScheme.secondary
-        ActivityType.FROZEN -> MaterialTheme.colorScheme.tertiary
-        ActivityType.UNFROZEN -> MaterialTheme.colorScheme.tertiary
-        ActivityType.HIDDEN -> MaterialTheme.colorScheme.secondary
-        ActivityType.UNHIDDEN -> MaterialTheme.colorScheme.secondary
         ActivityType.DELETED -> MaterialTheme.colorScheme.error
     }
 }

@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kuro.app.R
-import com.kuro.app.core.utils.formatBytes
 import com.kuro.app.core.utils.formatRelative
 import com.kuro.app.domain.models.CloneProfile
 
@@ -89,12 +88,8 @@ fun CloneCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                val sub = if (clone.storageBytes > 0)
-                    clone.sourceAppName + " • " + formatBytes(clone.storageBytes)
-                else
-                    clone.sourceAppName
                 Text(
-                    text = sub,
+                    text = clone.sourceAppName,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

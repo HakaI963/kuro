@@ -2,12 +2,13 @@ package com.kuro.app.ui.screens.details
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kuro.app.data.clones.RoomCloneRepository
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.domain.models.ActivityEvent
 import com.kuro.app.domain.models.ActivityType
 import com.kuro.app.domain.models.CloneProfile
-import com.kuro.app.domain.models.CloneStatus
-import com.kuro.app.engine.EngineResult
+import com.kuro.engine.CloneHandle
+import com.kuro.engine.LaunchResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,63 +26,10 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
     private val _showOpened = MutableStateFlow(false)
     val showOpened: StateFlow<Boolean> = _showOpened
 
-    private val _showSettings = MutableStateFlow(false)
-    val showSettings: StateFlow<Boolean> = _showSettings
-
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message
 
-    fun openSettings() { _showSettings.value = true }
-    fun dismissSettings() { _showSettings.value = false }
     fun clearMessage() { _message.value = null }
-
-    fun setNotifications(v: Boolean) {
-        viewModelScope.launch {
-            val c = cloneRepo.getClone(cloneId) ?: return@launch
-            cloneRepo.updateClone(c.copy(notificationsEnabled = v))
-        }
-    }
-    fun setSeparateData(v: Boolean) {
-        viewModelScope.launch {
-            val c = cloneRepo.getClone(cloneId) ?: return@launch
-            cloneRepo.updateClone(c.copy(separateData = v))
-        }
-    }
-    fun setBiometric(v: Boolean) {
-        viewModelScope.launch {
-            val c = cloneRepo.getClone(cloneId) ?: return@launch
-            cloneRepo.updateClone(c.copy(biometricLock = v))
-        }
-    }
-    fun setHidden(v: Boolean) {
-        viewModelScope.launch {
-            val c = cloneRepo.getClone(cloneId) ?: return@launch
-            val engine = ServiceLocator.engine.value
-            val result = if (v) engine.hide(c.sourceAppId) else engine.unhide(c.sourceAppId)
-            when (result) {
-                is EngineResult.Ok -> {
-                    cloneRepo.updateClone(c.copy(hiddenFromLauncher = v))
-                    activityRepo.addEvent(
-                        ActivityEvent(
-                            id = "ev-" + System.currentTimeMillis(),
-                            cloneId = c.id,
-                            cloneName = c.name,
-                            type = if (v) ActivityType.HIDDEN else ActivityType.UNHIDDEN,
-                            timestampMillis = System.currentTimeMillis(),
-                            detail = if (v) "Hidden from launcher" else "Shown in launcher"
-                        )
-                    )
-                    _message.value = if (v) "Hidden" else "Unhidden"
-                }
-                is EngineResult.Unavailable -> {
-                    // Persist the preference so it applies once provisioned.
-                    cloneRepo.updateClone(c.copy(hiddenFromLauncher = v))
-                    _message.value = result.message
-                }
-                is EngineResult.Failed -> _message.value = result.message
-            }
-        }
-    }
 
     val clone: StateFlow<CloneProfile?> =
         cloneRepo.clones.combine(_showDelete) { clones, _ ->
@@ -100,9 +48,9 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
         viewModelScope.launch {
             val c = cloneRepo.getClone(cloneId)
             if (c != null) {
-                when (val r = ServiceLocator.engine.value.remove(c.sourceAppId)) {
-                    is EngineResult.Ok, is EngineResult.Unavailable -> Unit
-                    is EngineResult.Failed -> _message.value = r.message
+                val engineResult = ServiceLocator.virtualEngine.remove(CloneHandle(c.id, c.sourceAppId))
+                if (engineResult.isFailure) {
+                    _message.value = engineResult.exceptionOrNull()?.message
                 }
             }
             cloneRepo.deleteClone(cloneId)
@@ -123,65 +71,28 @@ class CloneDetailsViewModel(val cloneId: String) : ViewModel() {
         }
     }
 
-    fun toggleFreeze() {
-        viewModelScope.launch {
-            val c = cloneRepo.getClone(cloneId) ?: return@launch
-            val freezing = c.status != CloneStatus.FROZEN
-            val engine = ServiceLocator.engine.value
-            val result = if (freezing) engine.freeze(c.sourceAppId) else engine.unfreeze(c.sourceAppId)
-            when (result) {
-                is EngineResult.Ok -> {
-                    cloneRepo.updateClone(c.copy(status = if (freezing) CloneStatus.FROZEN else CloneStatus.ACTIVE))
-                    activityRepo.addEvent(
-                        ActivityEvent(
-                            id = "ev-" + System.currentTimeMillis(),
-                            cloneId = c.id,
-                            cloneName = c.name,
-                            type = if (freezing) ActivityType.FROZEN else ActivityType.UNFROZEN,
-                            timestampMillis = System.currentTimeMillis(),
-                            detail = if (freezing) "Frozen from details" else "Unfrozen from details"
-                        )
-                    )
-                    _message.value = if (freezing) "Frozen" else "Unfrozen"
-                }
-                is EngineResult.Unavailable -> _message.value = result.message
-                is EngineResult.Failed -> _message.value = result.message
-            }
-        }
-    }
-
     fun openClone() {
         viewModelScope.launch {
             val c = cloneRepo.getClone(cloneId) ?: return@launch
-            when (val r = ServiceLocator.engine.value.open(c.sourceAppId)) {
-                is EngineResult.Ok -> {
+            when (val r = ServiceLocator.virtualEngine.launch(CloneHandle(c.id, c.sourceAppId))) {
+                is LaunchResult.Started -> {
+                    val now = System.currentTimeMillis()
+                    (cloneRepo as? RoomCloneRepository)?.markLaunched(c.id, now)
+                        ?: cloneRepo.updateClone(c.copy(lastLaunchedMillis = now))
                     activityRepo.addEvent(
                         ActivityEvent(
-                            id = "ev-" + System.currentTimeMillis(),
+                            id = "ev-" + now,
                             cloneId = c.id,
                             cloneName = c.name,
                             type = ActivityType.LAUNCHED,
-                            timestampMillis = System.currentTimeMillis(),
-                            detail = "Launch requested in isolated space (work profile)"
+                            timestampMillis = now,
+                            detail = "Launched inside Kuro space"
                         )
                     )
-                    cloneRepo.updateClone(c.copy(lastLaunchedMillis = System.currentTimeMillis()))
                     _showOpened.value = true
                 }
-                is EngineResult.Unavailable -> {
-                    activityRepo.addEvent(
-                        ActivityEvent(
-                            id = "ev-" + System.currentTimeMillis(),
-                            cloneId = c.id,
-                            cloneName = c.name,
-                            type = ActivityType.LAUNCHED,
-                            timestampMillis = System.currentTimeMillis(),
-                            detail = "Launch requested (work profile not ready)"
-                        )
-                    )
-                    _message.value = r.message
-                }
-                is EngineResult.Failed -> _message.value = r.message
+                is LaunchResult.NotReady -> _message.value = r.message
+                is LaunchResult.Failed -> _message.value = r.message
             }
         }
     }

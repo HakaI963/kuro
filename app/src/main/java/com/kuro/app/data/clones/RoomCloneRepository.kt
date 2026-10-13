@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 class RoomCloneRepository(
     private val db: KuroDatabase,
     private val context: Context,
+    private val engineName: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) : CloneRepository {
 
@@ -56,14 +57,18 @@ class RoomCloneRepository(
     }
 
     override suspend fun addClone(clone: CloneProfile) = withContext(Dispatchers.IO) {
-        db.cloneDao().upsert(clone.toRecord())
+        db.cloneDao().upsert(clone.toRecord(engineName))
     }
 
     override suspend fun updateClone(clone: CloneProfile) = withContext(Dispatchers.IO) {
-        db.cloneDao().upsert(clone.toRecord())
+        db.cloneDao().upsert(clone.toRecord(engineName))
     }
 
     override suspend fun deleteClone(id: String) = withContext(Dispatchers.IO) {
         db.cloneDao().delete(id)
+    }
+
+    suspend fun markLaunched(id: String, timestamp: Long) = withContext(Dispatchers.IO) {
+        db.cloneDao().setLastLaunched(id, timestamp)
     }
 }

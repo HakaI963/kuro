@@ -1,8 +1,5 @@
 package com.kuro.app.ui.screens.settings
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,42 +10,27 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
-import com.kuro.app.domain.models.ProvisioningState
 import com.kuro.app.domain.models.ThemeMode
+import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.KuroCard
-import com.kuro.app.ui.components.KuroPrimaryButton
 import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.KuroSettingRow
 import com.kuro.app.ui.components.KuroSwitchRow
 
 @Composable
 fun SettingsScreen(
-    onOpenExplainer: () -> Unit,
     modifier: Modifier = Modifier,
     vm: SettingsViewModel = viewModel()
 ) {
     val s by vm.settings.collectAsState()
-    val provisioning by vm.provisioning.collectAsState()
-    val context = LocalContext.current
-
-    val provisionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        vm.onProvisionResult(result.resultCode == Activity.RESULT_OK)
-    }
-
-    LaunchedEffect(Unit) {
-        vm.refreshProvisioning(context)
-    }
+    val engineStatus by vm.engineStatus.collectAsState()
 
     LazyColumn(
         modifier = modifier
@@ -62,52 +44,26 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_section_engine), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             KuroCard(
-                title = stringResource(R.string.settings_engine_title),
-                subtitle = when (provisioning) {
-                    is ProvisioningState.Active -> stringResource(R.string.settings_engine_active_desc)
-                    is ProvisioningState.NotSetup -> stringResource(R.string.settings_engine_not_setup_desc)
-                    is ProvisioningState.ProfileExistsNotOwner ->
-                        "A work profile already exists but is owned by another app. Only one work profile is allowed per device."
-                    is ProvisioningState.Blocked -> "Setup blocked. See details in the explainer."
-                    is ProvisioningState.Checking -> stringResource(R.string.state_loading)
-                }
+                title = stringResource(R.string.settings_engine_name),
+                subtitle = "${stringResource(R.string.settings_engine_version)} • ${stringResource(R.string.settings_engine_range)}"
             ) {
-                Text(
-                    text = when (provisioning) {
-                        is ProvisioningState.Active -> stringResource(R.string.settings_engine_active)
-                        is ProvisioningState.NotSetup -> stringResource(R.string.settings_engine_not_setup)
-                        else -> stringResource(R.string.settings_engine_blocked)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                if (provisioning !is ProvisioningState.Active) {
-                    KuroPrimaryButton(
-                        label = stringResource(R.string.settings_engine_setup),
-                        onClick = {
-                            val intent = vm.provisionIntent(context)
-                            if (intent != null) {
-                                try {
-                                    provisionLauncher.launch(intent)
-                                } catch (_: Exception) {
-                                    vm.refreshProvisioning(context)
-                                }
-                            } else {
-                                vm.refreshProvisioning(context)
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                val (label, detail) = when (val st = engineStatus) {
+                    is EngineStatus.Ready -> stringResource(R.string.settings_engine_status_ready) to null
+                    is EngineStatus.Uninitialized -> stringResource(R.string.settings_engine_status_uninitialized) to null
+                    is EngineStatus.Incompatible ->
+                        stringResource(R.string.settings_engine_status_incompatible) to
+                            "Engine not compatible with Android ${st.androidVersion} on this device"
+                    is EngineStatus.Error -> stringResource(R.string.settings_engine_status_error) to st.message
                 }
+                Text(text = label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                if (detail != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
                 KuroSecondaryButton(
-                    label = stringResource(R.string.settings_engine_learn),
-                    onClick = onOpenExplainer
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                KuroSecondaryButton(
-                    label = stringResource(R.string.settings_engine_refresh),
-                    onClick = { vm.refreshProvisioning(context) }
+                    label = stringResource(R.string.settings_engine_retry),
+                    onClick = vm::retryEngineInit
                 )
             }
         }
@@ -160,40 +116,6 @@ fun SettingsScreen(
                     checked = s.defaultToLibrary,
                     onCheckedChange = vm::setDefaultToLibrary
                 )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                KuroSwitchRow(
-                    title = stringResource(R.string.settings_auto_freeze),
-                    description = stringResource(R.string.settings_auto_freeze_desc),
-                    checked = s.autoFreezeIdle,
-                    onCheckedChange = vm::setAutoFreeze
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                KuroSwitchRow(
-                    title = stringResource(R.string.settings_hidden_visibility),
-                    description = stringResource(R.string.settings_hidden_visibility_desc),
-                    checked = s.showHiddenClones,
-                    onCheckedChange = vm::setShowHidden
-                )
-            }
-        }
-
-        item {
-            Text(text = stringResource(R.string.settings_section_security), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            KuroCard {
-                KuroSwitchRow(
-                    title = stringResource(R.string.settings_app_lock),
-                    description = stringResource(R.string.settings_app_lock_desc),
-                    checked = s.appLockEnabled,
-                    onCheckedChange = vm::setAppLock
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                KuroSwitchRow(
-                    title = stringResource(R.string.settings_biometric),
-                    description = stringResource(R.string.settings_biometric_desc),
-                    checked = s.biometricUnlock,
-                    onCheckedChange = vm::setBiometric
-                )
             }
         }
 
@@ -203,7 +125,7 @@ fun SettingsScreen(
             KuroCard {
                 KuroSettingRow(
                     title = stringResource(R.string.settings_version),
-                    description = "1.0.0-step2 (2)"
+                    description = "1.0.0-stage1 (3)"
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                 KuroSettingRow(
@@ -218,36 +140,5 @@ fun SettingsScreen(
             }
         }
         item { Spacer(modifier = Modifier.height(90.dp)) }
-    }
-}
-
-@Composable
-fun EngineExplainerScreen(modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item { Spacer(modifier = Modifier.height(8.dp)) }
-        item {
-            Text(text = stringResource(R.string.engine_explainer_title), style = MaterialTheme.typography.headlineSmall)
-        }
-        item {
-            KuroCard {
-                Text(text = stringResource(R.string.engine_explainer_body1), style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        item {
-            KuroCard {
-                Text(text = stringResource(R.string.engine_explainer_body2), style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        item {
-            Text(text = stringResource(R.string.engine_explainer_limits_title), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            KuroCard {
-                Text(text = stringResource(R.string.engine_explainer_limits_body), style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 }

@@ -19,9 +19,6 @@ import com.kuro.app.ui.theme.KuroPalette
 fun StatusBadge(status: CloneStatus, modifier: Modifier = Modifier) {
     val (label, color) = when (status) {
         CloneStatus.ACTIVE -> stringResource(R.string.status_active) to KuroPalette.Success
-        CloneStatus.FROZEN -> stringResource(R.string.status_frozen) to KuroPalette.Tertiary
-        CloneStatus.PRIVATE -> stringResource(R.string.status_private) to KuroPalette.Secondary
-        CloneStatus.SYNCING -> stringResource(R.string.status_syncing) to KuroPalette.Warning
         CloneStatus.ERROR -> stringResource(R.string.status_error) to KuroPalette.Error
     }
     Box(

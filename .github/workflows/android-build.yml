@@ -17,15 +17,26 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Install Android platform and build tools
+      - name: Install Android platform, build tools, NDK and CMake
         run: |
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
           ls "$ANDROID_SDK_ROOT/cmdline-tools/" || true
           which sdkmanager || ls "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/" || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;27.0.12077973" "cmake;3.22.1"
           yes | sdkmanager --licenses || true
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> "$GITHUB_ENV"
+          "$ANDROID_SDK_ROOT/ndk/27.0.12077973/ndk-build" --version || true
+          cmake --version || true
+
+      - name: Cache NDK and CMake
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk
+            /usr/local/lib/android/sdk/cmake
+          key: android-ndk-cmake-27.0.12077973-3.22.1
 
       - name: Install Gradle 8.10.2
         run: |
@@ -37,11 +48,17 @@ jobs:
       - name: Run unit tests
         run: gradle testDebugUnitTest --stacktrace
 
-      - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+      - name: Build stub and virtual debug APKs
+        run: gradle assembleStubDebug assembleVirtualDebug --stacktrace
 
-      - name: Upload debug APK
+      - name: Upload stub debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: kuro-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: kuro-stub-debug-apk
+          path: app/build/outputs/apk/stub/debug/*.apk
+
+      - name: Upload virtual debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuro-virtual-debug-apk
+          path: app/build/outputs/apk/virtual/debug/*.apk

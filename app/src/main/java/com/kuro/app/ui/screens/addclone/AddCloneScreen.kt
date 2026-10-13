@@ -21,36 +21,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
-import com.kuro.app.domain.models.IsolationMode
-import com.kuro.app.domain.models.ProvisioningState
-import com.kuro.app.engine.ProvisioningManager
+import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.AppSourceCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroPrimaryButton
 import com.kuro.app.ui.components.KuroSearchBar
 import com.kuro.app.ui.components.KuroSecondaryButton
-import com.kuro.app.ui.components.KuroSwitchRow
 import com.kuro.app.ui.components.ProgressPanel
 import com.kuro.app.ui.components.ProgressStep
 
@@ -60,17 +53,10 @@ private val labelColors = listOf(0xFF7C6CFF, 0xFF49D6C2, 0xFF5DB2FF, 0xFF3DDC97,
 fun AddCloneScreen(
     onDone: () -> Unit,
     onOpenClone: (String) -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     vm: AddCloneViewModel = viewModel()
 ) {
     val state by vm.ui.collectAsState()
-    val context = LocalContext.current
-
-    // Keep provisioning state in sync with the device. Runs on device only; CI compile is unaffected.
-    LaunchedEffect(Unit) {
-        vm.refreshProvisioningWith(ProvisioningManager.currentState(context))
-    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         StepIndicator(step = state.step)
@@ -81,19 +67,12 @@ fun AddCloneScreen(
                 onQuery = vm::setQuery,
                 onSelect = vm::selectApp,
                 onRefresh = vm::refreshApps,
-                onContinue = { vm.goToOptions() },
-                provisioning = state.provisioning,
-                onOpenSettings = onOpenSettings
+                onContinue = { vm.goToOptions() }
             )
             AddCloneStep.OPTIONS -> OptionsStep(
                 state = state,
                 onName = vm::setName,
                 onColor = vm::setColor,
-                onMode = vm::setMode,
-                onNotif = vm::setNotifications,
-                onSeparate = vm::setSeparateData,
-                onHidden = vm::setHidden,
-                onBiometric = vm::setBiometric,
                 onBack = vm::backToSource,
                 onCreate = vm::startCreation
             )
@@ -153,25 +132,15 @@ private fun SourceStep(
     onQuery: (String) -> Unit,
     onSelect: (String) -> Unit,
     onRefresh: () -> Unit,
-    onContinue: () -> Unit,
-    provisioning: ProvisioningState,
-    onOpenSettings: () -> Unit
+    onContinue: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Text(text = stringResource(R.string.add_clone_source_title), style = MaterialTheme.typography.titleLarge)
         Text(text = stringResource(R.string.add_clone_source_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (provisioning !is ProvisioningState.Active) {
-            KuroCard(
-                title = stringResource(R.string.add_clone_setup_required_title),
-                subtitle = stringResource(R.string.add_clone_setup_required_body)
-            ) {
-                KuroPrimaryButton(
-                    label = stringResource(R.string.add_clone_setup_required_action),
-                    onClick = onOpenSettings
-                )
-            }
+        if (state.engineStatus !is EngineStatus.Ready) {
+            EngineNotReadyCard(status = state.engineStatus)
             Spacer(modifier = Modifier.height(12.dp))
         }
 
@@ -218,15 +187,24 @@ private fun SourceStep(
 }
 
 @Composable
+private fun EngineNotReadyCard(status: EngineStatus) {
+    val body = when (status) {
+        is EngineStatus.Incompatible ->
+            "Engine not compatible with Android ${status.androidVersion} on this device"
+        is EngineStatus.Error -> status.message
+        else -> stringResource(R.string.add_clone_engine_not_ready_body)
+    }
+    KuroCard(
+        title = stringResource(R.string.add_clone_engine_not_ready_title),
+        subtitle = body
+    ) { }
+}
+
+@Composable
 private fun OptionsStep(
     state: AddCloneUiState,
     onName: (String) -> Unit,
     onColor: (Long) -> Unit,
-    onMode: (IsolationMode) -> Unit,
-    onNotif: (Boolean) -> Unit,
-    onSeparate: (Boolean) -> Unit,
-    onHidden: (Boolean) -> Unit,
-    onBiometric: (Boolean) -> Unit,
     onBack: () -> Unit,
     onCreate: () -> Unit
 ) {
@@ -271,60 +249,8 @@ private fun OptionsStep(
             }
         }
         item {
-            Text(text = stringResource(R.string.add_clone_isolation_label), style = MaterialTheme.typography.labelLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        item {
-            ModeCard(
-                selected = state.isolationMode == IsolationMode.STANDARD,
-                title = stringResource(R.string.add_clone_mode_standard),
-                desc = stringResource(R.string.add_clone_mode_standard_desc),
-                onClick = { onMode(IsolationMode.STANDARD) }
-            )
-        }
-        item {
-            ModeCard(
-                selected = state.isolationMode == IsolationMode.PRIVATE,
-                title = stringResource(R.string.add_clone_mode_private),
-                desc = stringResource(R.string.add_clone_mode_private_desc),
-                onClick = { onMode(IsolationMode.PRIVATE) }
-            )
-        }
-        item {
-            ModeCard(
-                selected = state.isolationMode == IsolationMode.WORK,
-                title = stringResource(R.string.add_clone_mode_work),
-                desc = stringResource(R.string.add_clone_mode_work_desc),
-                onClick = { onMode(IsolationMode.WORK) }
-            )
-        }
-        item {
-            ModeCard(
-                selected = state.isolationMode == IsolationMode.EXPERIMENTAL,
-                title = stringResource(R.string.add_clone_mode_experimental),
-                desc = stringResource(R.string.add_clone_mode_experimental_desc),
-                onClick = { onMode(IsolationMode.EXPERIMENTAL) }
-            )
-        }
-        item {
-            Card(
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    KuroSwitchRow(title = stringResource(R.string.add_clone_toggle_notifications), description = stringResource(R.string.add_clone_toggle_notifications_desc), checked = state.notifications, onCheckedChange = onNotif)
-                    KuroSwitchRow(title = stringResource(R.string.add_clone_toggle_separate_data), description = stringResource(R.string.add_clone_toggle_separate_data_desc), checked = state.separateData, onCheckedChange = onSeparate)
-                    KuroSwitchRow(title = stringResource(R.string.add_clone_toggle_hidden), description = stringResource(R.string.add_clone_toggle_hidden_desc), checked = state.hidden, onCheckedChange = onHidden)
-                    KuroSwitchRow(title = stringResource(R.string.add_clone_toggle_biometric), description = stringResource(R.string.add_clone_toggle_biometric_desc), checked = state.biometric, onCheckedChange = onBiometric)
-                }
-            }
-        }
-        item {
-            if (state.provisioning !is ProvisioningState.Active) {
-                KuroCard(
-                    title = stringResource(R.string.add_clone_setup_required_title),
-                    subtitle = stringResource(R.string.add_clone_setup_required_body)
-                ) { }
+            if (state.engineStatus !is EngineStatus.Ready) {
+                EngineNotReadyCard(status = state.engineStatus)
                 Spacer(modifier = Modifier.height(8.dp))
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -340,35 +266,6 @@ private fun OptionsStep(
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
-        }
-    }
-}
-
-@Composable
-private fun ModeCard(selected: Boolean, title: String, desc: String, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = if (selected) 1.5.dp else 1.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                shape = MaterialTheme.shapes.medium
-            )
-            .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-            else MaterialTheme.colorScheme.surfaceContainer
-        )
-    ) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
-                Text(text = desc, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (selected) {
-                Icon(imageVector = Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
         }
     }
 }
@@ -390,9 +287,9 @@ private fun ProgressStepUi(
                     else stringResource(R.string.add_clone_creating_subtitle),
                     progress = state.progress,
                     steps = listOf(
-                        ProgressStep(stringResource(R.string.add_clone_step_prepare), done = state.progress > 0.33f, active = state.progress <= 0.33f),
-                        ProgressStep(stringResource(R.string.add_clone_step_isolate), done = state.progress > 0.66f, active = state.progress in 0.33f..0.66f),
-                        ProgressStep(stringResource(R.string.add_clone_step_finish), done = false, active = state.progress > 0.66f)
+                        ProgressStep(stringResource(R.string.add_clone_progress_copy), done = state.progress > 0.5f, active = state.progress <= 0.5f),
+                        ProgressStep(stringResource(R.string.add_clone_progress_verify), done = state.progress >= 1f, active = state.progress in 0.5f..0.99f),
+                        ProgressStep(stringResource(R.string.add_clone_progress_done), done = false, active = state.progress >= 1f)
                     )
                 )
                 Spacer(modifier = Modifier.height(16.dp))

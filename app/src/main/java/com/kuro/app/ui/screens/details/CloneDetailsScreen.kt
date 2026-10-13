@@ -17,11 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -43,10 +39,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
-import com.kuro.app.core.utils.formatBytes
 import com.kuro.app.core.utils.formatDate
 import com.kuro.app.core.utils.formatRelative
-import com.kuro.app.domain.models.CloneStatus
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroDialog
@@ -59,6 +53,8 @@ class DetailsVmFactory(private val id: String) : ViewModelProvider.Factory {
         return CloneDetailsViewModel(id) as T
     }
 }
+
+private const val RUNNING_WINDOW_MILLIS = 10 * 60 * 1_000L
 
 @Composable
 fun CloneDetailsScreen(
@@ -73,7 +69,6 @@ fun CloneDetailsScreen(
     val events by vm.relatedEvents.collectAsState()
     val showDelete by vm.showDelete.collectAsState()
     val showOpened by vm.showOpened.collectAsState()
-    val showSettings by vm.showSettings.collectAsState()
     val message by vm.message.collectAsState()
     val snackbar = remember { SnackbarHostState() }
 
@@ -95,8 +90,9 @@ fun CloneDetailsScreen(
         )
         return
     }
+    val running = c.lastLaunchedMillis?.let { System.currentTimeMillis() - it < RUNNING_WINDOW_MILLIS } == true
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { _ ->
         LazyColumn(
             modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -116,7 +112,17 @@ fun CloneDetailsScreen(
                         Text(text = c.name, style = MaterialTheme.typography.headlineSmall)
                         Text(text = c.sourceAppName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(6.dp))
-                        StatusBadge(status = c.status)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            StatusBadge(status = c.status)
+                            if (running) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.details_running),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -130,38 +136,9 @@ fun CloneDetailsScreen(
                         primary = true
                     )
                     ActionButton(
-                        label = if (c.status == CloneStatus.FROZEN) stringResource(R.string.details_unfreeze) else stringResource(R.string.details_freeze),
-                        icon = { Icon(Icons.Filled.Pause, contentDescription = null) },
-                        onClick = vm::toggleFreeze,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ActionButton(
-                        label = if (c.hiddenFromLauncher) stringResource(R.string.details_unhide) else stringResource(R.string.details_hide),
-                        icon = {
-                            Icon(
-                                if (c.hiddenFromLauncher) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                contentDescription = null
-                            )
-                        },
-                        onClick = { vm.setHidden(!c.hiddenFromLauncher) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ActionButton(
                         label = stringResource(R.string.details_delete),
                         icon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                         onClick = vm::askDelete,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ActionButton(
-                        label = stringResource(R.string.details_clone_settings),
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                        onClick = vm::openSettings,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -169,8 +146,7 @@ fun CloneDetailsScreen(
             item {
                 KuroCard(title = stringResource(R.string.details_overview)) {
                     DetailRow(label = stringResource(R.string.details_created), value = formatDate(c.createdAtMillis))
-                    DetailRow(label = stringResource(R.string.details_profile_type), value = c.isolationMode.name.lowercase().replaceFirstChar { it.uppercase() })
-                    DetailRow(label = stringResource(R.string.details_storage), value = formatBytes(c.storageBytes))
+                    DetailRow(label = stringResource(R.string.details_package), value = c.sourceAppId)
                     DetailRow(
                         label = stringResource(R.string.details_last_launched),
                         value = if (c.lastLaunchedMillis != null) formatRelative(c.lastLaunchedMillis) else "—"
@@ -217,36 +193,6 @@ fun CloneDetailsScreen(
             onConfirm = vm::dismissOpened,
             onDismiss = vm::dismissOpened
         )
-    }
-    if (showSettings) {
-        com.kuro.app.ui.components.KuroBottomSheet(onDismiss = vm::dismissSettings) {
-            Text(text = stringResource(R.string.details_quick_actions), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            com.kuro.app.ui.components.KuroSwitchRow(
-                title = stringResource(R.string.add_clone_toggle_notifications),
-                description = stringResource(R.string.add_clone_toggle_notifications_desc),
-                checked = c.notificationsEnabled,
-                onCheckedChange = vm::setNotifications
-            )
-            com.kuro.app.ui.components.KuroSwitchRow(
-                title = stringResource(R.string.add_clone_toggle_separate_data),
-                description = stringResource(R.string.add_clone_toggle_separate_data_desc),
-                checked = c.separateData,
-                onCheckedChange = vm::setSeparateData
-            )
-            com.kuro.app.ui.components.KuroSwitchRow(
-                title = stringResource(R.string.add_clone_toggle_hidden),
-                description = stringResource(R.string.add_clone_toggle_hidden_desc),
-                checked = c.hiddenFromLauncher,
-                onCheckedChange = vm::setHidden
-            )
-            com.kuro.app.ui.components.KuroSwitchRow(
-                title = stringResource(R.string.add_clone_toggle_biometric),
-                description = stringResource(R.string.add_clone_toggle_biometric_desc),
-                checked = c.biometricLock,
-                onCheckedChange = vm::setBiometric
-            )
-        }
     }
 }
 

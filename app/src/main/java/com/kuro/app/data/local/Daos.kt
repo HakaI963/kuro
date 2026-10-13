@@ -11,14 +11,17 @@ interface CloneDao {
     @Query("SELECT * FROM clones ORDER BY createdAt DESC")
     fun observeAll(): Flow<List<CloneRecord>>
 
-    @Query("SELECT * FROM clones WHERE packageName = :packageName LIMIT 1")
-    suspend fun get(packageName: String): CloneRecord?
+    @Query("SELECT * FROM clones WHERE cloneId = :cloneId LIMIT 1")
+    suspend fun get(cloneId: String): CloneRecord?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(record: CloneRecord)
 
-    @Query("DELETE FROM clones WHERE packageName = :packageName")
-    suspend fun delete(packageName: String)
+    @Query("UPDATE clones SET lastLaunched = :timestamp WHERE cloneId = :cloneId")
+    suspend fun setLastLaunched(cloneId: String, timestamp: Long)
+
+    @Query("DELETE FROM clones WHERE cloneId = :cloneId")
+    suspend fun delete(cloneId: String)
 }
 
 @Dao

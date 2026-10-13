@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,7 +34,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
-import com.kuro.app.core.utils.formatBytes
 import com.kuro.app.domain.models.CloneStatus
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
@@ -136,7 +134,11 @@ fun HomeScreen(
             }
 
             item {
-                val active = state.clones.filter { it.status == CloneStatus.ACTIVE || it.status == CloneStatus.SYNCING }
+                val windowMs = 10 * 60 * 1_000L
+                val now = System.currentTimeMillis()
+                val active = state.clones.filter {
+                    it.status == CloneStatus.ACTIVE && it.lastLaunchedMillis?.let { t -> now - t < windowMs } == true
+                }
                 KuroCard(
                     title = stringResource(R.string.home_active_now),
                     subtitle = if (active.isEmpty()) stringResource(R.string.home_empty_title) else "${active.size} ${stringResource(R.string.home_storage_profiles)}"
@@ -161,11 +163,6 @@ fun HomeScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Text(
-                                    text = formatBytes(c.storageBytes),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
                     }
@@ -173,14 +170,10 @@ fun HomeScreen(
             }
 
             item {
-                val total = state.clones.sumOf { it.storageBytes }
                 KuroCard(
                     title = stringResource(R.string.home_storage_title),
-                    subtitle = "${stringResource(R.string.home_storage_used)} • ${formatBytes(total)}"
+                    subtitle = "${stringResource(R.string.home_storage_used)} • ${state.clones.size} ${stringResource(R.string.home_storage_profiles)}"
                 ) {
-                    val frac = (total / 4_000_000_000f).coerceIn(0f, 1f)
-                    LinearProgressIndicator(progress = { frac }, modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
                             text = "${state.clones.size} ${stringResource(R.string.home_storage_profiles)}",

@@ -11,10 +11,8 @@ import com.kuro.app.domain.repositories.ActivityRepository
 import com.kuro.app.domain.repositories.CloneRepository
 import com.kuro.app.domain.repositories.InstalledAppRepository
 import com.kuro.app.domain.repositories.SettingsRepository
-import com.kuro.app.engine.CloneEngine
-import com.kuro.app.engine.ProvisioningManager
-import com.kuro.app.engine.UnavailableCloneEngine
-import com.kuro.app.engine.WorkProfileCloneEngine
+import com.kuro.app.engine.EngineProvider
+import com.kuro.engine.VirtualEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,53 +32,39 @@ object ServiceLocator {
         private set
     lateinit var database: KuroDatabase
         private set
+    lateinit var virtualEngine: VirtualEngine
+        private set
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private val _engine = MutableStateFlow<CloneEngine>(
-        UnavailableCloneEngine("Work profile not set up")
+    private val _engineStatus = MutableStateFlow<com.kuro.engine.EngineStatus>(
+        com.kuro.engine.EngineStatus.Uninitialized
     )
-    val engine: StateFlow<CloneEngine> = _engine.asStateFlow()
+    val engineStatus: StateFlow<com.kuro.engine.EngineStatus> = _engineStatus.asStateFlow()
 
     private var initialized = false
-    private var appContext: Context? = null
 
     fun init(context: Context) {
         if (initialized) return
         val app = context.applicationContext
-        appContext = app
         database = Room.databaseBuilder(app, KuroDatabase::class.java, "kuro.db")
             .fallbackToDestructiveMigration()
             .build()
         installedAppRepository = RealInstalledAppRepository(app)
-        cloneRepository = RoomCloneRepository(database, app)
+        cloneRepository = RoomCloneRepository(database, app, engineName = "blackbox-stage1")
         activityRepository = RoomActivityRepository(database)
         settingsRepository = InMemorySettingsRepository()
+        virtualEngine = EngineProvider.provide(app)
         initialized = true
-        refreshEngine()
-    }
-
-    fun refreshEngine() {
-        val ctx = appContext ?: return
         scope.launch(Dispatchers.IO) {
-            val state = ProvisioningManager.currentState(ctx)
-            _engine.value = when (state) {
-                is com.kuro.app.domain.models.ProvisioningState.Active ->
-                    WorkProfileCloneEngine(ctx)
-                is com.kuro.app.domain.models.ProvisioningState.NotSetup ->
-                    UnavailableCloneEngine("Work profile not set up. Open Settings to provision an isolated space (work profile).")
-                is com.kuro.app.domain.models.ProvisioningState.ProfileExistsNotOwner ->
-                    UnavailableCloneEngine("A work profile already exists but is owned by another app. Only one work profile is allowed per device.")
-                is com.kuro.app.domain.models.ProvisioningState.Blocked ->
-                    UnavailableCloneEngine("Work profile unavailable: ${state.reason}. See Settings for details.")
-                else ->
-                    UnavailableCloneEngine("Checking work profile status…")
-            }
+            virtualEngine.status.collect { _engineStatus.value = it }
+        }
+        scope.launch(Dispatchers.IO) {
+            _engineStatus.value = virtualEngine.init()
         }
     }
 
     fun initForPreview() {
         if (initialized) return
-        // Preview only: no Context available. Unit tests construct repositories directly.
     }
 }

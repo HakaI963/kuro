@@ -13,8 +13,18 @@ android {
         applicationId = "com.kuro.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.0-step2"
+        versionCode = 3
+        versionName = "1.0.0-stage1"
+    }
+
+    flavorDimensions += "engine"
+    productFlavors {
+        create("stub") {
+            dimension = "engine"
+        }
+        create("virtual") {
+            dimension = "engine"
+        }
     }
 
     buildTypes {
@@ -59,6 +69,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(project(":engine"))
+
+    "virtualImplementation"(project(":engine-blackbox"))
 
     ksp(libs.androidx.room.compiler)
 
@@ -74,4 +87,5 @@ dependencies {
 
     testImplementation(libs.junit.junit)
     testImplementation(libs.kotlinx.coroutines.core)
+    testImplementation(project(":engine"))
 }

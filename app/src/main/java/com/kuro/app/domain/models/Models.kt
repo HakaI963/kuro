@@ -1,10 +1,8 @@
 package com.kuro.app.domain.models
 
-enum class CloneStatus { ACTIVE, FROZEN, PRIVATE, SYNCING, ERROR }
+enum class CloneStatus { ACTIVE, ERROR }
 
-enum class IsolationMode { STANDARD, PRIVATE, WORK, EXPERIMENTAL }
-
-enum class ActivityType { CREATED, LAUNCHED, FROZEN, UNFROZEN, HIDDEN, UNHIDDEN, DELETED }
+enum class ActivityType { CREATED, LAUNCHED, DELETED }
 
 /**
  * Real installed app entry resolved via PackageManager.
@@ -26,9 +24,9 @@ data class InstalledApp(
 }
 
 /**
- * UI-facing clone profile. Persisted source of truth is CloneRecord (Room);
- * status/icon fields are enriched from DevicePolicyManager + PackageManager
- * at repository level.
+ * UI-facing clone profile. Persisted source of truth is CloneRecord (Room):
+ * cloneId, packageName, cloneName, colorTag, createdAt, engineName.
+ * Status and last-launched are enriched at repository level.
  */
 data class CloneProfile(
     val id: String,
@@ -36,14 +34,8 @@ data class CloneProfile(
     val sourceAppId: String,
     val sourceAppName: String,
     val status: CloneStatus,
-    val isolationMode: IsolationMode,
     val createdAtMillis: Long,
     val lastLaunchedMillis: Long?,
-    val storageBytes: Long,
-    val notificationsEnabled: Boolean,
-    val separateData: Boolean,
-    val hiddenFromLauncher: Boolean,
-    val biometricLock: Boolean,
     val labelColorArgb: Long,
     val iconLetter: String
 )
@@ -62,27 +54,7 @@ data class AppSettings(
     val dynamicColor: Boolean = true,
     val reduceMotion: Boolean = false,
     val defaultToLibrary: Boolean = false,
-    val autoFreezeIdle: Boolean = true,
-    val showHiddenClones: Boolean = true,
-    val appLockEnabled: Boolean = false,
-    val biometricUnlock: Boolean = false,
     val onboardingCompleted: Boolean = false
 )
 
 enum class ThemeMode { SYSTEM, DARK, LIGHT }
-
-/** Work-profile provisioning state machine. Pure logic, unit-tested. */
-sealed interface ProvisioningState {
-    data object Checking : ProvisioningState
-    data object NotSetup : ProvisioningState
-    data object ProfileExistsNotOwner : ProvisioningState
-    data object Active : ProvisioningState
-    data class Blocked(val reason: ProvisionReason) : ProvisioningState
-}
-
-enum class ProvisionReason {
-    USER_CANCELLED,
-    ALREADY_OWNED_BY_ANOTHER_APP,
-    POLICY_BLOCKED,
-    UNKNOWN
-}

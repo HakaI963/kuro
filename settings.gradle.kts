@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Kuro"
 include(":app")
+include(":engine")
+include(":engine-blackbox")

@@ -1,65 +1,53 @@
-# Kuro — Step 2: Real Work-Profile Engine Foundation
+# Kuro — Stage 1: In-App Virtual Engine
 
-Kuro is a modern app-cloner utility. Step 2 removes all Step 1 placeholder data and
-replaces the mock layer with a real, legitimate clone engine based on Android managed
-work profiles (same mechanism as Island and Shelter).
+Kuro runs clones inside its own virtual space. Cloning is Stage 1 of a larger
+product plan; this step is intentionally minimal and extensible.
 
-> Clones are real installs inside the isolated space (work profile). No virtualization,
-> hooks, reflection, Xposed, or root. See `docs/STEP_2_ENGINE.md`.
+> No work profiles, no device admin, no root, no Xposed/LSPosed, no custom hooking
+> framework, no `QUERY_ALL_PACKAGES`. See `docs/ENGINE.md`.
 
-## What Step 2 includes
+## What Stage 1 includes
 
-- Zero placeholder clones or fake apps. Fresh installs show polished empty states.
-- Real installed-app list via `PackageManager.queryIntentActivities` (LAUNCHER) + `<queries>` block.
-  No `QUERY_ALL_PACKAGES`. Icons cached in an in-memory LRU cache, loaded off-main with Flow + IO.
-- Work-profile provisioning: `KuroDeviceAdminReceiver` + `ProvisioningManager`
-  (NotSetup / ProfileExistsNotOwner / Active / Blocked with clear UI states).
-- `CloneEngine` with `WorkProfileCloneEngine` (PackageInstaller sessions, `setPackagesSuspended`,
-  `setApplicationHidden`, badged labels) and `UnavailableCloneEngine` safe no-op.
-- Minimal strongly-typed cross-profile bridge (`CrossProfileBridge` + `CloneCommandReceiver`).
-- Room persistence: `CloneRecord`, `ActivityRecord`, DAOs, `KuroDatabase`. All in-memory state replaced.
-- Real install progress from `PackageInstaller` byte-copy + result broadcast. No fake timers.
-- UI wiring: Home/Library/Activity from Room; Add Clone with real search + gated Create;
-  Details with real Open/Freeze/Hide/Delete + snackbars; Settings engine status card + explainer.
-- Unit tests for provisioning state machine and record mapping.
-- Docs: `docs/STEP_2_ENGINE.md` (limitations + manual + adb steps).
+- Zero mocks, zero placeholders. Fresh installs show polished empty states.
+- Real installed-app list via `PackageManager.queryIntentActivities` (LAUNCHER) +
+  `<queries>` block. Icons cached in an in-memory LRU cache, loaded off-main.
+- `:engine` module with the future-proof `VirtualEngine` interface
+  (`status`, `init`, `installIntoSpace`, `launch`, `listSpacePackages`, `remove`;
+  `CloneSource = InstalledApp | ApkFile`, APK-file staged for later).
+  UI talks only to this interface. `NoOpEngine` keeps the app crash-free.
+- `:engine-blackbox` thin Stage 1 adapter (BlackBox-style, Apache-2.0 upstream —
+  nothing copied): file-backed space at `filesDir/virtualspace/<cloneId>`,
+  real byte-copy progress, `getPackageArchiveInfo` launch validation, delete.
+- Room metadata `CloneRecord(cloneId, packageName, cloneName, colorTag, createdAt,
+  engineName)` + activity log.
+- UI in Step 1 design language: Home (real clones, running state), New clone
+  (Source = real apps; Options = name + color only; Create = real engine progress),
+  tap = launch, long-press = Delete only, Settings engine card (name, version,
+  supported range, status).
+- Flavors: `stub` (NoOp, always builds) + `virtual` (Stage 1 adapter).
+- Unit tests for engine gating and record mapping.
 
 ## Tech
 
-- Kotlin 2.0.21, AGP 8.7.3, Gradle 8.10.2, Java 17
+- Kotlin 2.0.21, AGP 8.7.3, Gradle 8.10.2, Java 17, NDK/CMake (workflow-cached)
 - compileSdk 35, targetSdk 35, minSdk 26
 - Jetpack Compose (BOM 2024.11.00), Material 3, Navigation Compose 2.8.4
 - Room 2.6.1 (KSP 2.0.21-1.0.25), Coroutines 1.8.1, JUnit 4
-- No Firebase, ads, analytics, backend. No `QUERY_ALL_PACKAGES`.
 
-## How to build (local)
+## How to build
 
 ```bash
-# Requires Android SDK + JDK 17
-gradle assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+# Requires Android SDK + JDK 17 (NDK used only by future native backends)
+gradle assembleStubDebug assembleVirtualDebug
 gradle testDebugUnitTest
 ```
 
-CI installs Gradle directly (no wrapper binary in repo).
-
 ## How to run workflow
 
-1. Open GitHub → Actions → **Android Build** → **Run workflow**
-2. Workflow (`/.github/workflows/android-build.yml`):
-   - `ubuntu-latest`, checkout, JDK 17 (Temurin), Android SDK setup
-   - Installs platform 35 + build-tools 35.0.0
-   - Installs Gradle 8.10.2 directly
-   - Runs `gradle assembleDebug`
-   - Uploads `kuro-debug-apk` artifact (compile only; engine needs a device)
-
-## Current scope
-
-- Real engine foundation, Room-backed, work-profile gated. Unavailable features show
-  explicit disabled / setup-required states. Never fakes success or data.
+GitHub → Actions → **Android Build** → **Run workflow**. It installs the NDK/CMake
+(cached), runs unit tests, builds both flavors, and uploads both APKs.
 
 ## Roadmap
 
-- Step 3: harden cross-profile transport (`setCrossProfilePackages` / provider),
-  badged icons in lists, profile-pause handling, backup rules.
-- Security review, accessibility audit, performance pass.
+See `docs/ROADMAP.md`. Stage 1 is done; later stages are placeholders.
+Engine swap notes live in `docs/ENGINE.md`.
