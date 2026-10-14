@@ -242,7 +242,8 @@ fun TerminalScreen(
             ) {
                 sessions.forEachIndexed { i, managed ->
                     val selected = i == activeIndex
-                    val icon = managed.iconRes ?: R.drawable.ic_terminal                    Box(
+                    val icon = managed.iconRes ?: R.drawable.ic_terminal
+                    Box(
                         modifier = Modifier.size(40.dp),
                         contentAlignment = Alignment.Center
                     ) {
