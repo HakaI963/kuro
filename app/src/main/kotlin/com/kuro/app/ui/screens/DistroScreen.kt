@@ -32,7 +32,7 @@ import dev.chrisbanes.haze.HazeState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -157,11 +157,11 @@ fun DistroScreen(
                 }
             }
         } else {
-            items(
+            itemsIndexed(
                 items = visibleDistros,
-                key = { it.id },
-                contentType = { if (it.comingSoon) "soon" else "full" }
-            ) { distro ->
+                key = { _, item -> item.id },
+                contentType = { _, item -> if (item.comingSoon) "soon" else "full" }
+            ) { index, distro ->
                 if (distro.comingSoon) {
                     com.kuro.app.ui.components.CompactDistroCard(
                         distro = distro
@@ -181,7 +181,8 @@ fun DistroScreen(
                         },
                         onUninstall = {},
                         onNavigateToSettings = {},
-                        onNavigateToStart = {}
+                        onNavigateToStart = {},
+                        entranceIndex = index
                     )
                 }
             }

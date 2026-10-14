@@ -3,8 +3,11 @@ package com.kuro.app
 import android.Manifest
 import android.content.pm.ActivityInfo
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import com.kuro.app.core.gpu.DriverRelease
 import com.kuro.app.core.gpu.GpuDriverInstaller
@@ -15,7 +18,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -29,8 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -763,7 +763,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     when (tab) {
                         BottomTab.HOME -> {
-                            com.kuro.app.ui.screens.KuroSystemTab(
+                            com.kuro.app.ui.screens.KuroHomeScreen(
                                 onOpenTerminalTab = { showSessions = true },
                                 onOpenDistroCatalog = {
                                     currentTab = BottomTab.TERMINAL
@@ -773,7 +773,12 @@ class MainActivity : ComponentActivity() {
                                 onOpenSettingsTab = { currentTab = BottomTab.SETTINGS },
                                 onNavigateToInstall = onNavigateToInstall,
                                 onOpenTerminal = onOpenTerminal,
-                                engineReady = when (initState) { com.kuro.app.KuroInit.InitState.READY -> true; com.kuro.app.KuroInit.InitState.FAILED -> false; else -> null }
+                                engineReady = when (initState) { com.kuro.app.KuroInit.InitState.READY -> true; com.kuro.app.KuroInit.InitState.FAILED -> false; else -> null },
+                                onThemeChanged = { mode ->
+                                    currentThemeMode = mode
+                                    com.kuro.app.core.utils.ThemePreferences(this@MainActivity).setThemeMode(mode)
+                                },
+                                currentTheme = currentThemeMode
                             )
                         }
                         BottomTab.TERMINAL -> {
@@ -863,11 +868,20 @@ class MainActivity : ComponentActivity() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_logo),
-                                    contentDescription = "Logo",
-                                    modifier = Modifier.size(32.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(androidx.compose.ui.graphics.Color(0xFF6366F1)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Rounded.DevicesFold,
+                                        contentDescription = "Kuro",
+                                        tint = androidx.compose.ui.graphics.Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Kuro",
@@ -878,15 +892,6 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (!displayLive && com.kuro.app.core.terminal.TerminalLauncher.isBootstrapExtracted(LocalContext.current)) {
-                                   Text(
-                                       text = "Host: embedded",
-                                       style = MaterialTheme.typography.labelSmall,
-                                       color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                                       modifier = Modifier.padding(end = 4.dp)
-                                   )
-                                }
-
                                 IconButton(onClick = onOpenDisplay) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
@@ -925,17 +930,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 
-                // Show appropriate screen based on state (Step 7: slide + fade).
+                // Show appropriate screen based on state (fade + slide up).
                 AnimatedContent(
                     targetState = currentScreen,
                     transitionSpec = {
-                        slideInHorizontally(
-                            animationSpec = androidx.compose.animation.core.tween(200),
-                            initialOffsetX = { fullWidth -> fullWidth / 4 }
+                        slideInVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing),
+                            initialOffsetY = { it / 4 }
                         ) + fadeIn(
-                            animationSpec = androidx.compose.animation.core.tween(200)
-                        ) togetherWith androidx.compose.animation.fadeOut(
-                            animationSpec = androidx.compose.animation.core.tween(200)
+                            animationSpec = tween(300)
+                        ) togetherWith fadeOut(
+                            animationSpec = tween(300)
                         )
                     },
                     label = "kuro-screen-switch"
@@ -982,17 +987,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         ) {
-                            // Step 7: smooth tab glide — slide + fade, opaque content.
+                            // Tab switch: quick fade, opaque content.
                             AnimatedContent(
                                 targetState = currentTab,
                                 transitionSpec = {
-                                    slideInHorizontally(
-                                        animationSpec = androidx.compose.animation.core.tween(200),
-                                        initialOffsetX = { fullWidth -> fullWidth / 4 }
-                                    ) + fadeIn(
-                                        animationSpec = androidx.compose.animation.core.tween(200)
-                                    ) togetherWith androidx.compose.animation.fadeOut(
-                                        animationSpec = androidx.compose.animation.core.tween(200)
+                                    fadeIn(
+                                        animationSpec = tween(150)
+                                    ) togetherWith fadeOut(
+                                        animationSpec = tween(150)
                                     )
                                 },
                                 label = "kuro-tab-switch"

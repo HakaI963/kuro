@@ -12,6 +12,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.DevicesFold
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
@@ -22,7 +24,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +49,6 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -65,9 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -320,14 +318,14 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF1A1A1A)),
+                            .background(Color(0xFF6366F1)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_logo),
+                        Icon(
+                            imageVector = Icons.Rounded.DevicesFold,
                             contentDescription = "Kuro Logo",
-                            modifier = Modifier.size(48.dp),
-                            contentScale = ContentScale.Fit
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                     Spacer(Modifier.height(12.dp))
