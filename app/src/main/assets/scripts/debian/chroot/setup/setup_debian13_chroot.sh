@@ -5,7 +5,7 @@
 # Based on LinuxDroidMaster/Termux-Desktops Guide
 
 # Global Variables
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 USERNAME="flux"
 
 # Function to show progress message
@@ -223,7 +223,7 @@ mkdir -p \$DEBIANPATH/tmp
     success "Debian Environment Configured!"
 
     # --- LAUNCH SCRIPT GENERATION ---
-    LAUNCH_SCRIPT="/data/local/tmp/start_debian13.sh"
+    LAUNCH_SCRIPT="/data/local/kuro/start_debian13.sh"
     progress "Creating launch script at $LAUNCH_SCRIPT..."
     
     # Matches the guide's 'start_debian.sh' content
@@ -231,7 +231,7 @@ mkdir -p \$DEBIANPATH/tmp
 #!/bin/sh
 
 # Path of DEBIAN rootfs
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -286,7 +286,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -299,9 +299,9 @@ if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ] &&
      "$FLUX_BB" --list >/dev/null 2>&1; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -320,7 +320,7 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 
@@ -332,7 +332,7 @@ fi
          progress "Using Root Busybox: $BB"
     fi
 
-    DEBIANPATH="/data/local/tmp/chrootDebian13"
+    DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
     
     # --- CHECK EXISTING INSTALLATION ---
     # Check for marker file indicating SUCCESSFUL configuration
@@ -345,12 +345,12 @@ fi
         # Just creating the launch scripts again to be safe.
         
         # --- RE-GENERATE LAUNCH SCRIPT (Core) ---
-        LAUNCH_SCRIPT="/data/local/tmp/start_debian13.sh"
+        LAUNCH_SCRIPT="/data/local/kuro/start_debian13.sh"
         cat <<EOF > "$LAUNCH_SCRIPT"
 #!/bin/sh
 
 # Path of DEBIAN rootfs
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -411,7 +411,7 @@ EOF
         configure_debian_chroot
 
         # --- LAUNCH SCRIPT GENERATION ---
-        LAUNCH_SCRIPT="/data/local/tmp/start_debian13.sh"
+        LAUNCH_SCRIPT="/data/local/kuro/start_debian13.sh"
         progress "Creating launch script at $LAUNCH_SCRIPT..."
         
         # Matches the guide's 'start_debian.sh' content
@@ -419,7 +419,7 @@ EOF
 #!/bin/sh
 
 # Path of DEBIAN rootfs
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -456,7 +456,7 @@ EOF
     fi
 
     # --- GENERATE GUI LAUNCHER (For X11 from Root) ---
-    GUI_LAUNCHER="/data/local/tmp/start_debian13_gui.sh"
+    GUI_LAUNCHER="/data/local/kuro/start_debian13_gui.sh"
     progress "Creating X11 GUI Launcher at $GUI_LAUNCHER..."
     
     TARGET_TERMUX_PREFIX="/data/data/com.termux/files/usr"
@@ -464,10 +464,10 @@ EOF
     cat <<EOFGUI > "$GUI_LAUNCHER"
 #!/bin/sh
 # HyperOS-Compatible X11 Launcher with Debug Logging
-# FluxLinux - Debian 13 Chroot GUI Starter
+# Kuro - Debian 13 Chroot GUI Starter
 
 echo "========================================"
-echo "FluxLinux: Starting Debian 13 GUI"
+echo "Kuro: Starting Debian 13 GUI"
 echo "HyperOS Compatibility Mode"
 echo "========================================"
 
@@ -522,7 +522,7 @@ am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1
 
 # 5. Mount /tmp to chroot
 echo "[5/7] Mounting /tmp to chroot..."
-\$BB mount --bind \$TARGET_TERMUX_PREFIX/tmp /data/local/tmp/chrootDebian13/tmp 2>/dev/null
+\$BB mount --bind \$TARGET_TERMUX_PREFIX/tmp /data/local/kuro/chroot/debian13_chroot/rootfs/tmp 2>/dev/null
 chmod -R 1777 \$TARGET_TERMUX_PREFIX/tmp
 
 # 6. Start X server with debug logging
@@ -576,18 +576,18 @@ if pgrep -f virgl_test_server >/dev/null; then
     ls -la \$TARGET_TERMUX_PREFIX/tmp/.virgl_test 2>/dev/null || echo "[WARN] VirGL socket not visible"
 else
     echo "[!] VirGL not running - GPU acceleration will NOT work"
-    echo "[!] Please restart the GUI from FluxLinux app"
+    echo "[!] Please restart the GUI from Kuro app"
 fi
 
 echo ""
 echo "Entering chroot..."
-sh /data/local/tmp/start_debian13.sh
+sh /data/local/kuro/start_debian13.sh
 EOFGUI
     chmod +x "$GUI_LAUNCHER"
     success "GUI Launcher created: $GUI_LAUNCHER"
     
     # --- GENERATE GUI STOP SCRIPT ---
-    STOP_LAUNCHER="/data/local/tmp/stop_debian13_gui.sh"
+    STOP_LAUNCHER="/data/local/kuro/stop_debian13_gui.sh"
     progress "Creating GUI Stop Script at $STOP_LAUNCHER..."
     
     cat <<EOF > "$STOP_LAUNCHER"
@@ -595,10 +595,10 @@ EOFGUI
 # stop_debian13_gui.sh - Stop Debian 13 Chroot GUI
 
 echo "========================================"
-echo "FluxLinux: Stopping Debian 13 Chroot GUI"
+echo "Kuro: Stopping Debian 13 Chroot GUI"
 echo "========================================"
 
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 TARGET_TERMUX_PREFIX="/data/data/com.termux/files/usr"
 BB="$BB"
 
@@ -637,14 +637,14 @@ EOF
     success "GUI Stop Script created: $STOP_LAUNCHER"
     
     # --- GENERATE ROOT COMMAND RUNNER (For App Scripts) ---
-    ROOT_RUNNER="/data/local/tmp/run_debian13_root.sh"
+    ROOT_RUNNER="/data/local/kuro/run_debian13_root.sh"
     progress "Creating Root Runner at $ROOT_RUNNER..."
     
     cat <<EOF > "$ROOT_RUNNER"
 #!/bin/sh
 # Wrapper to run a command inside Chroot as Root (with mounts)
 
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -674,7 +674,7 @@ EOF
     success "Root runner created."
 
     # --- GENERATE CLI LAUNCHER (Shell Only) ---
-    CLI_SCRIPT="/data/local/tmp/enter_debian13.sh"
+    CLI_SCRIPT="/data/local/kuro/enter_debian13.sh"
     progress "Creating CLI Launcher at $CLI_SCRIPT..."
     
     cat <<EOF > "$CLI_SCRIPT"
@@ -682,7 +682,7 @@ EOF
 # CLI Entry for Debian 13 Chroot
 
 # Path of DEBIAN rootfs
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -714,7 +714,7 @@ EOF
     success "CLI Launcher created: $CLI_SCRIPT"
     
     # --- GENERATE ROOT CLI LAUNCHER (Shell as Root) ---
-    ROOT_CLI_SCRIPT="/data/local/tmp/enter_debian13_root.sh"
+    ROOT_CLI_SCRIPT="/data/local/kuro/enter_debian13_root.sh"
     progress "Creating Root CLI Launcher at $ROOT_CLI_SCRIPT..."
     
     cat <<EOF > "$ROOT_CLI_SCRIPT"
@@ -722,7 +722,7 @@ EOF
 # Root CLI Entry for Debian 13 Chroot
 
 # Path of DEBIAN rootfs
-DEBIANPATH="/data/local/tmp/chrootDebian13"
+DEBIANPATH="/data/local/kuro/chroot/debian13_chroot/rootfs"
 BB="$BB"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -751,11 +751,11 @@ EOF
     chmod +x "$ROOT_CLI_SCRIPT"
     success "Root CLI Launcher created: $ROOT_CLI_SCRIPT"
     
-    echo "FluxLinux: Chroot Setup Complete!"
+    echo "Kuro: Chroot Setup Complete!"
     
     # --- NOTIFY APP ---
-    progress "Notifying FluxLinux App..."
-    am start -a android.intent.action.VIEW -d "fluxlinux://callback?result=success&name=distro_install_debian13_chroot" >/dev/null 2>&1
+    progress "Notifying Kuro App..."
+    am start -a android.intent.action.VIEW -d "kuro://callback?result=success&name=distro_install_debian13_chroot" >/dev/null 2>&1
 }
 
 main

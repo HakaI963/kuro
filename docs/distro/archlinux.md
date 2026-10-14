@@ -1,8 +1,8 @@
-# Arch Linux ARM in FluxLinux
+# Arch Linux ARM in Kuro
 
 | | |
 |---|---|
-| Cards | `archlinux` (proot) · `archlinux_chroot` (`/data/local/tmp/chrootArch`) |
+| Cards | `archlinux` (proot) · `archlinux_chroot` (`/data/local/kuro/chroot/archlinux_chroot/rootfs`) |
 | Rootfs | `archlinux_arm_rootfs.tar.xz` (slim ALARM userspace) |
 | Package manager | `pacman` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

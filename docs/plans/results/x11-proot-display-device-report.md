@@ -1,7 +1,7 @@
 # Device report — Proot X11 display + VIEW LOGS
 
 **Date:** 2026-08-10 / 2026-08-11  
-**Package:** `com.ivarna.fluxlinux`  
+**Package:** `com.kuro.app`  
 **APK:** `app/build/outputs/apk/ivarna/release/app-ivarna-release.apk`  
 **Version:** `1.8.0` (`versionCode=10`)  
 **Device:** `Y5WWBMJVOZSK4HU8` (adb)  
@@ -66,12 +66,12 @@ File: [`app/src/main/kotlin/com/ivarna/fluxlinux/core/desktop/DesktopLauncher.kt
 ```
 I DesktopLauncher: startGui method=proot script=.../files/home/start_gui.sh
 === START method=proot script=start_gui.sh ===
-FluxLinux: VirGL unavailable; using software rendering
-FluxLinux: Starting termux-x11 server...
-FluxLinux: X server PID=5328
-FluxLinux: Launching X11 display activity...
-FluxLinux: startxfce4=READY
-FluxLinux(guest): VirGL socket missing — llvmpipe fallback
+Kuro: VirGL unavailable; using software rendering
+Kuro: Starting termux-x11 server...
+Kuro: X server PID=5328
+Kuro: Launching X11 display activity...
+Kuro: startxfce4=READY
+Kuro(guest): VirGL socket missing — llvmpipe fallback
 ...
 I DesktopLauncher: stopGui method=proot script=.../files/home/stop_gui.sh
 === STOP method=proot script=stop_gui.sh ===

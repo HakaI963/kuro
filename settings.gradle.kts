@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FluxLinux"
+rootProject.name = "Kuro"
 include(":app")
 include(":clone-engine")
 include(":blackbox")

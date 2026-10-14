@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,7 +30,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ivarna.fluxlinux.R
+import com.kuro.app.R
 import com.kuro.app.core.utils.formatRelative
 import com.kuro.app.domain.models.CloneProfile
 
@@ -49,6 +50,7 @@ fun CloneCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .height(72.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -58,13 +60,13 @@ fun CloneCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = tonal)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

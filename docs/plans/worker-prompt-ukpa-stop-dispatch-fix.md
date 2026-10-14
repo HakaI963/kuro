@@ -5,10 +5,10 @@ Parent contract: [`docs/plan/ubuntu-kali-parrot-arch.md`](../plan/ubuntu-kali-pa
 Review that found this: `/tmp/grok-1000/grok-review-fd39cc6f.md` (also summarized below).
 
 ```
-You are the FluxLinux UKPA follow-up worker.
+You are the Kuro UKPA follow-up worker.
 
 Repo:     /home/abhaybyte/repos/fluxlinux
-Package:  com.ivarna.fluxlinux
+Package:  com.kuro.app
 Flavor:   :app:assembleIvarnaRelease --no-daemon
 APK:      app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
 Install:  adb -s Y5WWBMJVOZSK4HU8 install -r <apk>
@@ -30,19 +30,19 @@ bug that made D5 look green:
     → case $1 in …
 
   start_gui_chroot.sh HAS:
-    ubuntu|ubuntu_chroot     → /data/local/tmp/chrootUbuntu  + start_guest_gui.sh
-    kali|kali_chroot         → /data/local/tmp/chrootKali    + start_guest_gui.sh
-    parrot|parrot_chroot     → /data/local/tmp/chrootParrot  + start_guest_gui.sh
-    archlinux|archlinux_chroot → /data/local/tmp/chrootArch  + start_guest_gui.sh
-    *                        → /data/local/tmp/chrootDebian13 + start_debian13_gui.sh
+    ubuntu|ubuntu_chroot     → /data/local/kuro/chroot/ubuntu_chroot/rootfs  + start_guest_gui.sh
+    kali|kali_chroot         → /data/local/kuro/chroot/kali_chroot/rootfs    + start_guest_gui.sh
+    parrot|parrot_chroot     → /data/local/kuro/chroot/parrot_chroot/rootfs  + start_guest_gui.sh
+    archlinux|archlinux_chroot → /data/local/kuro/chroot/archlinux_chroot/rootfs  + start_guest_gui.sh
+    *                        → /data/local/kuro/chroot/debian13_chroot/rootfs + start_debian13_gui.sh
 
   stop_gui_chroot.sh DOES NOT have those four arms.
   ubuntu_chroot / kali_chroot / parrot_chroot / archlinux_chroot hit *:
-    CHROOT_PATH=/data/local/tmp/chrootDebian13
+    CHROOT_PATH=/data/local/kuro/chroot/debian13_chroot/rootfs
     ROOT_STOP_NAME=stop_debian13_gui.sh
 
   That script chroots Debian and unmounts Debian binds if
-  /data/local/tmp/chrootDebian13 exists (it does — existing 8 guests stay
+  /data/local/kuro/chroot/debian13_chroot/rootfs exists (it does — existing 8 guests stay
   on this device). UKPA XFCE teardown is skipped. Home still flips to Start
   because StateManager.setGuiRunning is cleared BEFORE the script runs, and
   host `pkill termux-x11` can hide the miss.
@@ -51,7 +51,7 @@ Same-class miss (fix in this slice, do not leave it):
   uninstall_guest_chroot.sh allowlist (lines 22–30) has FVO+DCM paths only.
   UninstallSessionFactory runs it with FLUX_CHROOT from DistroInstallProfile.
   In-app uninstall of ubuntu/kali/parrot/archlinux chroot currently:
-    "Refusing to remove unexpected path: /data/local/tmp/chrootUbuntu"
+    "Refusing to remove unexpected path: /data/local/kuro/chroot/ubuntu_chroot/rootfs"
 
 ==============================================================================
 OUT OF SCOPE (hard)
@@ -109,19 +109,19 @@ A1. stop_gui_chroot.sh
 Mirror start_gui_chroot.sh. Insert BEFORE the `*)` arm (keep `*` = Debian 13):
 
   ubuntu|ubuntu_chroot)
-    CHROOT_PATH="${CHROOT_PATH:-/data/local/tmp/chrootUbuntu}"
+    CHROOT_PATH="${CHROOT_PATH:-/data/local/kuro/chroot/ubuntu_chroot/rootfs}"
     ROOT_STOP_NAME="${ROOT_STOP_NAME:-stop_guest_gui.sh}"
     ;;
   kali|kali_chroot)
-    CHROOT_PATH="${CHROOT_PATH:-/data/local/tmp/chrootKali}"
+    CHROOT_PATH="${CHROOT_PATH:-/data/local/kuro/chroot/kali_chroot/rootfs}"
     ROOT_STOP_NAME="${ROOT_STOP_NAME:-stop_guest_gui.sh}"
     ;;
   parrot|parrot_chroot)
-    CHROOT_PATH="${CHROOT_PATH:-/data/local/tmp/chrootParrot}"
+    CHROOT_PATH="${CHROOT_PATH:-/data/local/kuro/chroot/parrot_chroot/rootfs}"
     ROOT_STOP_NAME="${ROOT_STOP_NAME:-stop_guest_gui.sh}"
     ;;
   archlinux|archlinux_chroot)
-    CHROOT_PATH="${CHROOT_PATH:-/data/local/tmp/chrootArch}"
+    CHROOT_PATH="${CHROOT_PATH:-/data/local/kuro/chroot/archlinux_chroot/rootfs}"
     ROOT_STOP_NAME="${ROOT_STOP_NAME:-stop_guest_gui.sh}"
     ;;
 
@@ -139,10 +139,10 @@ A2. uninstall_guest_chroot.sh
 Add the four UKPA paths to the case allowlist (keep the refuse-unknown
 fail-closed). After Manjaro, include:
 
-  /data/local/tmp/chrootUbuntu
-  /data/local/tmp/chrootKali
-  /data/local/tmp/chrootParrot
-  /data/local/tmp/chrootArch
+  /data/local/kuro/chroot/ubuntu_chroot/rootfs
+  /data/local/kuro/chroot/kali_chroot/rootfs
+  /data/local/kuro/chroot/parrot_chroot/rootfs
+  /data/local/kuro/chroot/archlinux_chroot/rootfs
 
 Do not loosen the allowlist to `*`. Do not uninstall anything yourself
 unless /data is exhausted during retest (it should not be — guests already
@@ -220,7 +220,7 @@ PHASE C — Release APK
   adb -s Y5WWBMJVOZSK4HU8 install -r \
     app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
   adb -s Y5WWBMJVOZSK4HU8 shell am start -n \
-    com.ivarna.fluxlinux/.MainActivity
+    com.kuro.app/.MainActivity
 
 Confirm HostScriptDeployer will overwrite $HOME/stop_gui_chroot.sh from
 assets on next Start/Stop (deployScripts is called from DesktopLauncher.stop).
@@ -236,17 +236,17 @@ Preconditions (must all exist):
 
   adb -s Y5WWBMJVOZSK4HU8 shell su -c '
     for p in \
-      /data/local/tmp/chrootDebian13 \
-      /data/local/tmp/chrootUbuntu \
-      /data/local/tmp/chrootKali \
-      /data/local/tmp/chrootParrot \
-      /data/local/tmp/chrootArch
+      /data/local/kuro/chroot/debian13_chroot/rootfs \
+      /data/local/kuro/chroot/ubuntu_chroot/rootfs \
+      /data/local/kuro/chroot/kali_chroot/rootfs \
+      /data/local/kuro/chroot/parrot_chroot/rootfs \
+      /data/local/kuro/chroot/archlinux_chroot/rootfs
     do
       echo -n "$p "
       test -d "$p" && echo OK || echo MISSING
     done
     echo -n "debian .flux or startxfce4: "
-    test -e /data/local/tmp/chrootDebian13/usr/bin/startxfce4 && echo yes || echo no
+    test -e /data/local/kuro/chroot/debian13_chroot/rootfs/usr/bin/startxfce4 && echo yes || echo no
   '
 
 If a UKPA chroot is missing, install THAT card only from Distros. If Debian
@@ -255,7 +255,7 @@ chroot is missing, skip D-SIB Debian-bind check but still run UKPA D5.
 D-PRE — prove the OLD bug is gone on-device (after new APK, before Start):
 
   adb -s Y5WWBMJVOZSK4HU8 shell '
-    P=/data/data/com.ivarna.fluxlinux/files/home/stop_gui_chroot.sh
+    P=/data/data/com.kuro.app/files/home/stop_gui_chroot.sh
     # after first Stop, this file is redeployed; if missing, Start+Stop once
     grep -n "ubuntu|ubuntu_chroot\|chrootUbuntu\|chrootDebian13" "$P" || true
   '
@@ -268,8 +268,8 @@ D1  Home → that card → Start → Launch XFCE4
 
       adb shell su -c 'ps -A | rg -i "xfce4-session|xfwm4|xfce4-panel|xfdesktop"'
       adb shell su -c 'ls /proc/*/root 2>/dev/null | head'
-      # or: readlink /proc/<xfce-pid>/root  must be /data/local/tmp/chrootXxx
-      # MUST NOT be /data/local/tmp/chrootDebian13
+      # or: readlink /proc/<xfce-pid>/root  must be /data/local/kuro/chrootXxx
+      # MUST NOT be /data/local/kuro/chroot/debian13_chroot/rootfs
 
     Screenshot: docs/plans/results/<id>_xfce_retest.png
     <id> = ubuntu_chroot | kali_chroot | parrot_chroot | archlinux_chroot
@@ -280,16 +280,16 @@ D5  Tap Stop on that card.
     1. Card returns to Start (not stuck RUNNING).
     2. Screenshot: docs/plans/results/<id>_stopped_retest.png
     3. Stop log (View Logs or
-       /data/data/com.ivarna.fluxlinux/files/home/.fluxlinux/gui_desktop.log
+       /data/data/com.kuro.app/files/home/.fluxlinux/gui_desktop.log
        or the path GuiDesktopLog uses) contains:
-         distro=<cardId> path=/data/local/tmp/chrootXxx
-       and does NOT contain path=/data/local/tmp/chrootDebian13
+         distro=<cardId> path=/data/local/kuro/chrootXxx
+       and does NOT contain path=/data/local/kuro/chroot/debian13_chroot/rootfs
        for this Stop.
     4. xfce4-session / xfwm4 / xfce4-panel / xfdesktop for THAT guest are gone.
     5. Debian chroot still intact:
-         test -d /data/local/tmp/chrootDebian13
-         test -e /data/local/tmp/chrootDebian13/usr/bin/startxfce4 \
-           || test -e /data/local/tmp/chrootDebian13/.flux_configured
+         test -d /data/local/kuro/chroot/debian13_chroot/rootfs
+         test -e /data/local/kuro/chroot/debian13_chroot/rootfs/usr/bin/startxfce4 \
+           || test -e /data/local/kuro/chroot/debian13_chroot/rootfs/.flux_configured
          # binds that were mounted for Debian before this Stop are not
          # newly torn down. Record: findmnt | rg chrootDebian13 before+after
          # first UKPA Stop.
@@ -310,7 +310,7 @@ D-UN  Do NOT fully uninstall a UKPA chroot unless you have disk pressure.
     Instead, dry-check the allowlist by reading the on-device deployed
     uninstall_guest_chroot.sh after HostScriptDeployer runs:
 
-      grep chrootUbuntu /data/data/com.ivarna.fluxlinux/files/home/uninstall_guest_chroot.sh
+      grep chrootUbuntu /data/data/com.kuro.app/files/home/uninstall_guest_chroot.sh
 
     Optional: start the in-app uninstall wizard and cancel before confirm
     if the UI shows the correct path. Never delete a guest just to prove

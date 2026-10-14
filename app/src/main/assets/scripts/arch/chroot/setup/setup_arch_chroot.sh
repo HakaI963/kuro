@@ -4,7 +4,7 @@
 # Requires Root (su)
 
 # Global Variables
-ARCHPATH="/data/local/tmp/chrootArch"
+ARCHPATH="/data/local/kuro/chroot/archlinux_chroot/rootfs"
 USERNAME="flux"
 # Used for Hyprland 3D acceleration
 VIRGL_SERVER="virgl_test_server_android"
@@ -56,7 +56,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -69,9 +69,9 @@ if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ] &&
      "$FLUX_BB" --list >/dev/null 2>&1; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -90,7 +90,7 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 
@@ -280,10 +280,10 @@ fi
     # --- LAUNCH SCRIPTS ---
     
     # 1. CLI Launcher (enter_arch.sh)
-    CLI_SCRIPT="/data/local/tmp/enter_arch.sh"
+    CLI_SCRIPT="/data/local/kuro/enter_arch.sh"
     cat <<EOF > "$CLI_SCRIPT"
 #!/bin/sh
-ARCHPATH="/data/local/tmp/chrootArch"
+ARCHPATH="/data/local/kuro/chroot/archlinux_chroot/rootfs"
 BB="$BB"
 
 \$BB mount -o remount,dev,suid /data
@@ -303,7 +303,7 @@ EOF
     success "CLI Launcher Created: $CLI_SCRIPT"
 
     # 2. KDE Launcher (start_arch_gui.sh)
-    GUI_SCRIPT="/data/local/tmp/start_arch_gui.sh"
+    GUI_SCRIPT="/data/local/kuro/start_arch_gui.sh"
     TERMUX_PREFIX="/data/data/com.termux/files/usr"
     
     cat <<EOF > "$GUI_SCRIPT"
@@ -318,7 +318,7 @@ killall -9 termux-x11 Xwayland pulseaudio virgl_test_server_android 2>/dev/null
 am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null
 
 # Mount Tmp for VirGL socket sharing
-$BB mount --bind $TERMUX_PREFIX/tmp /data/local/tmp/chrootArch/tmp 2>/dev/null
+$BB mount --bind $TERMUX_PREFIX/tmp /data/local/kuro/chroot/archlinux_chroot/rootfs/tmp 2>/dev/null
 
 # Fix Permissions for VirGL
 chmod -R 1777 $TERMUX_PREFIX/tmp
@@ -341,7 +341,7 @@ sleep 2
 
 # Launch KDE Plasma
 echo "Starting KDE Plasma..."
-$BB chroot /data/local/tmp/chrootArch /bin/su - flux -c '
+$BB chroot /data/local/kuro/chroot/archlinux_chroot/rootfs /bin/su - flux -c '
     export DISPLAY=:0 
     export PULSE_SERVER=tcp:127.0.0.1
     export GALLIUM_DRIVER=virpipe 
@@ -356,7 +356,7 @@ EOF
     cleanup_mounts
     
     # Notify App
-    am start -a android.intent.action.VIEW -d "fluxlinux://callback?result=success&name=distro_install_arch_chroot" >/dev/null 2>&1
+    am start -a android.intent.action.VIEW -d "kuro://callback?result=success&name=distro_install_arch_chroot" >/dev/null 2>&1
 }
 
 main

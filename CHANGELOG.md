@@ -13,7 +13,7 @@
 - feat: Settings → Terminal guest login shell toggle (zsh default, bash opt-in) — new proot/chroot sessions honor it; chroot root now follows the pref (default zsh) with the Settings switch as the escape hatch
 
 ### Bug Fixes
-- fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/tmp/flux_busybox)
+- fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/kuro/flux_busybox)
 - fix: fluxlinux_chroot v2.5 — chroot root login fail-opens to sh when bash/zsh are missing (Alpine/Chimera minirootfs)
 - fix: Fedora chroot flux login — do not hardcode `/bin/su` (missing on Fedora 44+); helper v2.7 uses runuser then su then staged busybox `setuidgid` (Android busybox has no `chroot --userspec`); Fedora family installs util-linux
 - fix: LorieView JNI matches native `nativeInit()J` so the X11 display opens
@@ -76,7 +76,7 @@
 - docs: add scripts_usage_guide.md and adding_new_distro.md
 - docs: add Debian PRoot setup guide
 - docs: add Debian Chroot setup tutorial with images
-- docs: add setup guide for FluxLinux under tutorial
+- docs: add setup guide for Kuro under tutorial
 - docs: add mermaid flowchart of script execution lifecycle
 - docs: add script locations reference document
 - docs: update README badges and Discord link

@@ -115,7 +115,7 @@ Key files (exact, verified today):
 | `app/src/main/assets/scripts/chroot/setup_debian13_chroot.sh` | honors `FLUX_ROOTFS_URL`; default already `releases/download/rootfs/debian_13_rootfs.tar.xz` |
 | `app/src/main/assets/scripts/chroot/setup_alpine_chroot.sh` | same pattern; default alpine `.tar.gz` URL (**404 today**) |
 | `app/src/main/assets/scripts/chroot/setup_guest_chroot.sh:276` | **local-only** — no download fallback (Fedora/Void/openSUSE/Deepin/Chimera/Manjaro/Ubuntu/Kali/Parrot/Arch chroot) |
-| `com.ivarna.fluxlinux.yml` | F-Droid metadata (`Binaries:` is the **APK** URL, not rootfs) |
+| `com.kuro.app.yml` | F-Droid metadata (`Binaries:` is the **APK** URL, not rootfs) |
 
 Already in place (reuse, don't rebuild):
 
@@ -165,7 +165,7 @@ Side effect (call out): today `prepareHost` copies **all 12** archives into `$HO
 | D4 | **SHA256 + min-bytes are the SSOT** (`DistroInstallProfile`), identical for bundled and downloaded bytes | Single source of truth; re-download when a pin changes (e.g. Fedora 43→44, which is a **new filename**) |
 | D5 | **Resume via HTTP Range** into `<name>.partial`, atomic rename on success | Mobile networks; no double-counted data. 206 = append; 200 = restart/truncate; **416 = delete partial and restart**. GitHub 302 → `objects.githubusercontent.com` — OkHttp must forward `Range` across the host change (it does, except `Authorization`). |
 | D6 | Rootfs stays **absent from host readiness gate** | `prepareHost` must succeed without any rootfs (host = bootstrap + scripts + loader only) |
-| D7 | **Local-first in Kotlin *and* scripts** | `RootfsDownloader.ensurePresent` walks the same candidates as `flux_install.sh` (`$HOME/<name>`, `$HOME/rootfs/`, proot cache, `/sdcard/Download/`, emulated Download) and copies a verified hit into `$HOME/<name>` before touching the network. Offline `$HOME` placement always works. `/sdcard/Download` only works if the file is readable by the app uid — FluxLinux has **no** `READ_EXTERNAL_STORAGE` / `MANAGE_EXTERNAL_STORAGE`; do not promise Download works on modern Android without adding a permission (out of scope). Document `$HOME` / `adb push` as the supported offline path. |
+| D7 | **Local-first in Kotlin *and* scripts** | `RootfsDownloader.ensurePresent` walks the same candidates as `flux_install.sh` (`$HOME/<name>`, `$HOME/rootfs/`, proot cache, `/sdcard/Download/`, emulated Download) and copies a verified hit into `$HOME/<name>` before touching the network. Offline `$HOME` placement always works. `/sdcard/Download` only works if the file is readable by the app uid — Kuro has **no** `READ_EXTERNAL_STORAGE` / `MANAGE_EXTERNAL_STORAGE`; do not promise Download works on modern Android without adding a permission (out of scope). Document `$HOME` / `adb push` as the supported offline path. |
 | D8 | Alpine release asset keeps gzip bytes under the **real** name `alpine_3.24_rootfs.tar.gz` | The `.minirootfs` rename only existed to dodge aapt2 `*.gz` decompression inside the APK; no packaging → no rename. `DistroInstallProfile.ALPINE_ROOTFS_NAME` already deploys as `.tar.gz`. Source file on disk: `assets/rootfs/alpine_3.24_rootfs.tar.gz` (SHA `f55a90f6…`). |
 | D9 | **Never replace a release asset whose SHA is changing** | Floating tag `rootfs` + `--clobber` of the same filename breaks old APKs that still pin the old hash. New bytes ⇒ new filename (keep the old asset). `--clobber` is only for identical-byte retries. |
 | D10 | **Install phases are addressed by `Phase.id`**, never by numeric index | Adding `DL` shifts every later index (proot 1→2→3, chroot 2→3→4→5). `BaseDesktopInstallPlanTest` asserts the id list + weight sum 100. |
@@ -197,7 +197,7 @@ Do **not** implement or merge in the written P-number order blindly.
 - `gh release upload rootfs <12 files> sha256sums.txt` — use `--clobber` **only** when the SHA of the remote asset already matches (retry). Refuse to overwrite a same-name asset whose remote SHA differs (D9).
 - Fails closed on any local SHA mismatch.
 - `--check` dry-run: verify local SHAs + print the 12 URLs, no upload.
-- Optionally `gh release edit rootfs --title "FluxLinux rootfs (12 distros)"` so the release is not still named "debian rootfs latest".
+- Optionally `gh release edit rootfs --title "Kuro rootfs (12 distros)"` so the release is not still named "debian rootfs latest".
 
 **P0-T2. Upload** all 12 tarballs + manifest to the `rootfs` tag. **Alpine is not there today (404).**
 
@@ -426,7 +426,7 @@ completePhase(phases, dlIdx, onProgress, "Rootfs ready (${profile.rootfsFileName
 - `README.md` — only if it still mentions a bundled rootfs.
 - `docs/plans/README.md` — **already lists this plan**; flip status as phases land.
 - In-app: one sentence on the install-failure path and/or Distro Settings pointing at `$HOME/<name>` (D7/C14). No storage-permission UI.
-- `com.ivarna.fluxlinux.yml` — F-Droid **build** is unaffected (rootfs was never required at compile time; debian-in-git going away just shrinks the clone). Re-run an `fdroid build` smoke after P5. Runtime download is already described in the privacy policy.
+- `com.kuro.app.yml` — F-Droid **build** is unaffected (rootfs was never required at compile time; debian-in-git going away just shrinks the clone). Re-run an `fdroid build` smoke after P5. Runtime download is already described in the privacy policy.
 
 ### Phase 7 — Verification
 

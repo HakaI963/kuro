@@ -1,6 +1,6 @@
-# FluxLinux Scripts Reference
+# Kuro Scripts Reference
 
-This document provides a comprehensive overview of all scripts used in the FluxLinux project. Scripts are organized by category and include their purpose, execution context, and key functionality.
+This document provides a comprehensive overview of all scripts used in the Kuro project. Scripts are organized by category and include their purpose, execution context, and key functionality.
 
 ---
 
@@ -19,11 +19,11 @@ This document provides a comprehensive overview of all scripts used in the FluxL
 
 ## Architecture Overview
 
-FluxLinux uses a layered script architecture:
+Kuro uses a layered script architecture:
 
 ```mermaid
 graph TD
-    A[FluxLinux App] --> B[Termux Intent API]
+    A[Kuro App] --> B[Termux Intent API]
     B --> C[Termux Scripts]
     B --> D[Common Scripts]
     B --> E[Chroot Scripts]
@@ -290,7 +290,7 @@ bash ~/install.sh
    - `mesa-zink` - OpenGL over Vulkan
 5. Install Mali Vulkan wrapper (aarch64 only)
 
-**Callback Intent:** `fluxlinux://callback?result=success&name=setup_termux`
+**Callback Intent:** `kuro://callback?result=success&name=setup_termux`
 
 ---
 
@@ -326,7 +326,7 @@ bash ~/install.sh
 5. Create marker file for tracking
 6. Send callback intent to app
 
-**Callback Intent:** `fluxlinux://callback?result=success&name=distro_install_<distro>`
+**Callback Intent:** `kuro://callback?result=success&name=distro_install_<distro>`
 
 ---
 
@@ -590,12 +590,12 @@ export PATH=$PATH:/opt/gradle/bin
 **Paths Used:**
 | Path | Purpose |
 |------|---------|
-| `/data/local/tmp/chrootDebian13` | Chroot root filesystem |
-| `/data/local/tmp/start_debian13.sh` | GUI launcher script |
-| `/data/local/tmp/start_debian13_gui.sh` | X11 + GUI wrapper |
-| `/data/local/tmp/enter_debian13.sh` | CLI entry script |
-| `/data/local/tmp/run_debian13_root.sh` | Root command runner |
-| `/data/local/tmp/stop_debian13_gui.sh` | GUI stop script |
+| `/data/local/kuro/chroot/debian13_chroot/rootfs` | Chroot root filesystem |
+| `/data/local/kuro/start_debian13.sh` | GUI launcher script |
+| `/data/local/kuro/start_debian13_gui.sh` | X11 + GUI wrapper |
+| `/data/local/kuro/enter_debian13.sh` | CLI entry script |
+| `/data/local/kuro/run_debian13_root.sh` | Root command runner |
+| `/data/local/kuro/stop_debian13_gui.sh` | GUI stop script |
 
 **Key Operations:**
 1. Detect root-capable Busybox (non-Termux paths)
@@ -619,7 +619,7 @@ installs. Offline: place the archive at `$HOME/debian_13_rootfs.tar.xz`.
 
 **Marker File:** `$DEBIANPATH/.flux_configured`
 
-**Callback Intent:** `fluxlinux://callback?result=success&name=distro_install_debian13_chroot`
+**Callback Intent:** `kuro://callback?result=success&name=distro_install_debian13_chroot`
 
 ---
 
@@ -651,7 +651,7 @@ best-effort only (no storage permission requested).
 
 **Similar to:** `setup_debian13_chroot.sh` with following differences:
 - Uses Debian 12 rootfs
-- Different installation path: `/data/local/tmp/chrootDebian`
+- Different installation path: `/data/local/kuro/chroot/debian_chroot/rootfs`
 - Different rootfs URL
 
 ---
@@ -671,8 +671,8 @@ best-effort only (no storage permission requested).
 - Initializes pacman keys
 
 **Generated Scripts:**
-- `/data/local/tmp/enter_arch.sh` - CLI entry
-- `/data/local/tmp/start_arch_gui.sh` - KDE Plasma launcher
+- `/data/local/kuro/enter_arch.sh` - CLI entry
+- `/data/local/kuro/start_arch_gui.sh` - KDE Plasma launcher
 
 ---
 
@@ -704,7 +704,7 @@ best-effort only (no storage permission requested).
 4. Remove rootfs directory
 5. Remove launcher scripts
 
-**Callback Intent:** `fluxlinux://callback?result=success&name=distro_uninstall_debian13_chroot`
+**Callback Intent:** `kuro://callback?result=success&name=distro_uninstall_debian13_chroot`
 
 ---
 
@@ -723,12 +723,12 @@ best-effort only (no storage permission requested).
 The chroot setup scripts generate additional scripts at runtime:
 
 ### start_debian13.sh
-**Location:** `/data/local/tmp/start_debian13.sh`
+**Location:** `/data/local/kuro/start_debian13.sh`
 
 Mounts filesystems and starts XFCE4 GUI.
 
 ### start_debian13_gui.sh  
-**Location:** `/data/local/tmp/start_debian13_gui.sh`
+**Location:** `/data/local/kuro/start_debian13_gui.sh`
 
 Full GUI launcher that:
 1. Kills old processes
@@ -740,12 +740,12 @@ Full GUI launcher that:
 7. Calls `start_debian13.sh`
 
 ### enter_debian13.sh
-**Location:** `/data/local/tmp/enter_debian13.sh`
+**Location:** `/data/local/kuro/enter_debian13.sh`
 
 CLI-only entry to chroot (no GUI).
 
 ### run_debian13_root.sh
-**Location:** `/data/local/tmp/run_debian13_root.sh`
+**Location:** `/data/local/kuro/run_debian13_root.sh`
 
 Helper script to run commands as root inside chroot:
 ```bash
@@ -759,7 +759,7 @@ Helper script to run commands as root inside chroot:
 ### Error Handling
 ```bash
 handle_error() {
-    echo "❌ FluxLinux Error: Script failed at step: $1"
+    echo "❌ Kuro Error: Script failed at step: $1"
     read -p "Press Enter to acknowledge error and exit..."
     exit 1
 }
@@ -781,7 +781,7 @@ error() {
 ### Callback Intents
 ```bash
 am start -a android.intent.action.VIEW \
-    -d "fluxlinux://callback?result=success&name=<script_name>"
+    -d "kuro://callback?result=success&name=<script_name>"
 ```
 
 ### Marker Files

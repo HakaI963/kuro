@@ -1,6 +1,6 @@
 # Worker agent prompt — Onboarding + Debian proot shell + ExtraKeys (device + unit tests)
 
-**Package:** `com.ivarna.fluxlinux`  
+**Package:** `com.kuro.app`  
 **Repo:** `/home/abhaybyte/repos/fluxlinux`  
 **Branch:** current working branch (do not force-push; local commits OK)  
 **Reference SSOT (nativecode-ai copy):** `/home/abhaybyte/repos/termux-lib`  
@@ -127,7 +127,7 @@ Keep tests deterministic; no real rootfs extraction in unit tests.
 ```bash
 ./gradlew :app:assembleIvarnaRelease --no-daemon
 adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
-# if UPDATE_INCOMPATIBLE: adb uninstall com.ivarna.fluxlinux && adb install …
+# if UPDATE_INCOMPATIBLE: adb uninstall com.kuro.app && adb install …
 ```
 
 Sign with existing `keystore.properties` (do not commit secrets).
@@ -140,16 +140,16 @@ Sign with existing `keystore.properties` (do not commit secrets).
 
 ```bash
 # Clear app data to force onboarding (destructive to guest data — OK for this mission)
-adb shell pm clear com.ivarna.fluxlinux
+adb shell pm clear com.kuro.app
 # Or only flip prefs if guest rootfs must be preserved:
-# adb shell run-as com.ivarna.fluxlinux …  (if debuggable) / shared_prefs edit
+# adb shell run-as com.kuro.app …  (if debuggable) / shared_prefs edit
 ```
 
 Prefer **clean slate** (`pm clear`) unless an existing proot rootfs is required to save time **and** onboarding skip is already marked — then re-run install from Distros thin wizard instead. Prefer full onboarding path when possible.
 
 ### UI flow (uiautomator / adb input / accessibility dump)
 
-1. Launch app: `adb shell am start -n com.ivarna.fluxlinux/.MainActivity`
+1. Launch app: `adb shell am start -n com.kuro.app/.MainActivity`
 2. **Welcome** → Get Started  
 3. **DistroPick** → select **Debian** (proot, **not** Debian Rooted)  
 4. **Options** → theme dark (or light), start install  
@@ -157,7 +157,7 @@ Prefer **clean slate** (`pm clear`) unless an existing proot rootfs is required 
 
 ```bash
 adb logcat -c
-adb logcat -s FluxLinux:* OnboardingInstallRunner:* ShellCommandRunner:* AndroidRuntime:E
+adb logcat -s Kuro:* OnboardingInstallRunner:* ShellCommandRunner:* AndroidRuntime:E
 ```
 
 6. **Done** → either Open Terminal or Home  

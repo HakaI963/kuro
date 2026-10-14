@@ -17,8 +17,8 @@ BASE_URL="https://github.com/$REPO/releases/download/$RELEASE_TAG"
 
 # <release filename>|<sha256>|<local path relative to repo>
 PINS=(
-  "bootstrap_com.ivarna.fluxlinux.tar|5b16c6597d38380c0cab9471d3cf69a0c7a23d9a4191125bd9dd6ddc77277f5c|native/bootstrap/com.ivarna.fluxlinux/bootstrap.tar"
-  "bootstrap_com.zenithblue.fluxlinux.tar|b0856e1009b8718455bfaf6cb5332e57473ab7d58200f8c28a6db89b30a30cfd|native/bootstrap/com.zenithblue.fluxlinux/bootstrap.tar"
+  "bootstrap_com.kuro.app.tar|5b16c6597d38380c0cab9471d3cf69a0c7a23d9a4191125bd9dd6ddc77277f5c|native/bootstrap/com.kuro.app/bootstrap.tar"
+  "bootstrap_com.kuro.app.tar|b0856e1009b8718455bfaf6cb5332e57473ab7d58200f8c28a6db89b30a30cfd|native/bootstrap/com.kuro.app/bootstrap.tar"
 )
 
 CLOBBER=0
@@ -42,7 +42,7 @@ remote_digest() {
     | sed 's/^sha256://' | tr '[:upper:]' '[:lower:]' || true
 }
 
-echo "=== FluxLinux host bootstrap release verification ($RELEASE_TAG) ==="
+echo "=== Kuro host bootstrap release verification ($RELEASE_TAG) ==="
 
 FAIL=0
 WORK_DIR="$(mktemp -d)"

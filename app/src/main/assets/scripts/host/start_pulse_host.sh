@@ -4,7 +4,7 @@
 # --system. Exit 0 even if audio fails so desktop start is not blocked.
 # Invoked via libbash; shebang is a fallback for a raw exec.
 
-PKG="${TERMUX_APP__PACKAGE_NAME:-com.ivarna.fluxlinux}"
+PKG="${TERMUX_APP__PACKAGE_NAME:-com.kuro.app}"
 _HOST_ENV="${TERMUX__PREFIX:-/data/data/${PKG}/files/usr}/etc/fluxlinux-host.env"
 [ -r "$_HOST_ENV" ] && . "$_HOST_ENV"
 
@@ -83,7 +83,7 @@ else
 fi
 
 audio_fail() {
-  echo "FluxLinux: [AUDIO] FAIL $*"
+  echo "Kuro: [AUDIO] FAIL $*"
   exit 0
 }
 
@@ -223,7 +223,7 @@ already_good() {
 }
 
 if already_good; then
-  echo "FluxLinux: [AUDIO] already running sink=$(sink_name) tcp=127.0.0.1:4713"
+  echo "Kuro: [AUDIO] already running sink=$(sink_name) tcp=127.0.0.1:4713"
   exit 0
 fi
 
@@ -272,5 +272,5 @@ if ! tcp_bound_localhost_only || ! tcp_ok; then
   audio_fail "sink=$(sink_name) but tcp:127.0.0.1:4713 not reachable${TCP_LOAD_ERR:+ load=$TCP_LOAD_ERR}"
 fi
 
-echo "FluxLinux: [AUDIO] sink=$(sink_name) tcp=127.0.0.1:4713"
+echo "Kuro: [AUDIO] sink=$(sink_name) tcp=127.0.0.1:4713"
 exit 0

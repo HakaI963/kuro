@@ -1,4 +1,4 @@
-FluxLinux brings full Linux desktops to Android. Install a guest distro, run XFCE, and use GPU acceleration — no external Termux app required.
+Kuro brings full Linux desktops to Android. Install a guest distro, run XFCE, and use GPU acceleration — no external Termux app required.
 
 <b>Features:</b>
 • Embedded host terminal and X11 display

@@ -21,10 +21,10 @@ fi
 # Common helpers may be prepended by BaseDesktopInstallPlan.
 
 DISTRO_NAME="${1:-fedora}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Fedora Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Fedora Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -38,7 +38,7 @@ if command -v dnf5 >/dev/null 2>&1; then
     DNF="dnf5"
 fi
 if ! command -v "$DNF" >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: dnf/dnf5 not found"
+    echo "Kuro: ERROR: dnf/dnf5 not found"
     exit 1
 fi
 
@@ -60,7 +60,7 @@ fi
 
 _flux_log "dnf makecache ($DNF)..."
 $DNF -y --setopt=install_weak_deps=False makecache || {
-    echo "FluxLinux: dnf makecache failed (network / repos)"
+    echo "Kuro: dnf makecache failed (network / repos)"
     exit 1
 }
 
@@ -70,7 +70,7 @@ $DNF $DNF_OPTS install \
     gzip xz tzdata \
     dbus dbus-daemon \
     || {
-        echo "FluxLinux: base package install failed"
+        echo "Kuro: base package install failed"
         exit 1
     }
 # dbus-x11 is optional on F44 (some images use dbus-daemon only)
@@ -86,7 +86,7 @@ $DNF $DNF_OPTS install \
     gsettings-desktop-schemas \
     mesa-dri-drivers mesa-libGL mesa-libEGL \
     || {
-        echo "FluxLinux: XFCE package install failed"
+        echo "Kuro: XFCE package install failed"
         exit 1
     }
 $DNF $DNF_OPTS install mesa-vulkan-drivers 2>/dev/null || true
@@ -100,12 +100,12 @@ command -v glib-compile-schemas >/dev/null 2>&1 && \
     glib-compile-schemas /usr/share/glib-2.0/schemas 2>/dev/null || true
 command -v update-mime-database >/dev/null 2>&1 && update-mime-database /usr/share/mime 2>/dev/null || true
 if [ -x /usr/bin/bwrap ] && [ ! -e /usr/bin/bwrap.real ] && \
-   ! grep -q 'FluxLinux proot' /usr/bin/bwrap 2>/dev/null; then
+   ! grep -q 'Kuro proot' /usr/bin/bwrap 2>/dev/null; then
     mv /usr/bin/bwrap /usr/bin/bwrap.real 2>/dev/null || true
 fi
 cat > /usr/bin/bwrap <<'BWRAP_EOF'
 #!/bin/sh
-# FluxLinux: exec the real glycin loader, not an earlier --ro-bind source.
+# Kuro: exec the real glycin loader, not an earlier --ro-bind source.
 while [ $# -gt 0 ]; do
   case "$1" in
     /usr/libexec/glycin-loaders/*|/usr/lib/glycin-loaders/*|/usr/bin/true|/bin/true)
@@ -143,5 +143,5 @@ _flux_setup_pulse
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Fedora setup complete!"
+echo "Kuro: ${DISTRO_NAME} Fedora setup complete!"
 exit 0

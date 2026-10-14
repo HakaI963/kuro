@@ -1,6 +1,6 @@
 # Distro documentation
 
-Per-distro reference docs for FluxLinux.
+Per-distro reference docs for Kuro.
 
 | Distro | Doc | Modes |
 |--------|-----|--------|

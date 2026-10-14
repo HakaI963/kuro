@@ -2,7 +2,7 @@
 
 - Date: 2026-08-14
 - Device: Xiaomi 2311DRK48I (duchamp), Android 16, KernelSU, serial `Y5WWBMJVOZSK4HU8`
-- App: `com.ivarna.fluxlinux` Ivarna release (`adb install -r` of `app/build/outputs/apk/ivarna/release/app-ivarna-release.apk`, 867 MiB)
+- App: `com.kuro.app` Ivarna release (`adb install -r` of `app/build/outputs/apk/ivarna/release/app-ivarna-release.apk`, 867 MiB)
 - Card: `ubuntu` (PROOT), rootfs `ubuntu_26.04_rootfs.tar.xz` SHA `e648a5302dd273c476e5658e652f88d1e66ece69b487431521c5caef4b960efc`
 - Theme: Dark (default)
 
@@ -19,7 +19,7 @@
 | T4 | `id -un` is flux uid 1000 | **PASS** | `uid=1000(flux)`; `grep ^flux /etc/passwd` → `flux:x:1000:1000::/home/flux:/usr/bin/zsh`. |
 | T5 | Root card `id` | **PASS** | `ubuntu_proot_shell_root.png`: `uid=0(root)` `whoami=root`. |
 | D1 | Start XFCE; Pulse/X/startxfce4 in log | **PASS** | `gui_desktop.log`: `X server PID=18686`, `startxfce4=READY`. `ubuntu_proot_gui_log.png`. |
-| D2 | Embedded X11 resumed | **PASS** | `com.ivarna.fluxlinux/com.termux.x11.MainActivity` topResumed. |
+| D2 | Embedded X11 resumed | **PASS** | `com.kuro.app/com.termux.x11.MainActivity` topResumed. |
 | D3 | Paint: panel + wallpaper, no failsafe | **PASS** | `ubuntu_proot_xfce_pass.png`. Processes: `xfce4-session`, `xfwm4`, `xfce4-panel`, `xfdesktop`. |
 | D4 | Space + Papirus + Vimix + Nerd + wallpaper | **PASS** | xfconf: `ThemeName=Space-transparency`, `IconThemeName=Papirus-Dark`, `CursorThemeName=Vimix-white-cursors`, `FontName=JetBrainsMono Nerd Font 10`, `WindowScalingFactor=2`; `last-image=…/fluxlinux-dark.png`. Category icons present (`applications-accessories/internet/system.svg`). Screenshot shows penguin wallpaper + XFCE panel `Applications` / `flux`. |
 | D5 | Stop → Start; xfce gone | **PASS** | `ubuntu_proot_stopped.png`. Card shows Start. `ps` after stop: NONE. |

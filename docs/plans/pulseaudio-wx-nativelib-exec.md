@@ -4,7 +4,7 @@
 | --- | --- |
 | **Date** | 2026-08-17 |
 | **Status** | **COMPLETE** (device, 2026-08-17) |
-| **Flavor** | Ivarna first (`com.ivarna.fluxlinux`); zenithblue gets the same jniLibs |
+| **Flavor** | Ivarna first (`com.kuro.app`); zenithblue gets the same jniLibs |
 | **APK** | `:app:assembleIvarnaRelease` + `adb install -r`. No PREFIX/chroot wipe. |
 | **Scope lock** | Host Pulse exec only. Do not change X11 / VirGL / `libXlorie` / `loader.apk` / proot W^X loaders. Do not edit `docs/releases/v2.0.0-fdroid-release-plan.md`. Do not bump `EXTRACT_VERSION`. |
 
@@ -17,8 +17,8 @@ Parent plan: [pulseaudio-host-guest-all-distros.md](./pulseaudio-host-guest-all-
 Settings → Audio after a fresh host extract:
 
 ```
-FluxLinux: [AUDIO] FAIL pulseaudio cannot exec
-(env: exec /data/data/com.ivarna.fluxlinux/files/usr/bin/pulseaudio: Permission denied)
+Kuro: [AUDIO] FAIL pulseaudio cannot exec
+(env: exec /data/data/com.kuro.app/files/usr/bin/pulseaudio: Permission denied)
 ```
 
 | Check | Result |
@@ -46,7 +46,7 @@ env: exec --version: No such file or directory
 Android 7+ extracts jniLibs to:
 
 ```
-/data/app/~~XXXX==/com.ivarna.fluxlinux-YYYY==/lib/arm64/libpulseaudio.so
+/data/app/~~XXXX==/com.kuro.app-YYYY==/lib/arm64/libpulseaudio.so
 ```
 
 Toybox `env` treats every `NAME=VALUE` argument as an assignment. That path contains `==`, so:
@@ -113,7 +113,7 @@ No guest, X11, or bootstrap-tar change. Existing PREFIX stays.
 | ID | Pass |
 | --- | --- |
 | D1 | `lib/arm64-v8a/libpulseaudio.so` and `libpactl.so` in the installed APK |
-| D2 | Supervisor line `FluxLinux: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713` (or `already running`) |
+| D2 | Supervisor line `Kuro: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713` (or `already running`) |
 | D3 | `ps` Pulse uid = app uid, not root |
 | D4 | `/proc/net/tcp` listen `0100007F:1269` only |
 | D5 | Desktop stop still does not kill Pulse |
@@ -121,7 +121,7 @@ No guest, X11, or bootstrap-tar change. Existing PREFIX stays.
 Device (Xiaomi 2311DRK48I, uid `10308` / `u0_a308`), Settings → Audio → Start, **no root**:
 
 ```
-FluxLinux: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713
+Kuro: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713
 u0_a308  10308  …  u:r:untrusted_app:s0:c52,c257,c512,c768
   libpulseaudio.so --daemonize=yes --exit-idle-time=-1 …
 /proc/net/tcp  0100007F:1269  uid=10308

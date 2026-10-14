@@ -4,7 +4,7 @@
 
 DISTRO_NAME="${1:-debian}"
 
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Debian Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Debian Family)..."
 
 # 1. Update and Install Core Packages
 export DEBIAN_FRONTEND=noninteractive
@@ -24,7 +24,7 @@ DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
     || true
 mkdir -p /etc/fluxlinux
 printf '%s\n' virgl > /etc/fluxlinux/gpu_mode
-echo "FluxLinux: gpu_mode=virgl (first-paint; hw-accel may upgrade)"
+echo "Kuro: gpu_mode=virgl (first-paint; hw-accel may upgrade)"
 
 # 2. Create User 'flux'
 if ! id "flux" &>/dev/null; then
@@ -78,4 +78,4 @@ EOF
     fi
 fi
 
-echo "FluxLinux: ${DISTRO_NAME} Setup Complete!"
+echo "Kuro: ${DISTRO_NAME} Setup Complete!"

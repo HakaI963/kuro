@@ -3,7 +3,7 @@
 **Date:** 2026-08-06  
 **Branch:** `feat/embedded-terminal-bootstrap-proot-chroot`  
 **Status:** **COMPLETE** (device verified 2026-08-06)  
-**App ID (device):** `com.ivarna.fluxlinux`  
+**App ID (device):** `com.kuro.app`  
 **Reference:** `~/repos/termux-lib` (W^X loader patch + bottom-nav Terminal page)
 
 ---
@@ -16,7 +16,7 @@ Debian base install reported OK (rootfs already present), then configuration fai
 proot error: execve("/usr/bin/bash"): Permission denied
 fatal error: see 'libproot.so --help'
 proot error: can't chmod '…/usr/tmp/proot-…': No such file or directory
-FluxLinux: Configuration/Setup Script Failed! (exit 1)
+Kuro: Configuration/Setup Script Failed! (exit 1)
 ```
 
 ### Root cause (targetSdk 36 W^X)
@@ -27,7 +27,7 @@ FluxLinux: Configuration/Setup Script Failed! (exit 1)
 | Host loader | `PROOT_LOADER` → jniLibs `libloader.so` | proot defaults to `$PREFIX/libexec/proot/loader` (blocked) |
 | proot-distro pass-through | Allowlist must include `PROOT_LOADER` | Stock only allows `PROOT_NO_SECCOMP`, `PROOT_VERBOSE` |
 
-termux-lib patches `proot_distro/commands/login/__init__.py` after bootstrap extract. FluxLinux was missing that patch → guest `execve("/usr/bin/bash")` Permission denied.
+termux-lib patches `proot_distro/commands/login/__init__.py` after bootstrap extract. Kuro was missing that patch → guest `execve("/usr/bin/bash")` Permission denied.
 
 ---
 
@@ -99,7 +99,7 @@ termux-lib patches `proot_distro/commands/login/__init__.py` after bootstrap ext
 
 ## 5. Device notes
 
-- Package: `com.ivarna.fluxlinux`
+- Package: `com.kuro.app`
 - Existing guest rootfs may remain; prepareHost re-applies patch without wiping containers
 - If setup still fails for non-loader reasons, uninstall distro and reinstall once
 

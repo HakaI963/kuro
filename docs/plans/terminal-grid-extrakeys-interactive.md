@@ -78,7 +78,7 @@ Nativecode also filters AI tools by method; **Flux v1** ships **system shells on
 
 ---
 
-## 3. FluxLinux current state (post-`685eebb`)
+## 3. Kuro current state (post-`685eebb`)
 
 | Area | Status |
 |------|--------|

@@ -22,10 +22,10 @@ fi
 # kali-linux-default / kali-linux-large. Flux is uid 1000; leave user kali (uid 100000).
 
 DISTRO_NAME="${1:-kali}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Kali Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Kali Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -38,7 +38,7 @@ _flux_disable_guest_selinux
 _flux_apt_prep
 
 if ! command -v apt-get >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: apt-get not found"
+    echo "Kuro: ERROR: apt-get not found"
     exit 1
 fi
 
@@ -46,7 +46,7 @@ _flux_log "apt-get update (kali-rolling only)..."
 if ! apt-get update; then
     _flux_log "apt-get update failed once — retrying"
     apt-get update || {
-        echo "FluxLinux: apt-get update failed (repos/network)"
+        echo "Kuro: apt-get update failed (repos/network)"
         exit 1
     }
 fi
@@ -56,7 +56,7 @@ apt-get install -y --no-install-recommends \
     bash sudo passwd adduser ca-certificates curl wget unzip tar xz-utils \
     git zsh python3 locales \
     dbus dbus-x11 || {
-        echo "FluxLinux: base package install failed"
+        echo "Kuro: base package install failed"
         exit 1
     }
 
@@ -70,7 +70,7 @@ if ! apt-get install -y --no-install-recommends \
     libgl1-mesa-dri libegl1 mesa-utils; then
     _flux_log "targeted XFCE install failed — falling back to xfce4 metapackage"
     apt-get install -y --no-install-recommends xfce4 || {
-        echo "FluxLinux: XFCE install failed"
+        echo "Kuro: XFCE install failed"
         exit 1
     }
 fi
@@ -91,5 +91,5 @@ _flux_setup_pulse
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Kali setup complete!"
+echo "Kuro: ${DISTRO_NAME} Kali setup complete!"
 exit 0

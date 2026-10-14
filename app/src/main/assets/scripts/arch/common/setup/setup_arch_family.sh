@@ -23,10 +23,10 @@ fi
 # HoldPkg stays pacman glibc. User alarm occupies uid 1000 — rename to flux.
 
 DISTRO_NAME="${1:-archlinux}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Arch Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Arch Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -38,7 +38,7 @@ _flux_ensure_tmp
 _flux_ensure_dns
 
 if ! command -v pacman >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: pacman not found"
+    echo "Kuro: ERROR: pacman not found"
     exit 1
 fi
 
@@ -156,7 +156,7 @@ _flux_ensure_groups
 
 _flux_log "pacman -Sy..."
 if ! pacman -Sy --noconfirm; then
-    echo "FluxLinux: pacman -Sy failed (repos/network)"
+    echo "Kuro: pacman -Sy failed (repos/network)"
     exit 1
 fi
 
@@ -169,7 +169,7 @@ if ! pacman -S --noconfirm --needed \
     ttf-dejavu adwaita-icon-theme \
     mesa mesa-utils \
     dbus xz; then
-    echo "FluxLinux: XFCE install failed"
+    echo "Kuro: XFCE install failed"
     exit 1
 fi
 
@@ -208,5 +208,5 @@ _flux_ensure_en_us_locale || exit 1
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Arch setup complete!"
+echo "Kuro: ${DISTRO_NAME} Arch setup complete!"
 exit 0

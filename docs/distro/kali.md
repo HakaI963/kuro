@@ -1,8 +1,8 @@
-# Kali Rolling in FluxLinux
+# Kali Rolling in Kuro
 
 | | |
 |---|---|
-| Cards | `kali` (proot) · `kali_chroot` (`/data/local/tmp/chrootKali`) |
+| Cards | `kali` (proot) · `kali_chroot` (`/data/local/kuro/chroot/kali_chroot/rootfs`) |
 | Rootfs | `kali_2026_2_rootfs.tar.xz` (NetHunter-minimal arm64, flattened — treated as Kali Rolling) |
 | Package manager | `apt-get` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

@@ -2,9 +2,10 @@
 """Assemble bootstrap.tar + jniLibs from custom-prefix .debs.
 
 Usage:
-  ./scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux
-  ./scripts/assemble_bootstrap.py --package-name com.zenithblue.fluxlinux \\
-      --deb-dir native/output/com.zenithblue.fluxlinux \\
+  ./scripts/assemble_bootstrap.py --package-name com.kuro.app \\
+      --source-package com.ivarna.fluxlinux
+  ./scripts/assemble_bootstrap.py --package-name com.kuro.app \\
+      --deb-dir native/output/com.kuro.app \\
       --list native/package-lists/bootstrap-host.txt
 """
 from __future__ import annotations
@@ -270,8 +271,70 @@ def copy_to_jni_libs(extract_dir: Path, target_prefix: str, jni_dir: Path) -> No
             print(f"  [WARN] missing {src_rel}")
 
 
+def rebase_prefix(extract_dir: Path, src_package: str, dst_package: str) -> None:
+    """Rewrite an extracted `data/data/<src>/files` tree to `<dst>/files`.
+
+    Used when the target applicationId has no natively-built .debs yet:
+    the .debs were compiled with `PREFIX=/data/data/<src>/files/usr`.
+    Every absolute-prefix reference is rewritten:
+      * directory renamed `data/data/<src>` -> `data/data/<dst>`
+      * symlinks retargeted
+      * text files: plain string replace (shebangs, scripts, configs)
+      * binaries: same-length replace with NUL padding (safe for C strings;
+        requires the new prefix to be shorter, which holds for Kuro ids)
+    """
+    old_abs = f"/data/data/{src_package}/files".encode()
+    new_abs = f"/data/data/{dst_package}/files".encode()
+    if len(new_abs) > len(old_abs):
+        raise SystemExit(
+            f"rebase {src_package} -> {dst_package}: new prefix longer than old; "
+            "binary rewrite would overflow"
+        )
+    padded = new_abs + b"\x00" * (len(old_abs) - len(new_abs))
+    src_root = extract_dir / "data" / "data" / src_package
+    if not src_root.is_dir():
+        raise SystemExit(f"rebase source missing: {src_root}")
+    n_text = n_bin = n_link = 0
+    for dirpath, dirnames, filenames in os.walk(src_root):
+        for name in dirnames + filenames:
+            p = Path(dirpath) / name
+            if p.is_symlink():
+                try:
+                    target = os.readlink(p)
+                except OSError:
+                    continue
+                if old_abs.decode() in target:
+                    os.unlink(p)
+                    os.symlink(target.replace(old_abs.decode(), new_abs.decode()), p)
+                    n_link += 1
+            elif p.is_file():
+                try:
+                    data = p.read_bytes()
+                except OSError:
+                    continue
+                if old_abs not in data:
+                    continue
+                st = p.stat()
+                try:
+                    text = data.decode("utf-8")
+                    if "\x00" in text:
+                        raise ValueError("nul")
+                    p.write_bytes(text.replace(old_abs.decode(), new_abs.decode()).encode())
+                    n_text += 1
+                except (UnicodeDecodeError, ValueError):
+                    p.write_bytes(data.replace(old_abs, padded))
+                    n_bin += 1
+                os.chmod(p, st.st_mode)
+    dst_root = extract_dir / "data" / "data" / dst_package
+    if dst_root.exists():
+        shutil.rmtree(dst_root)
+    src_root.rename(dst_root)
+    print(f"[*] Rebasing {src_package} -> {dst_package}: "
+          f"{n_text} text, {n_bin} binary, {n_link} symlink rewrites")
+
+
 def assert_no_wrong_prefix(extract_dir: Path, package_name: str) -> None:
-    """Ensure archive root is for this package, not another FluxLinux id / termux."""
+    """Ensure archive root is for this package, not another Kuro id / termux."""
     expected = extract_dir / f"data/data/{package_name}/files"
     if not expected.is_dir():
         # list what we got
@@ -289,7 +352,15 @@ def main() -> None:
     ap.add_argument(
         "--package-name",
         required=True,
-        help="Android applicationId (e.g. com.ivarna.fluxlinux)",
+        help="Android applicationId (e.g. com.kuro.app)",
+    )
+    ap.add_argument(
+        "--source-package",
+        default=None,
+        help="applicationId the .debs were built for (default: same as "
+        "--package-name). When different, the extracted tree is rebased to "
+        "--package-name (e.g. --package-name com.kuro.app "
+        "--source-package com.ivarna.fluxlinux).",
     )
     ap.add_argument(
         "--deb-dir",
@@ -347,7 +418,8 @@ def main() -> None:
     args = ap.parse_args()
 
     package_name = args.package_name
-    deb_dir = (args.deb_dir or ROOT / "native/output" / package_name).resolve()
+    source_package = args.source_package or package_name
+    deb_dir = (args.deb_dir or ROOT / "native/output" / source_package).resolve()
     out_tar = (
         args.out_tar
         or ROOT / "native/bootstrap" / package_name / "bootstrap.tar"
@@ -380,6 +452,8 @@ def main() -> None:
         print("    Re-run with --allow-missing to assemble a partial bootstrap.", file=sys.stderr)
         sys.exit(1)
 
+    if source_package != package_name:
+        rebase_prefix(extract_dir, source_package, package_name)
     assert_no_wrong_prefix(extract_dir, package_name)
     if args.mode == "full" or not args.skip_loader_check:
         add_loader(extract_dir, target_prefix, args.loader_apk.resolve())

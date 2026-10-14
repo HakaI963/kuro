@@ -10,7 +10,7 @@
 | **Worker prompt (iter 2)** | [worker-prompt-busybox-module-bypass-iter2.md](./worker-prompt-busybox-module-bypass-iter2.md) |
 | **Audience** | Worker agent implementing chroot BusyBox resolve + UI |
 | **Helper bump** | `fluxlinux-chroot v2.7` → **`v2.8`** |
-| **Flavor** | `com.ivarna.fluxlinux` / `:app:testIvarnaDebugUnitTest` |
+| **Flavor** | `com.kuro.app` / `:app:testIvarnaDebugUnitTest` |
 
 This file is the **implementation contract**. If this file and the tree disagree, this file wins for new work. If this file and the research plan disagree on *why*, the research plan wins; if they disagree on *what to ship*, this file wins.
 
@@ -18,21 +18,21 @@ This file is the **implementation contract**. If this file and the tree disagree
 
 ## 0. Verdict (do not reopen)
 
-The osm0sis **Busybox for Android NDK** Magisk/KSU/APatch module is **not required** for FluxLinux chroot.
+The osm0sis **Busybox for Android NDK** Magisk/KSU/APatch module is **not required** for Kuro chroot.
 
-Magisk (`/data/adb/magisk/busybox`), KernelSU (`/data/adb/ksu/bin/busybox`), and APatch (`/data/adb/ap/bin/busybox`) already ship a feature-complete static BusyBox. FluxLinux already invokes `$BB applet` (not bare `wget`/`tar` on PATH). The module only installs applet **symlinks** onto PATH.
+Magisk (`/data/adb/magisk/busybox`), KernelSU (`/data/adb/ksu/bin/busybox`), and APatch (`/data/adb/ap/bin/busybox`) already ship a feature-complete static BusyBox. Kuro already invokes `$BB applet` (not bare `wget`/`tar` on PATH). The module only installs applet **symlinks** onto PATH.
 
-**Ship:** one resolver, applet probe, pin to `/data/local/tmp/flux_busybox`, pass `FLUX_BB`, `/system/bin` mount/chroot fallback, stop telling users they MUST flash the zip.
+**Ship:** one resolver, applet probe, pin to `/data/local/kuro/flux_busybox`, pass `FLUX_BB`, `/system/bin` mount/chroot fallback, stop telling users they MUST flash the zip.
 
 ### Iter 1 device (2026-08-15, duchamp / KSU)
 
 Debian (Rooted) uninstall + reinstall in-app succeeded. Helper restaged to v2.8. Resolver present. `BB=/data/adb/ksu/bin/busybox` (no NDK module). XFCE4 / X11 reported working. Unit tests green.
 
-**Device fact:** `/data/local/tmp` is **noexec**. Pin file is created (`chmod 755` → `[ -x ]` true) but exec is **127**. `resolve_bb` / helper embed correctly refuse to switch `BB` to the pin (`bb_ok` runs `--list`). The last-resort `[ -x PINNED ]` walk in every setup/start/stop/uninstall does **not**. That is iter 2.
+**Device fact:** `/data/local/kuro` is **noexec**. Pin file is created (`chmod 755` → `[ -x ]` true) but exec is **127**. `resolve_bb` / helper embed correctly refuse to switch `BB` to the pin (`bb_ok` runs `--list`). The last-resort `[ -x PINNED ]` walk in every setup/start/stop/uninstall does **not**. That is iter 2.
 
 ### Iter 2 (must ship)
 
-**B15.** Never assign `BB` to `/data/local/tmp/flux_busybox` (or any path) on `[ -x ]` alone. Require a real exec (`"$path" --list >/dev/null` or `bb_ok` if sourced). Last-resort walk must still reach KSU/APatch/Magisk when the pin exists but cannot exec. Same for `TermuxIntentFactory` legacy `BB=…flux_busybox`.
+**B15.** Never assign `BB` to `/data/local/kuro/flux_busybox` (or any path) on `[ -x ]` alone. Require a real exec (`"$path" --list >/dev/null` or `bb_ok` if sourced). Last-resort walk must still reach KSU/APatch/Magisk when the pin exists but cannot exec. Same for `TermuxIntentFactory` legacy `BB=…flux_busybox`.
 
 Uninstall resolver `cp` is best-effort (`|| true`); do not `&&` it in front of `sh uninstall`.
 
@@ -48,10 +48,10 @@ Break any of these and the work is wrong even if tests are green.
 
 | ID | Contract |
 | --- | --- |
-| **B1** | Candidate order is exactly: `FLUX_BB` (if `bb_ok`) → `/data/local/tmp/flux_busybox` → KSU → APatch → Magisk → NDK `system/xbin` → NDK `system/bin` → `/debug_ramdisk/busybox` → `/sbin/busybox` → `command -v busybox` (if `bb_ok`) → `/system/xbin/busybox` → `/system/bin/busybox`. First `bb_ok` wins. |
+| **B1** | Candidate order is exactly: `FLUX_BB` (if `bb_ok`) → `/data/local/kuro/flux_busybox` → KSU → APatch → Magisk → NDK `system/xbin` → NDK `system/bin` → `/debug_ramdisk/busybox` → `/sbin/busybox` → `command -v busybox` (if `bb_ok`) → `/system/xbin/busybox` → `/system/bin/busybox`. First `bb_ok` wins. |
 | **B2** | `bb_ok` = executable **and** not a Termux/Flux PREFIX path (`*com.termux*` / `*fluxlinux*` / `*nativecode*`) **and** `$bb --list` contains both `chroot` and `mount` (split on space/tab/newline). |
-| **B3** | Never exec BusyBox from app-data (`/data/data/<pkg>/files/...`). W^X / SELinux. Same reason the helper lives in `/data/local/tmp`. |
-| **B4** | After a successful resolve, best-effort `cp -f "$BB" /data/local/tmp/flux_busybox && chmod 755`. Pin failure is **not** fatal; keep the resolved path. |
+| **B3** | Never exec BusyBox from app-data (`/data/data/<pkg>/files/...`). W^X / SELinux. Same reason the helper lives in `/data/local/kuro`. |
+| **B4** | After a successful resolve, best-effort `cp -f "$BB" /data/local/kuro/flux_busybox && chmod 755`. Pin failure is **not** fatal; keep the resolved path. |
 | **B5** | Helper version stamp, `VERSION_STR`, and `ChrootPaths.CHROOT_HELPER_VERSION` all become **`fluxlinux-chroot v2.8`** in the **same** change. `ensureChrootHelper` restages on the version grep. |
 | **B6** | Do **not** restore `chroot --userspec`. `guest_userspec` stays numeric `setuidgid`. If `setuidgid` is missing, die with the existing class of message — do not invent GNU flags. |
 | **B7** | Root install gate stays **`RootShell.isRootAvailable()` only**. Missing BusyBox must **not** fail onboarding before the setup script runs. Setup/helper still exit non-zero if resolve fails (existing behavior). |
@@ -66,10 +66,10 @@ Break any of these and the work is wrong even if tests are green.
 ### Locked paths
 
 ```
-PINNED            = /data/local/tmp/flux_busybox
-RESOLVER_ON_DEVICE = /data/local/tmp/fluxlinux_resolve_bb.sh
+PINNED            = /data/local/kuro/flux_busybox
+RESOLVER_ON_DEVICE = /data/local/kuro/fluxlinux_resolve_bb.sh
 RESOLVER_ASSET    = scripts/chroot/resolve_bb.sh
-HELPER            = /data/local/tmp/fluxlinux_chroot.sh   (unchanged)
+HELPER            = /data/local/kuro/fluxlinux_chroot.sh   (unchanged)
 ```
 
 `BusyBoxPaths.CANDIDATES` (search after FLUX_BB + PINNED):
@@ -94,9 +94,9 @@ New file `app/src/main/kotlin/com/ivarna/fluxlinux/core/root/BusyBoxPaths.kt`:
 
 ```kotlin
 object BusyBoxPaths {
-    const val PINNED = "/data/local/tmp/flux_busybox"
+    const val PINNED = "/data/local/kuro/flux_busybox"
     const val RESOLVER_ASSET = "scripts/chroot/resolve_bb.sh"
-    const val RESOLVER_ON_DEVICE = "/data/local/tmp/fluxlinux_resolve_bb.sh"
+    const val RESOLVER_ON_DEVICE = "/data/local/kuro/fluxlinux_resolve_bb.sh"
     val CANDIDATES: List<String> = listOf(
         "/data/adb/ksu/bin/busybox",
         "/data/adb/ap/bin/busybox",
@@ -128,8 +128,8 @@ Probe command (locked shape; helper/resolver implements the logic):
 
 ```sh
 export FLUX_PACKAGE='…'
-if [ -f /data/local/tmp/fluxlinux_resolve_bb.sh ]; then
-  . /data/local/tmp/fluxlinux_resolve_bb.sh
+if [ -f /data/local/kuro/fluxlinux_resolve_bb.sh ]; then
+  . /data/local/kuro/fluxlinux_resolve_bb.sh
   resolve_bb && printf '%s\n' "$BB" && exit 0
 fi
 exit 1
@@ -161,18 +161,18 @@ resolve_bb() {
   BB=""
   if [ -n "${FLUX_BB:-}" ] && bb_ok "$FLUX_BB"; then
     BB="$FLUX_BB"
-  elif bb_ok /data/local/tmp/flux_busybox; then
-    BB=/data/local/tmp/flux_busybox
+  elif bb_ok /data/local/kuro/flux_busybox; then
+    BB=/data/local/kuro/flux_busybox
   else
     # walk B1 list (KSU … /sbin), then command -v, then /system/*
     …
   fi
   [ -n "$BB" ] || return 1
-  if [ "$BB" != /data/local/tmp/flux_busybox ]; then
-    cp -f "$BB" /data/local/tmp/flux_busybox 2>/dev/null \
-      && chmod 755 /data/local/tmp/flux_busybox 2>/dev/null \
-      && bb_ok /data/local/tmp/flux_busybox \
-      && BB=/data/local/tmp/flux_busybox || true
+  if [ "$BB" != /data/local/kuro/flux_busybox ]; then
+    cp -f "$BB" /data/local/kuro/flux_busybox 2>/dev/null \
+      && chmod 755 /data/local/kuro/flux_busybox 2>/dev/null \
+      && bb_ok /data/local/kuro/flux_busybox \
+      && BB=/data/local/kuro/flux_busybox || true
   fi
   return 0
 }
@@ -185,8 +185,8 @@ resolve_bb() {
 `$(dirname "$0")/resolve_bb.sh` is **not** enough by itself. Live callers copy **only** the script they run:
 
 - Setup: `RootShell.stageAsset` → `filesDir/staged_scripts/setup_*.sh` (no sibling resolver)
-- Desktop: `start_gui_chroot.sh` copies **only** the guest start script + helper to `/data/local/tmp/` then `su -c sh /data/local/tmp/start_*_gui.sh` (`start_gui_chroot.sh` ~L205–229). It does **not** copy `resolve_bb.sh` and does **not** set `FLUX_BB`.
-- Uninstall: `UninstallSessionFactory` copies **only** `uninstall_*.sh` to `/data/local/tmp` and `su` drops the env map.
+- Desktop: `start_gui_chroot.sh` copies **only** the guest start script + helper to `/data/local/kuro/` then `su -c sh /data/local/kuro/start_*_gui.sh` (`start_gui_chroot.sh` ~L205–229). It does **not** copy `resolve_bb.sh` and does **not** set `FLUX_BB`.
+- Uninstall: `UninstallSessionFactory` copies **only** `uninstall_*.sh` to `/data/local/kuro` and `su` drops the env map.
 
 So the consume block **must** still find Magisk/KSU/APatch when the sidecar is missing. Last-resort is an **inline B1 walk**, not `FLUX_BB`/PINNED only.
 
@@ -198,7 +198,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -210,8 +210,8 @@ fi
 if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ]; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ]; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ]; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -230,7 +230,7 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 ```
@@ -278,12 +278,12 @@ Extract stays `$BB tar`. If tar/xz fails, existing unxz-pipe in `setup_debian13_
 | --- | --- |
 | `RootShell.buildChrootHelperCmd` | If `cachedBusyBox()` non-null, add `export FLUX_BB='…';` next to the existing `FLUX_PACKAGE`/`FLUX_CHROOT` exports. |
 | `ChrootCommandBuilder.build` | Call `ensureBusyBoxResolver` + `resolveBusyBox` (already on a session-open path that can hit su). Prefix `withPath` with `export FLUX_BB='…';` when non-null. `buildEnv` puts `FLUX_BB` when `cachedBusyBox()` non-null. |
-| `OnboardingInstallRunner.runChroot` `rootCmd` | After root OK: `ensureBusyBoxResolver` + `resolveBusyBox()`. If non-null, `export FLUX_BB='…';` in `rootCmd`. **Do not** `postFail` when null. Fail text: drop “install BusyBox if needed” unless probe returned null **and** setup later failed — then the setup script’s own error is enough. Change the pre-setup fail string to: `"Root not available. Grant superuser to FluxLinux, then retry."` |
+| `OnboardingInstallRunner.runChroot` `rootCmd` | After root OK: `ensureBusyBoxResolver` + `resolveBusyBox()`. If non-null, `export FLUX_BB='…';` in `rootCmd`. **Do not** `postFail` when null. Fail text: drop “install BusyBox if needed” unless probe returned null **and** setup later failed — then the setup script’s own error is enough. Change the pre-setup fail string to: `"Root not available. Grant superuser to Kuro, then retry."` |
 | `DesktopLauncher` chroot start/stop | Call `ensureBusyBoxResolver` + `resolveBusyBox()` before launching `start_gui_chroot.sh` / `stop_gui_chroot.sh`. |
-| `start_gui_chroot.sh` / `stop_gui_chroot.sh` | Same `cp` pattern as the helper (~L205–229): copy `$TERMUX_HOME/resolve_bb.sh` (or staged) → `/data/local/tmp/fluxlinux_resolve_bb.sh`, `chmod 755`, and put `FLUX_BB=… FLUX_RESOLVE_BB=/data/local/tmp/fluxlinux_resolve_bb.sh` on the `su -c` env line next to `HELPER`. Do **not** assume the guest script can source a sibling — `$0` is `/data/local/tmp/start_*_gui.sh`. |
+| `start_gui_chroot.sh` / `stop_gui_chroot.sh` | Same `cp` pattern as the helper (~L205–229): copy `$TERMUX_HOME/resolve_bb.sh` (or staged) → `/data/local/kuro/fluxlinux_resolve_bb.sh`, `chmod 755`, and put `FLUX_BB=… FLUX_RESOLVE_BB=/data/local/kuro/fluxlinux_resolve_bb.sh` on the `su -c` env line next to `HELPER`. Do **not** assume the guest script can source a sibling — `$0` is `/data/local/kuro/start_*_gui.sh`. |
 | `UninstallSessionFactory` inner `su` string | `ensureBusyBoxResolver` + `resolveBusyBox` first. Copy `$HOME/resolve_bb.sh` → `RESOLVER_ON_DEVICE` in the `cp` chain. Export `FLUX_BB` and `FLUX_RESOLVE_BB` **inside** the `su` string (`extraEnv` is dropped by `su` — see factory comment at L38). |
 
-`ensureChrootHelper` **always** calls `ensureBusyBoxResolver(ctx)` on entry, **including** the version-stamp early return (`RootShell.kt:343–345`). Otherwise a deleted `/data/local/tmp/fluxlinux_resolve_bb.sh` is never repaired. Mirror helper self-heal: if on-device resolver missing, `cp` from `$HOME/resolve_bb.sh` or `staged_scripts/resolve_bb.sh`.
+`ensureChrootHelper` **always** calls `ensureBusyBoxResolver(ctx)` on entry, **including** the version-stamp early return (`RootShell.kt:343–345`). Otherwise a deleted `/data/local/kuro/fluxlinux_resolve_bb.sh` is never repaired. Mirror helper self-heal: if on-device resolver missing, `cp` from `$HOME/resolve_bb.sh` or `staged_scripts/resolve_bb.sh`.
 
 `resolveBusyBox()` has **no** `Context` and does **not** stage. Every Kotlin caller must call `ensureBusyBoxResolver` first. The locked probe (`su` + source sidecar) is `exit 1` if the sidecar is absent — that is why staging is mandatory for `probeBusyBox` / `BusyBoxInstallStep`. Session login still works via helper embed even if the sidecar is gone.
 
@@ -302,7 +302,7 @@ Do **not** use `RootUtils` for the BusyBox probe. `RootUtils` may remain for the
 **`OnboardingFlowScreen`** chroot blurb (exact replacement):
 
 ```
-Rooted path: grant superuser to FluxLinux. Magisk, KernelSU, and APatch already include BusyBox — a separate module is not required.
+Rooted path: grant superuser to Kuro. Magisk, KernelSU, and APatch already include BusyBox — a separate module is not required.
 ```
 
 **`TerminalComponent.CHROOT_ROOT_SHELL` KDoc:** `Root + SSOT chroot helper.` (drop “BusyBox NDK”).
@@ -316,7 +316,7 @@ Tutorials (`docs/tutorial/setup_fluxlinux.md`, `setup_debian_chroot.md`): BusyBo
 Replace bare `busybox chroot` with:
 
 ```sh
-BB="${FLUX_BB:-/data/local/tmp/flux_busybox}";
+BB="${FLUX_BB:-/data/local/kuro/flux_busybox}";
 [ -x "$BB" ] || BB="$(command -v busybox)";
 "$BB" chroot …
 ```
@@ -407,7 +407,7 @@ Setup scripts: keep `|| goodbye` on critical binds; add `/system/bin/mount` afte
 
 ```
 - feat: chroot uses Magisk/KernelSU/APatch built-in BusyBox — NDK module no longer required
-- fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/tmp/flux_busybox)
+- fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/kuro/flux_busybox)
 ```
 
 ### Phase 4 — Tests + optional device smoke
@@ -466,9 +466,9 @@ Not a substitute for unit tests. If no device, write that in the wrap-up and sto
 
 1. `adb shell su -c 'ls -l /data/adb/ksu/bin/busybox /data/adb/magisk/busybox /data/adb/ap/bin/busybox'` — note which exist.
 2. After install of the new APK: open any **already installed** chroot tab (Fedora or Debian). Helper on device is `fluxlinux-chroot v2.8`. Login works.
-3. `adb shell su -c 'ls -l /data/local/tmp/flux_busybox /data/local/tmp/fluxlinux_resolve_bb.sh'` — pin + resolver present after first chroot open.
-4. Cold desktop: reboot or `rm /data/local/tmp/fluxlinux_resolve_bb.sh /data/local/tmp/flux_busybox`, then Start Desktop on an existing chroot **without** opening a terminal tab first. XFCE must still start (inline B1 walk + wrapper copy).
-5. Optional: `adb shell su -c '/data/local/tmp/flux_busybox --list'` contains `chroot` and `mount`.
+3. `adb shell su -c 'ls -l /data/local/kuro/flux_busybox /data/local/kuro/fluxlinux_resolve_bb.sh'` — pin + resolver present after first chroot open.
+4. Cold desktop: reboot or `rm /data/local/kuro/fluxlinux_resolve_bb.sh /data/local/kuro/flux_busybox`, then Start Desktop on an existing chroot **without** opening a terminal tab first. XFCE must still start (inline B1 walk + wrapper copy).
+5. Optional: `adb shell su -c '/data/local/kuro/flux_busybox --list'` contains `chroot` and `mount`.
 
 **Do not** uninstall a working chroot just to re-install unless the user asked. Fresh chroot extract is optional and slow.
 

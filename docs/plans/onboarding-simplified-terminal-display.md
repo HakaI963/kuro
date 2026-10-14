@@ -92,7 +92,7 @@
 
 ### Already embedded (good foundation)
 
-- Host userland: `bootstrap.tar` + W^X jniLibs per flavor (`com.ivarna.fluxlinux` / `com.zenithblue.fluxlinux`)
+- Host userland: `bootstrap.tar` + W^X jniLibs per flavor (`com.kuro.app` / `com.kuro.app`)
 - Install/CLI via in-app `TerminalSession` / `TerminalView` (`FluxTerminalSessionManager`, command builders)
 - Embedded X11 module (`:termux-x11`) + `EmbeddedX11`
 - Distro catalog: Debian + Debian Rooted installable; ~18 coming-soon cards
@@ -120,7 +120,7 @@
 5. **Progress + live log** (bootstrap → host → Debian → optional extras)  
 6. Complete → Main  
 
-FluxLinux should keep **Compose + glass UI**, but mirror the **flow and install phases**, not the View-based widgets.
+Kuro should keep **Compose + glass UI**, but mirror the **flow and install phases**, not the View-based widgets.
 
 ---
 
@@ -356,7 +356,7 @@ Scripts already exist under Flux assets (`start_gui.sh`, chroot variants); align
 
 ## 6. File map (primary)
 
-### FluxLinux (edit)
+### Kuro (edit)
 
 | Area | Paths |
 |------|--------|
@@ -467,4 +467,4 @@ Pass 2: R1–R10, N13 (exit codes, cancel, cohesion, WINCH, deployer table)
 
 ## Summary
 
-FluxLinux already has the embedded host/terminal/X11 **platform**. This plan **repositions first-run UX** to a nativecode-style **full onboarding install** (distro pick + coming soon, then rootfs + XFCE + customization only), **defers feature modules** to Distro Settings, and **finishes product parity** for interactive terminal (extra keys/resize) and desktop launch (host `start_gui*.sh` + embedded X11, zero external Termux).
+Kuro already has the embedded host/terminal/X11 **platform**. This plan **repositions first-run UX** to a nativecode-style **full onboarding install** (distro pick + coming soon, then rootfs + XFCE + customization only), **defers feature modules** to Distro Settings, and **finishes product parity** for interactive terminal (extra keys/resize) and desktop launch (host `start_gui*.sh` + embedded X11, zero external Termux).

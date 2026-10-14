@@ -169,7 +169,7 @@ Chroot is already `--shell`-capable (`fluxlinux_chroot.sh` v2.4 `login --shell z
 | # | Decision | Rationale |
 | --- | --- | --- |
 | K1 | **One global pref**, not per-distro. | Product spec. **48 guest cards** (12 distros × proot/chroot × flux/root) would explode Settings. All guests share the same Flux customization (OMZ/zsh). |
-| K2 | **Launch-time `-s` / `exec`, never toggle-time `chsh` or passwd rewrite.** | App uid cannot reliably write chroot `/etc/passwd` (SELinux `/data/local/tmp`). Mutating passwd surprises `su -` elsewhere, is sticky across toggle-back, and fights `ensureFluxLoginShellZsh` / `ensure_flux_zsh_profile`. `-s` already exists in the helper. |
+| K2 | **Launch-time `-s` / `exec`, never toggle-time `chsh` or passwd rewrite.** | App uid cannot reliably write chroot `/etc/passwd` (SELinux `/data/local/kuro`). Mutating passwd surprises `su -` elsewhere, is sticky across toggle-back, and fights `ensureFluxLoginShellZsh` / `ensure_flux_zsh_profile`. `-s` already exists in the helper. |
 | K3 | **Default `zsh`.** | User asked for a toggle, not a default flip. Customization + OMZ assume zsh. Existing tests hardcode `--shell zsh` / zsh-first cascade. |
 | K4 | **`"exec zsh"` remains the API default `shellCmd` but becomes a *sentinel*, not a shell choice.** | Avoids touching every call site. Builders must not treat that string as “always run zsh”. |
 | K5 | **SSOT object `GuestLoginShell`** (enum + helpers) + persist in `TerminalPreferences`. | Stops scattering `"exec zsh"` comparisons. Pure functions stay JVM-testable without Android. |
@@ -236,7 +236,7 @@ Proot must **not** call `isInteractiveLogin`. A workdir-form `shellCmd` is a **p
 `trim()` is **intentional** and a small contract change vs today’s untrimmed `==`. `" exec zsh "` becomes a sentinel. Documented; no production caller pads the sentinel.
 
 ```kotlin
-package com.ivarna.fluxlinux.core.terminal
+package com.kuro.app.core.terminal
 
 enum class GuestLoginShell(val id: String) {
     ZSH("zsh"),
@@ -381,7 +381,7 @@ val rootInner = buildRootInner(
 )
 ```
 
-Rewrite the stale `build()` comments (“Always request zsh for flux”, Alpine `File.exists()` probe). New comment: **shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/tmp`).** Delete `isAlpine` only if it is unused after the mapping (it stays for the `null` path).
+Rewrite the stale `build()` comments (“Always request zsh for flux”, Alpine `File.exists()` probe). New comment: **shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/kuro`).** Delete `isAlpine` only if it is unused after the mapping (it stays for the `null` path).
 
 `buildRootInner` body:
 
@@ -670,7 +670,7 @@ Rejected per-distro. If a later distro truly cannot run bash (none today after c
 
 | | Mutate passwd / `chsh` | Launch-time (chosen) |
 | --- | --- | --- |
-| Chroot writability | App uid cannot stat/write `/data/local/tmp` (SELinux). Today’s `File.exists()` comment in `ChrootCommandBuilder` exists for this reason. | Helper runs as root; `-s` already implemented. |
+| Chroot writability | App uid cannot stat/write `/data/local/kuro` (SELinux). Today’s `File.exists()` comment in `ChrootCommandBuilder` exists for this reason. | Helper runs as root; `-s` already implemented. |
 | Toggle-back | Must rewrite again; races with `ensureFluxLoginShellZsh` | Pref flip; next session execs the other binary |
 | Side effects | `su - flux` inside guest / cron / GUI helpers change unexpectedly | Only Terminal-page interactive logins |
 | Alpine minirootfs | `chsh` may fail (no zsh in `/etc/shells`) | Resolver fail-opens to sh |
@@ -807,7 +807,7 @@ Enough detail for a later worker prompt. Do **not** implement in the design pass
 - `build(..., loginShell: GuestLoginShell? = null)` using the **locked mapping** in §3 (`null` → flux zsh / root bash / Alpine root sh; non-null → both `loginShell.chrootFlag`).
 - **Do not** change `buildRootInner` String defaults (`loginShellFlux = "zsh"`, `loginShellRoot = "bash"`).
 - `buildRootInner`: use **`GuestLoginShell.isInteractiveLogin`** + `GuestLoginShell.parseInteractiveWorkdir`. Delete private `parseInteractiveWorkdir`.
-- Delete unused Alpine comments. Rewrite the SELinux/`File.exists()` comment to: **shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/tmp`).** Keep `isAlpine` only for the `loginShell == null` root mapping.
+- Delete unused Alpine comments. Rewrite the SELinux/`File.exists()` comment to: **shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/kuro`).** Keep `isAlpine` only for the `loginShell == null` root mapping.
 
 #### `core/terminal/LinuxCommandBuilder.kt`
 

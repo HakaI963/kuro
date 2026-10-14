@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup_customization_kde_debian.sh
-# Applies "FluxLinux" branding and customization to Debian KDE Plasma Desktop
+# Applies "Kuro" branding and customization to Debian KDE Plasma Desktop
 # Mirrors setup_customization_debian.sh structure exactly, adapted for KDE
 # Works for both Chroot and Proot environments (run as root, switches to user 'flux')
 
@@ -17,7 +17,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # Error Handler
 handle_error() {
     echo ""
-    echo "❌ FluxLinux KDE Customization Error: Script failed at step: $1"
+    echo "❌ Kuro KDE Customization Error: Script failed at step: $1"
     echo "─────────────────────────────────────────────────────────────"
     echo "Log saved to: $LOG_FILE"
     echo ""
@@ -27,24 +27,24 @@ handle_error() {
     echo "─────────────────────────────────────────────────────────────"
     read -p "Press Enter to acknowledge error and exit..."
 
-    # Notify FluxLinux app of failure
+    # Notify Kuro app of failure
     am start -a android.intent.action.VIEW \
-        -d "fluxlinux://callback?result=failure&name=kde_customization" \
+        -d "kuro://callback?result=failure&name=kde_customization" \
         2>/dev/null || true
 
     exit 1
 }
 
-echo "FluxLinux: Starting KDE Plasma Customization..."
+echo "Kuro: Starting KDE Plasma Customization..."
 
 # 1. Install Dependencies
-echo "FluxLinux: Installing customization tools..."
+echo "Kuro: Installing customization tools..."
 export DEBIAN_FRONTEND=noninteractive
 apt update -y
 apt install -y curl fastfetch wget unzip fontconfig locales breeze breeze-gtk-theme || handle_error "Dependency Installation"
 
 # Setup Locales for proper font rendering in ZSH/Terminal
-echo "FluxLinux: Setting up locales..."
+echo "Kuro: Setting up locales..."
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
 update-locale LANG=en_US.UTF-8
@@ -57,7 +57,7 @@ ASSET_REPO="abhay-byte/fluxlinux"
 ASSET_TAG="debian-v1"
 BASE_URL="https://github.com/$ASSET_REPO/releases/download/$ASSET_TAG"
 
-echo "FluxLinux: Downloading assets from $BASE_URL..."
+echo "Kuro: Downloading assets from $BASE_URL..."
 
 # Helper to extract all contents
 extract_all_assets() {
@@ -80,7 +80,7 @@ extract_all_assets() {
 
 # 3. Theme Selection Prompt
 if [ -n "$FLUX_THEME" ]; then
-    echo "FluxLinux: Auto-applying Theme: $FLUX_THEME"
+    echo "Kuro: Auto-applying Theme: $FLUX_THEME"
     if [ "$FLUX_THEME" == "light" ]; then
         THEME_CHOICE="2"
     else
@@ -99,14 +99,14 @@ fi
 SEL_ICON="Papirus-Dark"
 
 if [ "$THEME_CHOICE" == "2" ]; then
-    echo "FluxLinux: Light Mode Selected (icons: Papirus-Dark only)."
+    echo "Kuro: Light Mode Selected (icons: Papirus-Dark only)."
     SEL_GTK_THEME="Space-light"
     SEL_CURSOR="Vimix-cursors"
     SEL_WALLPAPER="fluxlinux-light.png"
     KDE_COLOR_SCHEME="BreezeLight"
     KWIN_THEME="Breeze"
 else
-    echo "FluxLinux: Dark Mode Selected (icons: Papirus-Dark only)."
+    echo "Kuro: Dark Mode Selected (icons: Papirus-Dark only)."
     SEL_GTK_THEME="Space-transparency"
     SEL_CURSOR="Vimix-white-cursors"
     SEL_WALLPAPER="fluxlinux-dark.png"
@@ -115,17 +115,17 @@ else
 fi
 
 # Install GTK Themes (same as XFCE — KDE apps use GTK theme via qt5-style-plugins)
-echo "FluxLinux: Installing Themes..."
+echo "Kuro: Installing Themes..."
 mkdir -p "$THEME_DIR"
 extract_all_assets "$BASE_URL/theme.zip" "$THEME_DIR"
 
 # Install Icons (Papirus works perfectly in KDE)
-echo "FluxLinux: Installing Icons..."
+echo "Kuro: Installing Icons..."
 mkdir -p "$ICON_DIR"
 extract_all_assets "$BASE_URL/icons.zip" "$ICON_DIR"
 
 # Install Cursors
-echo "FluxLinux: Installing Cursors..."
+echo "Kuro: Installing Cursors..."
 extract_all_assets "$BASE_URL/cursor.zip" "$ICON_DIR"
 
 # Wallpaper Setup
@@ -133,7 +133,7 @@ WALLPAPER_DIR="$USER_HOME/Pictures/Wallpapers"
 mkdir -p "$WALLPAPER_DIR"
 chown -R "$CUSTOM_USER:$CUSTOM_GROUP" "$USER_HOME/Pictures" 2>/dev/null
 
-echo "FluxLinux: Downloading Wallpaper..."
+echo "Kuro: Downloading Wallpaper..."
 TEMP_WP_ZIP="/tmp/wallpaper.zip"
 wget -q --show-progress "$BASE_URL/wallpaper.zip" -O "$TEMP_WP_ZIP"
 unzip -o -j "$TEMP_WP_ZIP" -d "$WALLPAPER_DIR"
@@ -149,18 +149,18 @@ FONT_DIR="/usr/share/fonts/truetype/jetbrains-mono-nerd"
 FONT_INSTALLED=false
 
 if fc-list | grep -qi "JetBrainsMono Nerd"; then
-    echo "FluxLinux: JetBrains Mono Nerd Font already installed."
+    echo "Kuro: JetBrains Mono Nerd Font already installed."
     FONT_INSTALLED=true
 fi
 
 if [ "$FONT_INSTALLED" = false ]; then
-    echo "FluxLinux: Installing JetBrains Mono Nerd Font..."
+    echo "Kuro: Installing JetBrains Mono Nerd Font..."
     mkdir -p "$FONT_DIR"
     NERD_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
     TEMP_ZIP="/tmp/JetBrainsMono.zip"
     echo " - Downloading JetBrains Mono Nerd Font..."
     wget -q --show-progress "$NERD_FONT_URL" -O "$TEMP_ZIP" || {
-        echo "FluxLinux: Direct download failed, trying from release..."
+        echo "Kuro: Direct download failed, trying from release..."
         wget -q --show-progress "$BASE_URL/font.zip" -O "$TEMP_ZIP" || handle_error "Font Download"
     }
     echo " - Extracting font files..."
@@ -174,21 +174,21 @@ if [ "$FONT_INSTALLED" = false ]; then
     fc-cache -fv "$FONT_DIR"
     su -s /bin/bash - "$CUSTOM_USER" -c "fc-cache -f" 2>/dev/null
     if fc-list | grep -qi "JetBrainsMono Nerd"; then
-        echo "FluxLinux: ✓ JetBrains Mono Nerd Font installed successfully!"
+        echo "Kuro: ✓ JetBrains Mono Nerd Font installed successfully!"
     else
-        echo "FluxLinux: ⚠ Font may not be properly registered."
+        echo "Kuro: ⚠ Font may not be properly registered."
         ls -la "$FONT_DIR"
     fi
 fi
 
 # 4. Apply KDE Settings via config files
-echo "FluxLinux: Applying KDE Plasma Settings..."
+echo "Kuro: Applying KDE Plasma Settings..."
 
 KDE_CONFIG="$USER_HOME/.config"
 mkdir -p "$KDE_CONFIG"
 
 # ── kdeglobals: global KDE theme, icons, fonts, cursor ──────────────────────
-echo "FluxLinux: Writing kdeglobals..."
+echo "Kuro: Writing kdeglobals..."
 cat > "$KDE_CONFIG/kdeglobals" << EOF
 [General]
 ColorScheme=$KDE_COLOR_SCHEME
@@ -215,7 +215,7 @@ activeFont=JetBrainsMonoNerdFont,10,-1,5,700,0,0,0,0,0
 EOF
 
 # ── kcminputrc: cursor theme ─────────────────────────────────────────────────
-echo "FluxLinux: Writing kcminputrc (cursor)..."
+echo "Kuro: Writing kcminputrc (cursor)..."
 cat > "$KDE_CONFIG/kcminputrc" << EOF
 [Mouse]
 cursorSize=24
@@ -223,7 +223,7 @@ cursorTheme=$SEL_CURSOR
 EOF
 
 # ── kwinrc: window manager (Breeze), compositing, tiling ────────────────────
-echo "FluxLinux: Writing kwinrc..."
+echo "Kuro: Writing kwinrc..."
 cat > "$KDE_CONFIG/kwinrc" << EOF
 [Compositing]
 Backend=QPainter
@@ -251,14 +251,14 @@ theme=Breeze
 EOF
 
 # ── plasmarc: Plasma shell theme ─────────────────────────────────────────────
-echo "FluxLinux: Writing plasmarc..."
+echo "Kuro: Writing plasmarc..."
 cat > "$KDE_CONFIG/plasmarc" << EOF
 [Theme]
 name=breeze-dark
 EOF
 
 # ── plasma-org.kde.plasma.desktop-appletsrc: wallpaper + panel layout ────────
-echo "FluxLinux: Writing Plasma desktop config (wallpaper + panel)..."
+echo "Kuro: Writing Plasma desktop config (wallpaper + panel)..."
 cat > "$KDE_CONFIG/plasma-org.kde.plasma.desktop-appletsrc" << EOF
 [Containments][1]
 ItemGeometriesHorizontal=
@@ -311,7 +311,7 @@ AppletOrder=3;4;5;6;7
 EOF
 
 # ── kglobalshortcutsrc: keyboard shortcuts (KDE equivalent) ─────────────────
-echo "FluxLinux: Writing keyboard shortcuts (kglobalshortcutsrc)..."
+echo "Kuro: Writing keyboard shortcuts (kglobalshortcutsrc)..."
 cat > "$KDE_CONFIG/kglobalshortcutsrc" << 'EOF'
 [kwin]
 Show Desktop=Meta+D,Meta+D,Show Desktop
@@ -333,18 +333,18 @@ _launch=none,none,KDE Plasma Desktop
 EOF
 
 # ── kcmfonts: DPI / font scaling (2x for mobile displays) ───────────────────
-echo "FluxLinux: Writing font DPI config..."
+echo "Kuro: Writing font DPI config..."
 cat > "$KDE_CONFIG/kcmfonts" << EOF
 [General]
 forceFontDPI=192
 EOF
 
 # ── Konsole profile: replaces xfce4-terminal config ─────────────────────────
-echo "FluxLinux: Configuring Konsole..."
+echo "Kuro: Configuring Konsole..."
 KONSOLE_DIR="$USER_HOME/.local/share/konsole"
 mkdir -p "$KONSOLE_DIR"
 
-cat > "$KONSOLE_DIR/FluxLinux.profile" << 'EOF'
+cat > "$KONSOLE_DIR/Kuro.profile" << 'EOF'
 [Appearance]
 ColorScheme=Breeze
 Font=JetBrainsMonoNerdFontMono,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
@@ -352,7 +352,7 @@ antialias=true
 
 [General]
 Command=/bin/zsh
-Name=FluxLinux
+Name=Kuro
 Parent=FALLBACK/
 
 [Interaction Options]
@@ -373,7 +373,7 @@ EOF
 KONSOLE_CONFIG_DIR="$USER_HOME/.config"
 cat > "$KONSOLE_CONFIG_DIR/konsolerc" << 'EOF'
 [Desktop Entry]
-DefaultProfile=FluxLinux.profile
+DefaultProfile=Kuro.profile
 
 [KonsoleWindow]
 RememberWindowSize=true
@@ -387,21 +387,21 @@ chown -R "$CUSTOM_USER:$CUSTOM_GROUP" "$KONSOLE_DIR" "$KONSOLE_CONFIG_DIR/konsol
 
 # Fix ownership on all KDE configs
 chown -R "$CUSTOM_USER:$CUSTOM_GROUP" "$KDE_CONFIG"
-echo "FluxLinux: KDE settings applied successfully!"
+echo "Kuro: KDE settings applied successfully!"
 
 # 5. Configure Zsh and Terminal (identical to XFCE4 customization)
-echo "FluxLinux: Configuring Zsh and Terminal..."
+echo "Kuro: Configuring Zsh and Terminal..."
 
 # Install zsh
-echo "FluxLinux: Installing zsh..."
+echo "Kuro: Installing zsh..."
 apt-get install -y zsh 2>/dev/null
 
 # Install Oh My Zsh for flux user
-echo "FluxLinux: Installing Oh My Zsh..."
+echo "Kuro: Installing Oh My Zsh..."
 
 # Check for corrupt installation
 if [ -d "$USER_HOME/.oh-my-zsh" ] && [ ! -f "$USER_HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
-    echo "FluxLinux: Detected corrupt Oh My Zsh installation. Removing..."
+    echo "Kuro: Detected corrupt Oh My Zsh installation. Removing..."
     rm -rf "$USER_HOME/.oh-my-zsh"
 fi
 
@@ -411,29 +411,29 @@ if [ ! -d "$USER_HOME/.oh-my-zsh" ] || [ ! -f "$USER_HOME/.oh-my-zsh/oh-my-zsh.s
     su -s /bin/bash - "$CUSTOM_USER" -c 'RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"' 2>/dev/null || true
 fi
 if [ ! -f "$USER_HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
-    echo "FluxLinux: Oh My Zsh installer failed — trying git clone fallback..."
+    echo "Kuro: Oh My Zsh installer failed — trying git clone fallback..."
     rm -rf "$USER_HOME/.oh-my-zsh"
     su -s /bin/bash - "$CUSTOM_USER" -c "git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git '$USER_HOME/.oh-my-zsh'" 2>/dev/null || true
 fi
 if [ ! -f "$USER_HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
-    echo "FluxLinux: WARNING: Oh My Zsh not installed — .zshrc will skip source (no hard fail)"
+    echo "Kuro: WARNING: Oh My Zsh not installed — .zshrc will skip source (no hard fail)"
 fi
 
 ZSH_CUSTOM="$USER_HOME/.oh-my-zsh/custom"
 
 # Install Zsh plugins
-echo "FluxLinux: Installing Zsh plugins..."
+echo "Kuro: Installing Zsh plugins..."
 su -s /bin/bash - "$CUSTOM_USER" -c "git clone https://github.com/zsh-users/zsh-autosuggestions '$ZSH_CUSTOM/plugins/zsh-autosuggestions'" 2>/dev/null
 su -s /bin/bash - "$CUSTOM_USER" -c "git clone https://github.com/zsh-users/zsh-syntax-highlighting '$ZSH_CUSTOM/plugins/zsh-syntax-highlighting'" 2>/dev/null
 su -s /bin/bash - "$CUSTOM_USER" -c "git clone --depth 1 https://github.com/marlonrichert/zsh-autocomplete.git '$ZSH_CUSTOM/plugins/zsh-autocomplete'" 2>/dev/null
 
 # Install agnosterzak theme
-echo "FluxLinux: Installing agnosterzak theme..."
+echo "Kuro: Installing agnosterzak theme..."
 su -s /bin/bash - "$CUSTOM_USER" -c "mkdir -p '$ZSH_CUSTOM/themes'"
 su -s /bin/bash - "$CUSTOM_USER" -c "curl -fsSL https://raw.githubusercontent.com/zakaziko99/agnosterzak-ohmyzsh-theme/master/agnosterzak.zsh-theme -o '$ZSH_CUSTOM/themes/agnosterzak.zsh-theme'" 2>/dev/null
 
 # Install pokemon-colorscripts
-echo "FluxLinux: Installing pokemon-colorscripts..."
+echo "Kuro: Installing pokemon-colorscripts..."
 POKEMON_TEMP="/tmp/pokemon-colorscripts"
 rm -rf "$POKEMON_TEMP"
 git clone https://gitlab.com/phoneybadger/pokemon-colorscripts.git "$POKEMON_TEMP" 2>/dev/null
@@ -442,7 +442,7 @@ cd - > /dev/null
 rm -rf "$POKEMON_TEMP"
 
 # Configure .zshrc
-echo "FluxLinux: Configuring .zshrc..."
+echo "Kuro: Configuring .zshrc..."
 ZSHRC="$USER_HOME/.zshrc"
 
 # Write complete optimized .zshrc (performance fixes from screenshot)
@@ -450,7 +450,7 @@ ZSHRC="$USER_HOME/.zshrc"
 # - Backgrounded visuals with &! (async, don't block shell startup)
 # - DISABLE_AUTO_UPDATE / DISABLE_UPDATE_PROMPT (no prompts on launch)
 # - ZSH_DISABLE_COMPFIX (no compaudit, faster init)
-echo "FluxLinux: Writing optimized .zshrc..."
+echo "Kuro: Writing optimized .zshrc..."
 # Defensive: never hard-fail on missing oh-my-zsh / pokemon (network installs often skip).
 cat > "$ZSHRC" << 'ZSHEOF'
 # PATH setup - local bin, npm global modules
@@ -499,10 +499,10 @@ chsh -s /bin/zsh "$CUSTOM_USER" 2>/dev/null
 
 chown -R "$CUSTOM_USER:$CUSTOM_GROUP" "$USER_HOME/.oh-my-zsh" "$USER_HOME/.zshrc" "$USER_HOME/.local" 2>/dev/null
 
-echo "FluxLinux: Zsh configuration complete!"
+echo "Kuro: Zsh configuration complete!"
 
 # 6. Reload KDE Shell
-echo "FluxLinux: Reloading KDE Plasma Shell..."
+echo "Kuro: Reloading KDE Plasma Shell..."
 su -s /bin/bash - "$CUSTOM_USER" -c "
     export DISPLAY=:0
     # Kill and restart plasmashell to apply theme changes
@@ -514,12 +514,12 @@ su -s /bin/bash - "$CUSTOM_USER" -c "
     kwin_x11 --replace > /dev/null 2>&1 &
 " 2>/dev/null || true
 
-echo "FluxLinux: KDE Customization Complete!"
+echo "Kuro: KDE Customization Complete!"
 echo "Log saved at: $LOG_FILE"
 echo "------------------------------------------------"
 read -p "Press Enter to close..."
 
-# Notify FluxLinux app of success
+# Notify Kuro app of success
 am start -a android.intent.action.VIEW \
-    -d "fluxlinux://callback?result=success&name=kde_customization" \
+    -d "kuro://callback?result=success&name=kde_customization" \
     2>/dev/null || true

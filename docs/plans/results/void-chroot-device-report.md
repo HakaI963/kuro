@@ -1,8 +1,8 @@
 # Void chroot — device report
 
 **Date:** 2026-08-13  
-**Package:** `com.ivarna.fluxlinux`  
-**Path:** `/data/local/tmp/chrootVoid`
+**Package:** `com.kuro.app`  
+**Path:** `/data/local/kuro/chroot/void_chroot/rootfs`
 
 | Step | Result |
 |------|--------|

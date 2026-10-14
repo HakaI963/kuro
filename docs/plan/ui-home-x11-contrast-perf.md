@@ -81,11 +81,11 @@ Coming soon (7): Adélie Linux, Artix Linux, BackBox, CentOS Stream, Gentoo, Ope
 
 ### 1.3 Top bar — no X11 entry
 
-`MainActivity.kt` `TopBar` (~633–700): logo + “FluxLinux” | optional “Host: embedded” | **Terminal** | **Settings**.
+`MainActivity.kt` `TopBar` (~633–700): logo + “Kuro” | optional “Host: embedded” | **Terminal** | **Settings**.
 
 Shown when `currentScreen == HOME && currentTab != TERMINAL`. Distros tab uses the same top bar. There is no monitor / display action.
 
-`DesktopLauncher.reopenDisplay(ctx)` already opens `com.termux.x11.MainActivity` with `SINGLE_TOP | CLEAR_TOP` (Activity context, so BACK returns to FluxLinux).
+`DesktopLauncher.reopenDisplay(ctx)` already opens `com.termux.x11.MainActivity` with `SINGLE_TOP | CLEAR_TOP` (Activity context, so BACK returns to Kuro).
 
 ### 1.4 X11 idle stub — old X11 “X” logo
 
@@ -198,7 +198,7 @@ Shared widgets:
 4. **Home installed A–Z.** Home PRoot / Chroot installed cards use the same sorter. Catalog order (Debian-first) must not appear.
 5. **Top-bar Visit display.** Monitor icon on the global top bar opens the embedded X11 activity. Live-session badge when Running/Starting.
 6. **X11 idle art.** Stub uses a new **1:1** mascot+idle-monitor image. No X.org “X”. Idle stub still has Preferences / Help / Exit.
-7. **X11 chrome restyle + reliability.** Back + keyboard match Flux dark (rounded, cream/white hairline, no `#3DDC84`). A tap always fires Back or Keyboard. Back returns to FluxLinux **Home**. Keyboard shows the IME. Vertical drag still moves the cluster.
+7. **X11 chrome restyle + reliability.** Back + keyboard match Flux dark (rounded, cream/white hairline, no `#3DDC84`). A tap always fires Back or Keyboard. Back returns to Kuro **Home**. Keyboard shows the IME. Vertical drag still moves the cluster.
 8. **IME cleanup.** Leaving Terminal hides the soft keyboard. Home / Distros are not covered by a leftover IME.
 9. **Distros scroll.** Distros tab stays ≥ 50 fps on a mid-range device while flinging the full PRoot list. No haze-on-scroll hitch.
 10. **Contrast.** The three marked sections (Terminal settings, X11 Input switches, Appearance theme + Includes) meet WCAG AA for body (≥ 4.5:1) and have a visible switch track in both on and off states. X11 settings footer CTAs are also readable (cream + dark text; no white-on-cream, no near-black filled chip).
@@ -215,7 +215,7 @@ Shared widgets:
 - Do not generate a new mascot character. Use the existing penguin.
 - Do not ship a running XFCE screenshot as the stub. Monitor must look **off / disconnected**.
 - Do not delete idle-stub Preferences / Help / Exit. Restore them if the working tree still has them removed.
-- Do not `finishAffinity()` / kill the process from X11 Back. Session stays running; only the X11 **activity** may finish so Home is top of the FluxLinux task.
+- Do not `finishAffinity()` / kill the process from X11 Back. Session stays running; only the X11 **activity** may finish so Home is top of the Kuro task.
 
 ---
 
@@ -510,7 +510,7 @@ Grep (verified 2026-08-16):
     android:contentDescription="@string/x11_idle_mascot_cd" />
 ```
 
-Add `x11_idle_mascot_cd` = “FluxLinux mascot beside an idle X11 display”.
+Add `x11_idle_mascot_cd` = “Kuro mascot beside an idle X11 display”.
 
 **Keep** Preferences / Help / Exit on the idle stub (not requested to remove). The working tree deleted them plus their `onCreate` listeners — that is a regression; restore both XML and the three Java listeners (see §24.4). Optional restyle of those stub buttons to cream is still out of scope.
 
@@ -978,7 +978,7 @@ Do not implement “all 8 files at once.” Per PR:
 
 - [ ] Stub: square penguin + **off** monitor. No X.org mark.
 - [ ] Chrome: rounded dark pills, cream hairline, no green, still 50%+ visible.
-- [ ] A normal press (well over 100ms) on Back returns to FluxLinux **Home**. A second Back from Home exits. X11 does not reappear.
+- [ ] A normal press (well over 100ms) on Back returns to Kuro **Home**. A second Back from Home exits. X11 does not reappear.
 - [ ] A normal press on Keyboard shows the IME on the X11 surface. Hide still works on a second tap.
 - [ ] Drag Y still moves the cluster. Small vertical jitter must not swallow the tap.
 - [ ] Idle stub still has Preferences / Help / Exit.
@@ -1003,7 +1003,7 @@ Do not implement “all 8 files at once.” Per PR:
 - [ ] Distros + Back → Home (app still running).
 - [ ] Terminal + system Back → Home, IME gone.
 - [ ] Settings / X11 settings / Terminal settings + Back → parent, then Home. Does **not** exit.
-- [ ] X11 chrome Back or X11 system Back → FluxLinux Home. Session still running.
+- [ ] X11 chrome Back or X11 system Back → Kuro Home. Session still running.
 - [ ] Home + Back → app exits. X11 activity is not revealed.
 
 ---
@@ -1300,19 +1300,19 @@ If IME is already visible, hide with `hideSoftInputFromWindow`. Do not refuse ju
 
 Do not change ExtraKeys layout or `TermuxX11ExtraKeys` behavior beyond sharing a reliable show/hide if you extract a helper.
 
-### 24.4 Back must return to FluxLinux Home
+### 24.4 Back must return to Kuro Home
 
-`goToNativeCodeHome()` today starts `com.ivarna.fluxlinux.MainActivity` with only `REORDER_TO_FRONT | SINGLE_TOP`. Two holes:
+`goToNativeCodeHome()` today starts `com.kuro.app.MainActivity` with only `REORDER_TO_FRONT | SINGLE_TOP`. Two holes:
 
-1. Auto-open uses application context (`DesktopLauncher.openX11(app)` → `NEW_TASK`). KDE uses `EmbeddedX11.launchDisplay` which **always** sets `NEW_TASK`. X11 is then often another task; reorder-to-front does not raise FluxLinux.
-2. When X11 **is** in the same task, reorder leaves X11 **under** FluxLinux. The next system Back from Home reveals X11 instead of exiting — this violates item 12.
+1. Auto-open uses application context (`DesktopLauncher.openX11(app)` → `NEW_TASK`). KDE uses `EmbeddedX11.launchDisplay` which **always** sets `NEW_TASK`. X11 is then often another task; reorder-to-front does not raise Kuro.
+2. When X11 **is** in the same task, reorder leaves X11 **under** Kuro. The next system Back from Home reveals X11 instead of exiting — this violates item 12.
 
 **Required `goToNativeCodeHome()`:**
 
 ```
 Intent to {package}.MainActivity
   flags: SINGLE_TOP | CLEAR_TOP | REORDER_TO_FRONT
-         + NEW_TASK if FluxLinux is not in this task
+         + NEW_TASK if Kuro is not in this task
   extra: EXTRA_TARGET_PAGE = "home"   // force Home tab, not Terminal
 startActivity(intent)
 finish()   // pop the X11 activity; X server / session stays running
@@ -1342,7 +1342,7 @@ Keep NativeCode green `bg_nc_stub_btn` on those three. Do not restyle them in th
 
 ### 24.7 Device checks
 
-- Idle and running display: Back tap (press and hold ~200ms) → FluxLinux Home.
+- Idle and running display: Back tap (press and hold ~200ms) → Kuro Home.
 - Keyboard tap → IME visible on the X11 surface; second tap hides.
 - Drag the cluster vertically; release without a tap → no navigation / no IME flip.
 - Notification small icon still monochrome.
@@ -1358,7 +1358,7 @@ Keep NativeCode green `bg_nc_stub_btn` on those three. Do not restyle them in th
 
 There is **no** `BackHandler` / `OnBackPressedCallback` in the app module (`MainActivity.kt` ~729 `when (currentScreen)`). In-app arrow buttons already pop Settings → Home and Terminal → Home tab. **System / gesture Back** finishes `MainActivity` from Distros, Terminal, Settings, X11 settings, install, etc.
 
-X11 Back is item 11 (`goToNativeCodeHome` + `finish()`). After that, the user is on FluxLinux Home; the next Back must **exit**, not reopen X11.
+X11 Back is item 11 (`goToNativeCodeHome` + `finish()`). After that, the user is on Kuro Home; the next Back must **exit**, not reopen X11.
 
 ### 25.2 Required handler
 
@@ -1396,11 +1396,11 @@ Do not finish the process from Settings / X11-settings / Terminal / Distros. Hid
 |-------|-----------|
 | X11 chrome or X11 system Back | `goToNativeCodeHome()` then `finish()` X11 activity. Session stays. Lands on Home tab. |
 | Distros / Terminal / Settings / nested | Pop toward Home as above. |
-| Home tab | `finish()` FluxLinux. X11 activity is already gone, so the launcher (not X11) is next. |
+| Home tab | `finish()` Kuro. X11 activity is already gone, so the launcher (not X11) is next. |
 
 ### 25.4 Do not
 
-- `finishAffinity()` from X11 (would kill FluxLinux too).
+- `finishAffinity()` from X11 (would kill Kuro too).
 - Stop the desktop session on Back.
 - Add a confirmation dialog.
 

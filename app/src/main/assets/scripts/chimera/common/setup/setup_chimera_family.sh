@@ -25,10 +25,10 @@ fi
 #   - no bash/useradd/sudo in bootstrap — install shadow+bash BEFORE user creation
 
 DISTRO_NAME="${1:-chimera}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Chimera Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Chimera Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -36,7 +36,7 @@ _flux_ensure_tmp
 _flux_ensure_dns
 
 if ! command -v apk >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: apk not found"
+    echo "Kuro: ERROR: apk not found"
     exit 1
 fi
 
@@ -47,7 +47,7 @@ printf 'cache-packages\n' > /etc/apk/config
 
 _flux_log "apk update..."
 apk update || {
-    echo "FluxLinux: apk update failed (repos/network)"
+    echo "Kuro: apk update failed (repos/network)"
     exit 1
 }
 
@@ -61,7 +61,7 @@ if ! apk add bash shadow opendoas ca-certificates curl wget2 unzip gtar xz \
         cmd:wget2 cmd:unzip cmd:gtar cmd:xz cmd:git cmd:zsh cmd:python \
         cmd:dbus-run-session \
         fonts-dejavu || {
-            echo "FluxLinux: base package install failed"
+            echo "Kuro: base package install failed"
             exit 1
         }
 fi
@@ -90,7 +90,7 @@ if ! apk add xfce4-session xfce4-panel xfce4-settings xfce4-terminal \
     apk add cmd:startxfce4 cmd:xfce4-panel cmd:xfce4-settings \
         cmd:xfce4-terminal cmd:xfdesktop cmd:xfwm4 cmd:thunar \
         mesa mesa-dri || {
-            echo "FluxLinux: XFCE install failed"
+            echo "Kuro: XFCE install failed"
             exit 1
         }
 fi
@@ -130,5 +130,5 @@ _flux_ensure_en_us_locale || exit 1
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Chimera setup complete!"
+echo "Kuro: ${DISTRO_NAME} Chimera setup complete!"
 exit 0

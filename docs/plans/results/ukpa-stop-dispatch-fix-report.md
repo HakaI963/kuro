@@ -8,9 +8,9 @@
 
 ## What was wrong
 
-`DesktopLauncher.stop()` runs `bash $HOME/stop_gui_chroot.sh <cardId>` with no `CHROOT_PATH` env. `start_gui_chroot.sh` already had UKPA arms; `stop_gui_chroot.sh` did not. `ubuntu_chroot` / `kali_chroot` / `parrot_chroot` / `archlinux_chroot` hit `*` → `CHROOT_PATH=/data/local/tmp/chrootDebian13` + `stop_debian13_gui.sh`. That can unmount a live Debian chroot. Home still flipped to Start because `StateManager.setGuiRunning` is cleared before the script, and host `pkill termux-x11` hid the miss.
+`DesktopLauncher.stop()` runs `bash $HOME/stop_gui_chroot.sh <cardId>` with no `CHROOT_PATH` env. `start_gui_chroot.sh` already had UKPA arms; `stop_gui_chroot.sh` did not. `ubuntu_chroot` / `kali_chroot` / `parrot_chroot` / `archlinux_chroot` hit `*` → `CHROOT_PATH=/data/local/kuro/chroot/debian13_chroot/rootfs` + `stop_debian13_gui.sh`. That can unmount a live Debian chroot. Home still flipped to Start because `StateManager.setGuiRunning` is cleared before the script, and host `pkill termux-x11` hid the miss.
 
-Same-class miss: `uninstall_guest_chroot.sh` allowlist stopped at FVO+DCM, so in-app uninstall of a UKPA chroot refused `/data/local/tmp/chrootUbuntu` (etc.).
+Same-class miss: `uninstall_guest_chroot.sh` allowlist stopped at FVO+DCM, so in-app uninstall of a UKPA chroot refused `/data/local/kuro/chroot/ubuntu_chroot/rootfs` (etc.).
 
 ## Files changed
 
@@ -39,12 +39,12 @@ Guests were already installed; none reinstalled.
 
 | Card | D1 XFCE `/proc/<pid>/root` | D5 log path | xfce gone | card Start | shots |
 |------|----------------------------|-------------|-----------|------------|-------|
-| `ubuntu_chroot` | `/data/local/tmp/chrootUbuntu` | `distro=ubuntu_chroot path=/data/local/tmp/chrootUbuntu` | yes | yes | `ubuntu_chroot_xfce_retest.png`, `ubuntu_chroot_stopped_retest.png` |
-| `kali_chroot` | `/data/local/tmp/chrootKali` | `distro=kali_chroot path=/data/local/tmp/chrootKali` | yes | yes | `kali_chroot_xfce_retest.png`, `kali_chroot_stopped_retest.png` |
-| `parrot_chroot` | `/data/local/tmp/chrootParrot` | `distro=parrot_chroot path=/data/local/tmp/chrootParrot` | yes | yes | `parrot_chroot_xfce_retest.png`, `parrot_chroot_stopped_retest.png` |
-| `archlinux_chroot` | `/data/local/tmp/chrootArch` | `distro=archlinux_chroot path=/data/local/tmp/chrootArch` | yes | yes | `archlinux_chroot_xfce_retest.png`, `archlinux_chroot_stopped_retest.png` |
+| `ubuntu_chroot` | `/data/local/kuro/chroot/ubuntu_chroot/rootfs` | `distro=ubuntu_chroot path=/data/local/kuro/chroot/ubuntu_chroot/rootfs` | yes | yes | `ubuntu_chroot_xfce_retest.png`, `ubuntu_chroot_stopped_retest.png` |
+| `kali_chroot` | `/data/local/kuro/chroot/kali_chroot/rootfs` | `distro=kali_chroot path=/data/local/kuro/chroot/kali_chroot/rootfs` | yes | yes | `kali_chroot_xfce_retest.png`, `kali_chroot_stopped_retest.png` |
+| `parrot_chroot` | `/data/local/kuro/chroot/parrot_chroot/rootfs` | `distro=parrot_chroot path=/data/local/kuro/chroot/parrot_chroot/rootfs` | yes | yes | `parrot_chroot_xfce_retest.png`, `parrot_chroot_stopped_retest.png` |
+| `archlinux_chroot` | `/data/local/kuro/chroot/archlinux_chroot/rootfs` | `distro=archlinux_chroot path=/data/local/kuro/chroot/archlinux_chroot/rootfs` | yes | yes | `archlinux_chroot_xfce_retest.png`, `archlinux_chroot_stopped_retest.png` |
 
-No Stop log named `path=/data/local/tmp/chrootDebian13` for a UKPA card.
+No Stop log named `path=/data/local/kuro/chroot/debian13_chroot/rootfs` for a UKPA card.
 
 On-device after first Stop (`HostScriptDeployer.deployScripts` from `DesktopLauncher.stop`):
 
@@ -55,11 +55,11 @@ On-device after first Stop (`HostScriptDeployer.deployScripts` from `DesktopLaun
 
 After the first UKPA Stop (`ubuntu_chroot`):
 
-- `/data/local/tmp/chrootDebian13` still present; `usr/bin/startxfce4` still present
+- `/data/local/kuro/chroot/debian13_chroot/rootfs` still present; `usr/bin/startxfce4` still present
 - Home Debian (Rooted) still showed Start
-- Start → Launch XFCE4 painted; pids rooted at `/data/local/tmp/chrootDebian13`
+- Start → Launch XFCE4 painted; pids rooted at `/data/local/kuro/chroot/debian13_chroot/rootfs`
 - Screenshot: `ukpa_stopfix_debian_chroot_smoke.png`
-- Debian Stop then used `distro=debian13_chroot path=/data/local/tmp/chrootDebian13` (`*` arm intact)
+- Debian Stop then used `distro=debian13_chroot path=/data/local/kuro/chroot/debian13_chroot/rootfs` (`*` arm intact)
 
 ## Other checks
 

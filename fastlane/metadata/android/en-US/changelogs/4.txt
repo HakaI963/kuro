@@ -1,6 +1,6 @@
 First F-Droid Release! (v1.3)
 
-FluxLinux is now fully Open Source (GPLv3).
+Kuro is now fully Open Source (GPLv3).
 
 New:
 * Initial F-Droid release

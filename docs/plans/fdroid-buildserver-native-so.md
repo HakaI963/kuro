@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | **Date** | 2026-08-17 (review pass same day, after in-tree Xlorie) |
-| **Status** | **IMPLEMENTED** — `fdroid lint` green; `fdroid scanner --exit-code` 0 problems; `assembleIvarnaRelease` **SUCCESS** on `buildserver-trixie` (`com.ivarna.fluxlinux_12.apk`, 32 MiB unsigned). Post-build `Binaries:` fetch 404s until the GitHub `v2.0.0` APK is uploaded. |
-| **Flavor** | Ivarna (`com.ivarna.fluxlinux`) is what F-Droid builds |
+| **Status** | **IMPLEMENTED** — `fdroid lint` green; `fdroid scanner --exit-code` 0 problems; `assembleIvarnaRelease` **SUCCESS** on `buildserver-trixie` (`com.kuro.app_12.apk`, 32 MiB unsigned). Post-build `Binaries:` fetch 404s until the GitHub `v2.0.0` APK is uploaded. |
+| **Flavor** | Ivarna (`com.kuro.app`) is what F-Droid builds |
 | **Related** | [v2.0.0-fdroid-release-plan.md](../releases/v2.0.0-fdroid-release-plan.md), [termux-native-packages-dual-appid.md](./termux-native-packages-dual-appid.md), [rootfs-github-release-no-apk-bloat.md](./rootfs-github-release-no-apk-bloat.md) |
 | **Scope lock** | Review + update this plan (and the in-repo recipe `scanignore` so it matches scanner rules). Do **not** pull images, compile, or produce APK/test output. |
 
@@ -23,16 +23,16 @@ built and bundled in the APK.
 
 | Output | Source | Built by (recipe `build:`, after the scanner) |
 | --- | --- | --- |
-| `libbash/libproot/libloader/libloader32/libpulseaudio/libpactl.so`, `pulse-runtime/*.so`, `assets/bootstrap.tar` | `native/termux-packages` submodule (termux/termux-packages `ebe0dcc`) + `native/patches/<pkg>/` | `NO_DOCKER=1 scripts/build_packages_for_appid.sh com.ivarna.fluxlinux --list termux-lib-ssot`, then `scripts/assemble_bootstrap.py`; Gradle `packageHostAssetsIvarna` stages them |
+| `libbash/libproot/libloader/libloader32/libpulseaudio/libpactl.so`, `pulse-runtime/*.so`, `assets/bootstrap.tar` | `native/termux-packages` submodule (termux/termux-packages `ebe0dcc`) + `native/patches/<pkg>/` | `NO_DOCKER=1 scripts/build_packages_for_appid.sh com.kuro.app --list termux-lib-ssot`, then `scripts/assemble_bootstrap.py`; Gradle `packageHostAssetsIvarna` stages them |
 | `assets/loader.apk` | `native/loader/Loader.java` | `scripts/build_loader_apk.sh` (javac + d8) |
 | `bwrap-proot-shim`, `libevp_md2.so` (guest, aarch64 glibc) | `bwrap-proot-shim.c`, `native/guest/libevp_md2.c` | `scripts/build_guest_helpers.sh` (`gcc-aarch64-linux-gnu`) |
 | `libXlorie.so` | `termux-x11/src/main/cpp` | Gradle `:termux-x11` (NDK r29) |
 | `libtermux.so` | `terminal-emulator/src/main/jni` | Gradle `:terminal-emulator` (NDK r29) |
 
-Host requirements (see `sudo:` in `com.ivarna.fluxlinux.yml`): Debian build
+Host requirements (see `sudo:` in `com.kuro.app.yml`): Debian build
 tools derived from termux `scripts/setup-ubuntu.sh` (no i386, no apt.llvm.org),
 `fuse-overlayfs` + `/dev/fuse` (termux mounts the NDK toolchain with it), and a
-writable `/data/data/com.ivarna.fluxlinux` owned by the build user. termux
+writable `/data/data/com.kuro.app` owned by the build user. termux
 `build-package.sh` downloads each package's upstream source tarball (sha256-pinned),
 so the `build:` step needs network.
 
@@ -55,7 +55,7 @@ Prebuilts still tracked in git (`native/output/*.deb`, `native/bootstrap/*/jniLi
 
 **Policy: yes, with documented prebuilts.** Nothing here is Play Services, a tracker, or a mystery closed blob. Host W^X bins stay in the APK because targetSdk 36 cannot `exec` `$PREFIX/bin/*`; they are still FLOSS, built in `ghcr.io/termux/package-builder`, cited, and `scanignore`d — the same model as Termux’s own F-Droid recipe (prefix not compiled on `buildserver-trixie`).
 
-**Runner: not yet.** `libXlorie.so` is the only ELF F-Droid should compile, and that path is now real. The job still dies at `--refresh-scanner` if `scanignore` lists paths the scanner never flags (**unused / non-exist path = error**). The previous list would fail on that rule. Corrected in `com.ivarna.fluxlinux.yml` (this pass). Docker lint/scanner still **not run**.
+**Runner: not yet.** `libXlorie.so` is the only ELF F-Droid should compile, and that path is now real. The job still dies at `--refresh-scanner` if `scanignore` lists paths the scanner never flags (**unused / non-exist path = error**). The previous list would fail on that rule. Corrected in `com.kuro.app.yml` (this pass). Docker lint/scanner still **not run**.
 
 Xlorie CMake + 16 submodules are **in the working tree, not on `origin/main`**. A tag of current `main` would still ship the old prebuilt `libXlorie.so`. The runner can only compile Xlorie from a commit that contains `termux-x11/src/main/cpp/` + `.gitmodules` + `submodules: yes`.
 
@@ -173,7 +173,7 @@ From [`fdroidserver/scanner.py`](https://gitlab.com/fdroid/fdroidserver/-/blob/m
 - After the walk: **unused** `scanignore` and **non-exist** `scanignore` each increment the problem count → job red.
 - `.apk` files call `removeproblem()` **without** `toignore()` — `loader.apk` is deleted and a `scanignore` on it is unused.
 
-Correct `scanignore` for 2.0.0 / 12 (now in `com.ivarna.fluxlinux.yml`):
+Correct `scanignore` for 2.0.0 / 12 (now in `com.kuro.app.yml`):
 
 ```yaml
 scanignore:
@@ -190,7 +190,7 @@ scanignore:
 
 ---
 
-## 3. How each FluxLinux `.so` is built
+## 3. How each Kuro `.so` is built
 
 ### 3.1 Inventory (Ivarna APK + git)
 
@@ -221,13 +221,13 @@ Already implemented. **Not** F-Droid’s container.
 
 ```text
 native/termux-packages  →  symlink to a termux-packages clone
-scripts/set_termux_package_name.sh com.ivarna.fluxlinux
-scripts/build_packages_for_appid.sh com.ivarna.fluxlinux --list termux-lib-ssot
+scripts/set_termux_package_name.sh com.kuro.app
+scripts/build_packages_for_appid.sh com.kuro.app --list termux-lib-ssot
 # inside: ./scripts/run-docker.sh ./build-package.sh -a aarch64 <pkg>
 # image:  ghcr.io/termux/package-builder
-scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux \
+scripts/assemble_bootstrap.py --package-name com.kuro.app \
   --list native/package-lists/termux-lib-ssot.txt --mode full
-scripts/package_host_assets.sh com.ivarna.fluxlinux
+scripts/package_host_assets.sh com.kuro.app
 ```
 
 W^X still requires the host ET_DYN copies **inside the APK** `lib/arm64-v8a/`. You cannot exec them from `$PREFIX` on targetSdk 36, and you cannot drop new `.so`s into `nativeLibraryDir` at runtime. So they must be *in* the APK; they just should not be *compiled* on F-Droid.
@@ -298,7 +298,7 @@ docker pull registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
 docker pull debian:trixie-slim
 
 git clone https://gitlab.com/fdroid/fdroiddata.git
-# metadata/com.ivarna.fluxlinux.yml  ← copy in-repo yml, pin commit: to a
+# metadata/com.kuro.app.yml  ← copy in-repo yml, pin commit: to a
 # SHA that actually contains termux-x11/src/main/cpp + .gitmodules
 
 docker run --rm -it --name flux-fdroid-bs \
@@ -313,14 +313,14 @@ apt-get update && apt-get dist-upgrade
 apt-get install -y sudo openjdk-21-jdk-headless
 update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
 cd /home/vagrant/fdroiddata
-fdroid lint com.ivarna.fluxlinux
-fdroid rewritemeta com.ivarna.fluxlinux
+fdroid lint com.kuro.app
+fdroid rewritemeta com.kuro.app
 fdroid readmeta
 # cheapest proof the blob list is complete:
-fdroid scanner --verbose com.ivarna.fluxlinux
+fdroid scanner --verbose com.kuro.app
 # then the real job:
 fdroid build --verbose --test --refresh-scanner --on-server --no-tarball \
-  com.ivarna.fluxlinux:12
+  com.kuro.app:12
 ```
 
 `--on-server` expects `sudo -u vagrant`. Skip it and you get a laptop build, not what reviewers run.
@@ -330,7 +330,7 @@ Lint-only (fork CI):
 ```bash
 docker run --rm -it -v "$PWD/fdroiddata":/repo -w /repo debian:trixie-slim bash
 apt-get update && apt-get install -y fdroidserver git curl
-fdroid lint com.ivarna.fluxlinux
+fdroid lint com.kuro.app
 ```
 
 Do not treat a green `assembleIvarnaRelease` on the laptop as a green F-Droid build. The scanner is a different gate.
@@ -341,12 +341,12 @@ Do not treat a green `assembleIvarnaRelease` on the laptop as a green F-Droid bu
 
 | Gate | Result |
 |---|---|
-| `fdroid lint com.ivarna.fluxlinux` | **Pass** |
+| `fdroid lint com.kuro.app` | **Pass** |
 | `fdroid scanner --exit-code …:12` | **0 problems** |
-| `fdroid build --test --refresh-scanner --on-server --no-tarball …:12` | **`assembleIvarnaRelease` SUCCESS** (3m 39s Gradle after assemble). APK `tmp/com.ivarna.fluxlinux_12.apk` (32 MiB unsigned) contains compiled `libXlorie.so` + host W^X bins + restored `assets/loader.apk`. |
+| `fdroid build --test --refresh-scanner --on-server --no-tarball …:12` | **`assembleIvarnaRelease` SUCCESS** (3m 39s Gradle after assemble). APK `tmp/com.kuro.app_12.apk` (32 MiB unsigned) contains compiled `libXlorie.so` + host W^X bins + restored `assets/loader.apk`. |
 | `Binaries:` download of `v2.0.0/app-release.apk` | **404** — expected until the GitHub release asset exists. Not a compile failure. |
 
-Recipe that built: `com.ivarna.fluxlinux.yml` (`commit: 63f022a`, `submodules: true`, `gradle: [ivarna]`, `prebuild` assemble, `sudo` `binutils bison patch gcc libc6-dev xz-utils zstd bzip2`).
+Recipe that built: `com.kuro.app.yml` (`commit: 63f022a`, `submodules: true`, `gradle: [ivarna]`, `prebuild` assemble, `sudo` `binutils bison patch gcc libc6-dev xz-utils zstd bzip2`).
 
 Not done: fdroiddata MR, `v2.0.0` tag / `app-release.apk` upload, history rewrite (§8).
 
@@ -358,7 +358,7 @@ Asked: if any distro rootfs is in a git commit, remove it from GitHub only; keep
 
 **Current tip (`HEAD` / `origin/main`): no rootfs tarball is tracked.** `.gitignore` has `assets/rootfs/` and `app/src/*/assets/rootfs/`. Local disk still has all 12 archives (~720 MiB) under `assets/rootfs/` — leave them.
 
-The GitHub release tag [`rootfs`](https://github.com/abhay-byte/fluxlinux/releases/tag/rootfs) already has the 12 distro archives + `bootstrap_com.ivarna.fluxlinux.tar` + `bootstrap_com.zenithblue.fluxlinux.tar` + `sha256sums.txt`. That is the only place F-Droid / the app should fetch them.
+The GitHub release tag [`rootfs`](https://github.com/abhay-byte/fluxlinux/releases/tag/rootfs) already has the 12 distro archives + `bootstrap_com.kuro.app.tar` + `bootstrap_com.kuro.app.tar` + `sha256sums.txt`. That is the only place F-Droid / the app should fetch them.
 
 **History only:** commit `8d813e6` added `assets/rootfs/debian_13_rootfs.tar.xz` (~81 MiB). `fde4f67` (`feat: rootfs on-demand…`) **deleted it from the tree**. The blob remains in git objects. F-Droid clones the **pinned tag SHA**, which does not contain the file, so the scanner never sees it.
 

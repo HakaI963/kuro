@@ -3,9 +3,9 @@
 **Date:** 2026-08-15
 **Status:** RESEARCH DONE — implement from [busybox-module-bypass-impl.md](./busybox-module-bypass-impl.md) + [worker-prompt-busybox-module-bypass.md](./worker-prompt-busybox-module-bypass.md)
 **Implementation:** PR1+PR2 **READY**. PR3 (ship ELF) out of scope.
-**Question:** Can FluxLinux chroot install/run without the user flashing osm0sis **Busybox for Android NDK** in Magisk / KernelSU / APatch?
+**Question:** Can Kuro chroot install/run without the user flashing osm0sis **Busybox for Android NDK** in Magisk / KernelSU / APatch?
 
-**Short answer:** Yes for Magisk, KernelSU, and APatch. Those managers already ship a feature-complete static BusyBox. FluxLinux already calls `$BB applet` (not bare `wget`/`tar` on PATH). The extra module only puts applet **symlinks** on PATH. The current “you MUST install this module” gate is a detection + UX problem, not a missing binary.
+**Short answer:** Yes for Magisk, KernelSU, and APatch. Those managers already ship a feature-complete static BusyBox. Kuro already calls `$BB applet` (not bare `wget`/`tar` on PATH). The extra module only puts applet **symlinks** on PATH. The current “you MUST install this module” gate is a detection + UX problem, not a missing binary.
 
 A second, harder track can drop BusyBox entirely by using `/system/bin/{mount,umount,chroot,stat,mknod}` plus a non-exec extract. That is optional insurance, not required to stop forcing the module.
 
@@ -40,9 +40,9 @@ The binary itself is **not** unique. It is a static multi-call BusyBox. Confirme
 BusyBox v1.36.1-osm0sis (2023-05-25)
 ```
 
-Required applets FluxLinux uses are **all present**: `mount`, `umount`, `chroot`, `tar` (`-J` xz), `wget`, `unxz`/`xz`, `setuidgid`, `stat`, `mknod`, `ln`, `timeout`, `base64`, `ash`/`sh`.
+Required applets Kuro uses are **all present**: `mount`, `umount`, `chroot`, `tar` (`-J` xz), `wget`, `unxz`/`xz`, `setuidgid`, `stat`, `mknod`, `ln`, `timeout`, `base64`, `ash`/`sh`.
 
-What the module does that Magisk/KSU/APatch built-in does **not** do: install those applet names onto PATH. FluxLinux does not need that. Scripts already invoke `$BB mount`, `$BB chroot`, `$BB tar`.
+What the module does that Magisk/KSU/APatch built-in does **not** do: install those applet names onto PATH. Kuro does not need that. Scripts already invoke `$BB mount`, `$BB chroot`, `$BB tar`.
 
 osm0sis README notes that unpatched `mount` / `umount` / `wget` “do not entirely work correctly on Android.” His NDK build includes those patches. Magisk/KSU’s own BusyBox is a separate topjohnwu build, also Android-patched, and is what Magisk module scripts run under (`ASH_STANDALONE=1`).
 
@@ -66,7 +66,7 @@ Peer project [chroot-distro](https://github.com/Magisk-Modules-Alt-Repo/chroot-d
 
 ---
 
-## 3. What FluxLinux actually calls
+## 3. What Kuro actually calls
 
 SSOT helper: `assets/scripts/chroot/fluxlinux_chroot.sh` v2.7.
 
@@ -87,7 +87,7 @@ SSOT helper: `assets/scripts/chroot/fluxlinux_chroot.sh` v2.7.
 | `timeout` | setup_arch_chroot | mirror probe |
 | `base64` | helper `guest_sh` | host encode if no `/system/bin/base64` |
 
-Proot / Termux-native paths do **not** need any of this. Bootstrap already has GNU `tar` + `xz-utils` + `curl`. Those cannot be exec’d as root from app-data (W^X + SELinux). Same reason `ChrootPaths.SESSION_EXEC = /system/bin/sh` and the helper is copied to `/data/local/tmp`.
+Proot / Termux-native paths do **not** need any of this. Bootstrap already has GNU `tar` + `xz-utils` + `curl`. Those cannot be exec’d as root from app-data (W^X + SELinux). Same reason `ChrootPaths.SESSION_EXEC = /system/bin/sh` and the helper is copied to `/data/local/kuro`.
 
 ---
 
@@ -137,7 +137,7 @@ So a KSU-only device (exactly the Fedora test device) already works **if** the s
 
 **setuidgid is only needed when the guest has no `su`/`runuser`.** New Fedora installs get util-linux. The helper already tries runuser → su → setuidgid.
 
-PREFIX `tar`/`xz`/`busybox` cannot replace host tools: W^X on app-data, and `LD_LIBRARY_PATH` Termux ELF as root is fragile. Copying them to `/data/local/tmp` still needs the Termux linker + libs.
+PREFIX `tar`/`xz`/`busybox` cannot replace host tools: W^X on app-data, and `LD_LIBRARY_PATH` Termux ELF as root is fragile. Copying them to `/data/local/kuro` still needs the Termux linker + libs.
 
 ---
 
@@ -149,7 +149,7 @@ Use the BusyBox the root manager already installed. Do not flash anything.
 
 1. One `resolve_bb()` in `fluxlinux_chroot.sh`. Every other script sources it or is told `FLUX_BB=`.
 2. Search order (first **executable** that has `chroot` + `mount` in `$bb --list`):
-   1. `FLUX_BB` / `/data/local/tmp/flux_busybox`
+   1. `FLUX_BB` / `/data/local/kuro/flux_busybox`
    2. `/data/adb/ksu/bin/busybox`
    3. `/data/adb/ap/bin/busybox`
    4. `/data/adb/magisk/busybox`
@@ -157,7 +157,7 @@ Use the BusyBox the root manager already installed. Do not flash anything.
    6. `/debug_ramdisk/busybox`, `/sbin/busybox`
    7. `command -v busybox` only if not Termux/Flux PREFIX
    8. Last: `/system/xbin/busybox`, `/system/bin/busybox` — **only if applet probe passes**
-3. After resolve, `cp -f "$BB" /data/local/tmp/flux_busybox && chmod 755` (same pattern as the helper). Pin `FLUX_BB` for the rest of the session.
+3. After resolve, `cp -f "$BB" /data/local/kuro/flux_busybox && chmod 755` (same pattern as the helper). Pin `FLUX_BB` for the rest of the session.
 4. Kotlin `RootShell` probe: `test -x` those paths via `su`, cache the winner, pass `FLUX_BB=...` into setup/start/helper.
 5. Per-applet fallback: remount/bind/umount/chroot → `/system/bin/{mount,umount,chroot}` if `$BB` lacks them.
 6. UI: delete “MUST install NDK.” Root gate = `RootShell.isRootAvailable()`. Optional “BusyBox not found” only if the probe fails (rare). Keep Download Module as a last-resort link, not a blocker.
@@ -169,7 +169,7 @@ Use the BusyBox the root manager already installed. Do not flash anything.
 
 ### B — Ship a static BusyBox in the APK (insurance)
 
-Bundle `busybox-arm64-selinux` (~2.1 MiB) + `busybox-armeabi-v7a-selinux`. On first root use, `su` copies it to `/data/local/tmp/flux_busybox` (never exec from `files/usr`).
+Bundle `busybox-arm64-selinux` (~2.1 MiB) + `busybox-armeabi-v7a-selinux`. On first root use, `su` copies it to `/data/local/kuro/flux_busybox` (never exec from `files/usr`).
 
 - Works if the manager binary is missing or stripped.
 - GPLv2: F-Droid needs corresponding source (osm0sis [android-busybox-ndk](https://github.com/osm0sis/android-busybox-ndk) or a Flux-built config). Do not drop a prebuilt with no source pointer.
@@ -184,11 +184,11 @@ Do this only if A fails on a real device.
 | --- | --- |
 | mounts | `/system/bin/mount` + `/system/bin/umount` (already used for remount) |
 | chroot | `/system/bin/chroot` |
-| extract | Kotlin `XZInputStream` + Apache Commons Compress (or `org.tukaani.xz`) writing into `/data/local/tmp/chroot*` **as root** via a small extract helper, **or** `su` + toybox `tar` reading a gzip stream that Kotlin pre-decompresses to a fifo |
+| extract | Kotlin `XZInputStream` + Apache Commons Compress (or `org.tukaani.xz`) writing into `/data/local/kuro/chroot*` **as root** via a small extract helper, **or** `su` + toybox `tar` reading a gzip stream that Kotlin pre-decompresses to a fifo |
 | wget | already Kotlin |
 | setuidgid | require `util-linux` (or `shadow`) in every chroot family so `runuser`/`su` always exist; delete the staged-busybox fallback |
 
-Hard parts: root-owned extract into `/data/local/tmp` from the app process (SELinux), and guaranteeing `su` on every family (Chimera/Alpine minirootfs). Do **not** start here.
+Hard parts: root-owned extract into `/data/local/kuro` from the app process (SELinux), and guaranteeing `su` on every family (Chimera/Alpine minirootfs). Do **not** start here.
 
 ### D — Keep forcing the module
 
@@ -202,7 +202,7 @@ Reject. It is the current UX and it is false for Magisk/KSU/APatch.
 
 **Goal:** Magisk / KSU / APatch users install a chroot with **only** su grant. No module.
 
-- Extract `resolve_bb` + applet probe + `/data/local/tmp/flux_busybox` pin into `fluxlinux_chroot.sh` (or a tiny `assets/scripts/chroot/resolve_bb.sh` that setup/start/stop/uninstall all `.` source).
+- Extract `resolve_bb` + applet probe + `/data/local/kuro/flux_busybox` pin into `fluxlinux_chroot.sh` (or a tiny `assets/scripts/chroot/resolve_bb.sh` that setup/start/stop/uninstall all `.` source).
 - Add APatch; add KSU to debian/arch/gui/uninstall lists.
 - `RootShell.resolveBusyBox(): String?` + `FLUX_BB` on every root install/start command.
 - Unit tests: candidate order, reject PREFIX paths, require `chroot`+`mount` in `--list` sample fixtures.
@@ -228,7 +228,7 @@ Only if a manager is found whose built-in binary fails the applet probe (documen
 ### Non-goals
 
 - Do not exec PREFIX/Termux busybox as root.
-- Do not install a FluxLinux Magisk module just to expose applets.
+- Do not install a Kuro Magisk module just to expose applets.
 - Do not restore GNU `chroot --userspec`.
 - Do not change proot.
 - Do not rewrite family scripts (they run **inside** the guest).
@@ -250,8 +250,8 @@ bb_ok() {
 
 resolve_bb() {
   if [ -n "${FLUX_BB:-}" ] && bb_ok "$FLUX_BB"; then BB="$FLUX_BB"; return 0; fi
-  if [ -x /data/local/tmp/flux_busybox ] && bb_ok /data/local/tmp/flux_busybox; then
-    BB=/data/local/tmp/flux_busybox; return 0
+  if [ -x /data/local/kuro/flux_busybox ] && bb_ok /data/local/kuro/flux_busybox; then
+    BB=/data/local/kuro/flux_busybox; return 0
   fi
   for path in \
     /data/adb/ksu/bin/busybox \
@@ -269,9 +269,9 @@ resolve_bb() {
     bb_ok "$_det" && BB="$_det"
   fi
   [ -n "$BB" ] || return 1
-  if [ "$BB" != /data/local/tmp/flux_busybox ]; then
-    cp -f "$BB" /data/local/tmp/flux_busybox 2>/dev/null && chmod 755 /data/local/tmp/flux_busybox \
-      && BB=/data/local/tmp/flux_busybox
+  if [ "$BB" != /data/local/kuro/flux_busybox ]; then
+    cp -f "$BB" /data/local/kuro/flux_busybox 2>/dev/null && chmod 755 /data/local/kuro/flux_busybox \
+      && BB=/data/local/kuro/flux_busybox
   fi
 }
 ```
@@ -320,8 +320,8 @@ Bump helper version (`v2.7` → `v2.8`) so `ensureChrootHelper` restages.
 | --- | --- |
 | Must the user flash BusyBox NDK? | **No**, if they have Magisk, KernelSU, or APatch. |
 | Can we delete every BusyBox call? | Not in PR1. Mount/chroot can move to toybox; xz-tar and setuidgid cannot without extra work. |
-| Can we use the app’s Termux `tar`/`xz`/`busybox`? | **No** (W^X / SELinux). Same reason the helper lives in `/data/local/tmp`. |
+| Can we use the app’s Termux `tar`/`xz`/`busybox`? | **No** (W^X / SELinux). Same reason the helper lives in `/data/local/kuro`. |
 | Is the NDK module useless? | Useless as a **hard requirement**. Still a valid last resort if a manager binary is missing or fails the applet probe. |
 | What should ship first? | PR1: one resolver, APatch+KSU everywhere, probe, drop the mandatory UI step. |
 
-The module is a PATH installer. FluxLinux already has the multi-call binary on every supported root stack. Point `$BB` at it.
+The module is a PATH installer. Kuro already has the multi-call binary on every supported root stack. Point `$BB` at it.

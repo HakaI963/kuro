@@ -1,13 +1,13 @@
 # Storage, phantom-process and GPU driver TODO
 
 Work one item at a time, top to bottom. Tick status only after the device acceptance test passes.
-Build/test flavor: `ivarna` (`com.ivarna.fluxlinux`). Never touch distro rootfs builds.
+Build/test flavor: `ivarna` (`com.kuro.app`). Never touch distro rootfs builds.
 
 Status: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## 1. Shared storage in guests (#48 no /sdcard on HyperOS, #29 USB OTG / lsblk)
 
-Status: [x] done. Device test passed on Poco X6 Pro (2311DRK48I) and Lenovo TB336FU, ivarna debug: before grant guest `/sdcard/Download` showed a partial list and writes failed; after `appops set --uid com.ivarna.fluxlinux MANAGE_EXTERNAL_STORAGE allow` guest listed the full folder, a file written in guest `/sdcard` was readable via `adb shell cat /sdcard/...`, no app restart needed; Settings card shows "Shared storage" Not allowed/Allowed and opens the All files access page. Desktop start_gui (proot-distro path) and OTG volumes not device-tested. Chroot scripts already bind `/sdcard` (verified by grep only).
+Status: [x] done. Device test passed on Poco X6 Pro (2311DRK48I) and Lenovo TB336FU, ivarna debug: before grant guest `/sdcard/Download` showed a partial list and writes failed; after `appops set --uid com.kuro.app MANAGE_EXTERNAL_STORAGE allow` guest listed the full folder, a file written in guest `/sdcard` was readable via `adb shell cat /sdcard/...`, no app restart needed; Settings card shows "Shared storage" Not allowed/Allowed and opens the All files access page. Desktop start_gui (proot-distro path) and OTG volumes not device-tested. Chroot scripts already bind `/sdcard` (verified by grep only).
 
 - Onboarding page: done. "Access your files" (Step 5 of 5) sits between Options and the install; shown only when the manifest declares MANAGE_EXTERNAL_STORAGE (ivarna), Android 11+, and access not yet granted. Grant access / Skip for now / Continue (after grant). Shared helper `core/system/SharedStorageAccess.kt` also used by the Settings card. Device tested on Lenovo TB336FU.
 - Goal: guide user to grant All-files access, then bind `/sdcard` (-> `/storage/emulated/0`) and `/storage` (external SD / OTG volumes where readable) into proot and chroot guests.

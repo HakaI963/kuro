@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13  
 **Device:** Xiaomi 2311DRK48I `Y5WWBMJVOZSK4HU8`  
-**Package:** `com.ivarna.fluxlinux` Ivarna release (`adb install -r`)
+**Package:** `com.kuro.app` Ivarna release (`adb install -r`)
 
 ## What was fixed in the APK
 

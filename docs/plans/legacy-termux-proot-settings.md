@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Author** | FluxLinux |
+| **Author** | Kuro |
 | **Date** | 2026-08-16 |
 | **Updated** | 2026-08-16 (review-1: 14 issues) |
 | **Status** | **Draft** |
 | **Repo** | `/home/abhaybyte/repos/fluxlinux` |
 | **Audience** | Implementers of Settings leftover-Termux cleanup (scripts, bridge, page) |
-| **Flavor / package** | Ivarna (`com.ivarna.fluxlinux`) |
+| **Flavor / package** | Ivarna (`com.kuro.app`) |
 | **APK policy** | `:app:assembleIvarnaRelease` + `adb install -r` only. Do **not** uninstall the existing APK. |
 | **Scope lock** | Additive Settings surface only. Do **not** re-add Termux as an installable Distros card, do **not** install into `com.termux`, do **not** mutate embedded `start_gui.sh` / `stop_gui.sh` / `HostScriptDeployer` / Settings → Chroot / Settings → PRoot. |
 
@@ -18,7 +18,7 @@
 1. Plan review (design-doc loop) — `/tmp/grok-1000/grok-design-review-3b513b26.md`. 10 major / 3 minor / 1 nit. This revision addresses all 14.
 
 **Historical correction (read first):**
-The informal claim “in and after v1.8.0 FluxLinux uses the embedded host” is **false**.
+The informal claim “in and after v1.8.0 Kuro uses the embedded host” is **false**.
 
 | Ref | SHA | Date | Fact |
 | --- | --- | --- | --- |
@@ -35,9 +35,9 @@ Implementers must `git show v1.8.0:<path>` for protocol SSOT. Do **not** target 
 
 ## Overview
 
-Through tag `v1.8.0` FluxLinux installed Debian PRoot **into the user’s external Termux app** (`/data/data/com.termux/files/…`) and launched the desktop by asking Termux to run `$HOME/start_gui.sh`, which started **external** `com.termux.x11`. After that tag (first code `784fa45`, then PR #36) FluxLinux switched to an **embedded** host under `filesDir` (`com.ivarna.fluxlinux` / `com.zenithblue.fluxlinux`) and an **embedded** X11 activity. Home, Distros, Settings → PRoot, `TerminalLauncher`, and `DesktopLauncher` now speak only to the embedded prefix.
+Through tag `v1.8.0` Kuro installed Debian PRoot **into the user’s external Termux app** (`/data/data/com.termux/files/…`) and launched the desktop by asking Termux to run `$HOME/start_gui.sh`, which started **external** `com.termux.x11`. After that tag (first code `784fa45`, then PR #36) Kuro switched to an **embedded** host under `filesDir` (`com.kuro.app` / `com.kuro.app`) and an **embedded** X11 activity. Home, Distros, Settings → PRoot, `TerminalLauncher`, and `DesktopLauncher` now speak only to the embedded prefix.
 
-Users who installed Debian (and optionally extra `proot-distro` containers) with FluxLinux ≤ v1.8.0 still have leftover rootfs trees **inside Termux**. The current app cannot see, launch, or delete them: FluxLinux and Termux are different UIDs, and the embedded uninstall/GUI paths would touch the **wrong** container or do nothing.
+Users who installed Debian (and optionally extra `proot-distro` containers) with Kuro ≤ v1.8.0 still have leftover rootfs trees **inside Termux**. The current app cannot see, launch, or delete them: Kuro and Termux are different UIDs, and the embedded uninstall/GUI paths would touch the **wrong** container or do nothing.
 
 This plan adds one Settings App card (**Legacy Termux**) and one Settings page that, using a **new** `LegacyTermuxBridge` and a **new** `scripts/legacy-termux/` asset tree, talks to Termux the way v1.8.0 did — `com.termux.RUN_COMMAND` → `com.termux.app.RunCommandService` → `/data/data/com.termux/files/usr/bin/bash` — and offers only:
 
@@ -53,14 +53,14 @@ No new installs into Termux. No Distros card. No mutation of embedded start/stop
 
 ### Why this change is needed
 
-A user who upgraded from ≤ v1.8.0 still has (typically) `debian` under Termux’s `proot-distro` tree. That tree is **not** the same object as Settings → PRoot’s `filesDir/usr/var/lib/proot-distro/containers/debian`. Embedded uninstall (`UninstallSessionFactory.openUninstallSession`) runs `proot-distro remove` against **FluxLinux’s** `$PREFIX`. Calling it from a leftover page would delete the embedded debian (or no-op if only the Termux leftover exists). The reverse is also true: v1.8-era `$HOME/start_gui.sh` in Termux, if it still exists, is the old protocol; HEAD’s `start_gui.sh` is the embedded protocol and must never be copied into Termux.
+A user who upgraded from ≤ v1.8.0 still has (typically) `debian` under Termux’s `proot-distro` tree. That tree is **not** the same object as Settings → PRoot’s `filesDir/usr/var/lib/proot-distro/containers/debian`. Embedded uninstall (`UninstallSessionFactory.openUninstallSession`) runs `proot-distro remove` against **Kuro’s** `$PREFIX`. Calling it from a leftover page would delete the embedded debian (or no-op if only the Termux leftover exists). The reverse is also true: v1.8-era `$HOME/start_gui.sh` in Termux, if it still exists, is the old protocol; HEAD’s `start_gui.sh` is the embedded protocol and must never be copied into Termux.
 
 ### Pain points (today)
 
 1. Settings hub comment is explicit: “Legacy Termux environment / prerequisites / connection-fix cards removed.” (`SettingsScreen.kt` 62–64.) There is no leftover manager.
 2. `StateManager.isTermuxX11Installed` always returns `true` because X11 is embedded (`StateManager.kt` 67–72). Using that helper would falsely report that **external** Termux:X11 is present.
 3. `handleScriptCallback` treats `name=distro_uninstall_$id` as an **embedded** uninstall and calls `TerminalLauncher.refreshInstalledAfterUninstall` (`MainActivity.kt` 159–163) → `StateManager.clearDistroState` (`TerminalLauncher.kt` 97–114). That **does not** delete files and **does not** clear `flux_proot_prefs`. Home (`HomeScreen.kt` 144–151) and Distros filter `isDistroInstalledOnFs` (filesDir); Settings → PRoot is `isDistroInstalledOnFs || ProotInfoStore.cachedInstalled`. Catalog cards stay installed. What **does** drop is `fluxlinux_state`: `distro_${id}_installed`, `distro_${id}_gui_running`, and every `distro_${id}_component_*` flag — so the **Home session card / KDE residual flags** disappear. `InstallationQueueManager.enqueue` has **zero** remaining callers; `processNextInstallTask()` (`MainActivity.kt` 450–452) is a no-op `clear()` of stale queue UI. Early-return is still required to prevent those toasts / `setScriptStatus("legacy_termux_list")` / session-pref wipe. It is **not** “delete embedded debian” and **not** “abort a live rootfs install.”
-4. FluxLinux **cannot** `stat` `/data/data/com.termux/` (different UID, SELinux). Any “scan leftovers” that walks `filesDir` is wrong.
+4. Kuro **cannot** `stat` `/data/data/com.termux/` (different UID, SELinux). Any “scan leftovers” that walks `filesDir` is wrong.
 
 ### Current state (inspected 2026-08-16)
 
@@ -68,7 +68,7 @@ A user who upgraded from ≤ v1.8.0 still has (typically) `debian` under Termux�
 
 ```mermaid
 timeline
-    title FluxLinux Termux vs embedded
+    title Kuro Termux vs embedded
     2026-06-17 : tag v1.8.0 be70a2c
                : external com.termux + com.termux.x11
                : TermuxIntentFactory RUN_COMMAND
@@ -87,7 +87,7 @@ timeline
 | --- | --- | --- |
 | `debian` | Termux-hosted **proot-distro** | **Yes** (primary leftover) |
 | `termux` | Termux Native (XFCE/KDE **pkgs in the Termux host**, not a container) | **No** (follow-up) |
-| `debian13_chroot` | chroot at `/data/local/tmp/chrootDebian13` | **No** (Settings → Chroot) |
+| `debian13_chroot` | chroot at `/data/local/kuro/chroot/debian13_chroot/rootfs` | **No** (Settings → Chroot) |
 
 Across tags v1.0–v1.8.0 the only **app-installable Termux proot name** was `debian`. Discovery must still be filesystem / `proot-distro` inside Termux because users may have extra containers (`ubuntu`, …) from a manual `proot-distro install`.
 
@@ -136,7 +136,7 @@ v1.8.0 `stop_gui.sh` (tag, 33 lines) — **copy this**, not HEAD:
 - `killall -9 Xwayland termux-x11`; `kill -9 $(pgrep -f "termux.x11")`
 - `pulseaudio --kill`
 
-HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!/data/data/com.ivarna.fluxlinux/files/usr/bin/bash`, sources `fluxlinux-host.env`, sets `TERMUX_X11_OVERRIDE_PACKAGE`. HEAD `stop_gui.sh` broadcasts `-p "$PKG"` where `$PKG` is FluxLinux. **MUST NOT** be reused.
+HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!/data/data/com.kuro.app/files/usr/bin/bash`, sources `fluxlinux-host.env`, sets `TERMUX_X11_OVERRIDE_PACKAGE`. HEAD `stop_gui.sh` broadcasts `-p "$PKG"` where `$PKG` is Kuro. **MUST NOT** be reused.
 
 #### HEAD surfaces this page must not call
 
@@ -146,20 +146,20 @@ HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!
 | `UninstallSessionFactory.openUninstallSession` | Host session: `proot-distro remove` + `rm -rf $PREFIX/…/containers/$NAME` under **embedded** PREFIX (`UninstallSessionFactory.kt` 68–87). Callback `distro_uninstall_${distro.id}`. |
 | `DesktopLauncher.start/stop` | Embedded `start_gui.sh` / `stop_gui.sh` via `HostScriptDeployer` + `TermuxHostPaths.HOME`; `ACTION_STOP` `setPackage(app.packageName)` (`DesktopLauncher.kt` 286–307). |
 | Settings → PRoot | `ProotStorageListScreen` + `ProotInfoStore` (`flux_proot_prefs`) + `GuestStorageCatalog.installableProots()`. |
-| Settings → Chroot | `/data/local/tmp/chroot*` via `ChrootDetection`. |
-| `HostScriptDeployer.HOST_SCRIPTS` | Deploys into **FluxLinux** `$HOME`, including HEAD `start_gui.sh` / `stop_gui.sh` (lines 119–120). Do not add leftover scripts here. |
+| Settings → Chroot | `/data/local/kuro/chroot*` via `ChrootDetection`. |
+| `HostScriptDeployer.HOST_SCRIPTS` | Deploys into **Kuro** `$HOME`, including HEAD `start_gui.sh` / `stop_gui.sh` (lines 119–120). Do not add leftover scripts here. |
 | `TermuxIntentFactory.buildInstallIntent` / `getBaseInstallScript` / `buildUninstallIntent` | Product comment (`TermuxIntentFactory.kt` 7–17): install/run/uninstall/component for debian* **MUST NOT** use this factory. Remaining live callers: KDE start/stop on Home + DistroSettings, Prerequisites tweaks, BusyBox tests. |
 
 #### What already exists that we **reuse**
 
-- Manifest: `com.termux.permission.RUN_COMMAND` (`AndroidManifest.xml` 7); `<queries>` for `com.termux` and `com.termux.x11` (17–20); `fluxlinux://callback` VIEW filter (52–58); `launchMode="singleTask"` (45).
+- Manifest: `com.termux.permission.RUN_COMMAND` (`AndroidManifest.xml` 7); `<queries>` for `com.termux` and `com.termux.x11` (17–20); `kuro://callback` VIEW filter (52–58); `launchMode="singleTask"` (45).
 - `ScriptManager.getScriptContent` reads `assets/scripts/$fileName`.
 - `SettingsNavCard` (`SettingsScreen.kt` 406–418, private to the hub). `GlassSettingCard` (`GlassCard.kt` 434–459) is the glass wrapper only.
 - Cream contrast: `colorScheme.secondary` for titles/buttons (same as Settings hub / X11 / storage pages).
 - `rememberPermissionState("com.termux.permission.RUN_COMMAND")` already lifted in `MainActivity.kt` 466–468.
 - `onStartServiceStub` already swallows `startService` exceptions (`MainActivity.kt` 550–551).
 - v1.8 Settings / `PrerequisitesScreen` copy-paste: `mkdir -p ~/.termux && echo "allow-external-apps = true" >> ~/.termux/termux.properties && termux-reload-settings` (`PrerequisitesScreen.kt` 602).
-- Termux min version compare: `isVersionOlderThan` vs `0.118.3` (`PrerequisitesScreen.kt` 65–77, 885). F-Droid Termux ≥ 0.118.3 is the RUN_COMMAND extras contract FluxLinux 1.8 documented.
+- Termux min version compare: `isVersionOlderThan` vs `0.118.3` (`PrerequisitesScreen.kt` 65–77, 885). F-Droid Termux ≥ 0.118.3 is the RUN_COMMAND extras contract Kuro 1.8 documented.
 
 ---
 
@@ -170,7 +170,7 @@ HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!
 1. Settings App card **below PRoot**, visually distinct subtitle, titled **Legacy Termux**.
 2. One Settings page (`Screen.SETTINGS_LEGACY_TERMUX`) with BackHandler page → Settings → Home (mirror Terminal / X11).
 3. Prerequisite strip: **five** checks, **four** rows. Termux installed **and** ≥ 0.118.3 share one row; then external Termux:X11; `RUN_COMMAND`; `allow-external-apps` (list-as-ping). Fix CTAs. Never crash on `startService`.
-4. Discover leftover **proot-distro containers inside `com.termux`** via `RUN_COMMAND` + `fluxlinux://callback` (FluxLinux cannot read Termux’s data dir).
+4. Discover leftover **proot-distro containers inside `com.termux`** via `RUN_COMMAND` + `kuro://callback` (Kuro cannot read Termux’s data dir).
 5. Per leftover: Open terminal (Termux), Start display (external X11), Stop display, Uninstall (confirm).
 6. New scripts under `assets/scripts/legacy-termux/`. Always redeploy to Termux `$HOME/flux_legacy_*.sh` via the v1.8 base64 pattern. Never trust leftover `$HOME/start_gui.sh`.
 7. New `LegacyTermuxBridge`. Do not resurrect dead factory install/uninstall as product paths.
@@ -181,8 +181,8 @@ HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!
 - Re-add Termux as an installable Distros card.
 - Re-add “Copy & Open Termux” onboarding / Prerequisites as the **primary** path (the leftover page may show the `allow-external-apps` one-liner as a **fix**, not as setup).
 - Install new distros into Termux.
-- Manage `/data/local/tmp/chroot*` (Settings → Chroot).
-- Manage embedded PRoot under FluxLinux `filesDir` (Settings → PRoot).
+- Manage `/data/local/kuro/chroot*` (Settings → Chroot).
+- Manage embedded PRoot under Kuro `filesDir` (Settings → PRoot).
 - Change Home session card, embedded Terminal tab, embedded X11 settings, `DesktopLauncher`, `EmbeddedX11`.
 - Mutate current `start_gui.sh` / `stop_gui.sh` / `flux_install.sh` / `uninstall_guest*` / `HostScriptDeployer` tables.
 - Touch flavor / bootstrap / jniLibs.
@@ -199,7 +199,7 @@ HEAD `app/src/main/assets/scripts/debian/proot/start/start_gui.sh` line 1 is `#!
 
 ```mermaid
 flowchart LR
-    subgraph FL["FluxLinux com.ivarna.fluxlinux"]
+    subgraph FL["Kuro com.kuro.app"]
         Card["Settings → Legacy Termux"]
         Page["LegacyTermuxSettingsScreen"]
         Bridge["LegacyTermuxBridge"]
@@ -221,7 +221,7 @@ flowchart LR
     Bridge -->|"startService RUN_COMMAND"| RCS --> Home
     Home -->|"proot-distro / du / rm"| Old
     Home -->|"proot-distro / du / rm"| New
-    Home -->|"am start fluxlinux://callback"| CB --> Store
+    Home -->|"am start kuro://callback"| CB --> Store
     Home -->|"am start -n com.termux.x11/.MainActivity"| Act
 ```
 
@@ -264,7 +264,7 @@ Insert **below PRoot**, **above** the Help heading (`SettingsScreen.kt` 158–16
 | Field | Value |
 | --- | --- |
 | Title | `Legacy Termux` |
-| Subtitle | `Leftover PRoot installs from FluxLinux ≤ v1.8.0 live in the Termux app` |
+| Subtitle | `Leftover PRoot installs from Kuro ≤ v1.8.0 live in the Termux app` |
 | Icon | `Icons.Default.History` (not `Folder` / `Storage` — those are PRoot / Chroot) |
 
 Do not change `GlassSettingCard`. Accent = `colorScheme.secondary` (cream). No new color tokens.
@@ -323,7 +323,7 @@ Uninstall confirm (`AlertDialog`, same cream/error pattern as storage pages, **n
 
 > Delete **any** Termux `proot-distro` container named **`$id`**, including ones you installed in Termux yourself?  
 > Path: `/data/data/com.termux/files/usr/var/lib/proot-distro/{installed-rootfs|containers}/$id`  
-> This does **not** touch FluxLinux `filesDir/usr/var/lib/proot-distro/containers/$id` (Settings → PRoot).
+> This does **not** touch Kuro `filesDir/usr/var/lib/proot-distro/containers/$id` (Settings → PRoot).
 
 ### Prerequisite gates (exact)
 
@@ -381,7 +381,7 @@ On `ON_RESUME`, re-read packages + permission (same `LifecycleEventObserver` pat
 
 ### Isolation / discovery (critical)
 
-FluxLinux **cannot** read `/data/data/com.termux/`. Discovery **must** run inside Termux via `RUN_COMMAND`. A one-shot script prints a machine-parseable list and `am start`s a callback. There is no other channel.
+Kuro **cannot** read `/data/data/com.termux/`. Discovery **must** run inside Termux via `RUN_COMMAND`. A one-shot script prints a machine-parseable list and `am start`s a callback. There is no other channel.
 
 #### List command (contract)
 
@@ -438,7 +438,7 @@ done
 
 # Empty scan is success with empty ids (not an error).
 am start -a android.intent.action.VIEW \
-  -d "fluxlinux://callback?result=success&name=legacy_termux_list&ids=${ids}&bytes=${bytes}&layouts=${layouts}"
+  -d "kuro://callback?result=success&name=legacy_termux_list&ids=${ids}&bytes=${bytes}&layouts=${layouts}"
 ```
 
 Do **not** treat `proot-distro list` as SSOT (output format drifted). Optional extra: if `command -v proot-distro` and `ids` is empty, still succeed (no leftovers). If `du` is slow on a huge tree, 15s Kotlin timeout shows last cache + “scan timed out — tap retry”. Expected size: 1 leftover debian, 2–8 GB; `du -sb` is typically < 5s.
@@ -446,7 +446,7 @@ Do **not** treat `proot-distro list` as SSOT (output format drifted). Optional e
 #### Callback parse format
 
 ```
-fluxlinux://callback?result=success&name=legacy_termux_list&ids=debian,ubuntu&bytes=2147483648,98765&layouts=installed-rootfs,containers
+kuro://callback?result=success&name=legacy_termux_list&ids=debian,ubuntu&bytes=2147483648,98765&layouts=installed-rootfs,containers
 ```
 
 | Query | Rule |
@@ -460,20 +460,20 @@ fluxlinux://callback?result=success&name=legacy_termux_list&ids=debian,ubuntu&by
 Optional ping (fix CTA only — not on enter):
 
 ```
-fluxlinux://callback?result=success&name=legacy_termux_ping
+kuro://callback?result=success&name=legacy_termux_ping
 ```
 
 Uninstall success (only if both dirs are gone — see `uninstall_proot.sh`):
 
 ```
-fluxlinux://callback?result=success&name=legacy_termux_uninstall_<id>
+kuro://callback?result=success&name=legacy_termux_uninstall_<id>
 ```
 
 Uninstall / bad-id failure (scripts **do** emit this):
 
 ```
-fluxlinux://callback?result=error&name=legacy_termux_uninstall_<id>&reason=unknown
-fluxlinux://callback?result=error&name=legacy_termux_uninstall_<id>&reason=bad_id
+kuro://callback?result=error&name=legacy_termux_uninstall_<id>&reason=unknown
+kuro://callback?result=error&name=legacy_termux_uninstall_<id>&reason=bad_id
 ```
 
 `reason` allowlist actually emitted: `bad_id`, `unknown`. Kotlin-side timeout is **not** a URI (UI state only). Do not invent `no_termux` / `proot_missing` URIs.
@@ -530,7 +530,7 @@ DesktopLauncher.isSessionActive()
     || DistroRepository.supportedDistros.any { StateManager.isGuiRunning(ctx, it.id) }
 ```
 
-When true: **disable Start leftover** and show “Stop the FluxLinux desktop first. Leftover Termux:X11 and embedded XFCE should not run together (Pulse TCP 127.0.0.1:4713).” Stop / terminal / uninstall stay available.
+When true: **disable Start leftover** and show “Stop the Kuro desktop first. Leftover Termux:X11 and embedded XFCE should not run together (Pulse TCP 127.0.0.1:4713).” Stop / terminal / uninstall stay available.
 
 In-flight: one RUN_COMMAND. `scanning` / `uninstalling` ignore further Scan / Uninstall taps. A late callback still applies and returns the page to `idle` / `empty`.
 
@@ -540,7 +540,7 @@ Uninstall 20s timeout → toast/status “Termux did not confirm removal; tap Sc
 
 | Situation | UI |
 | --- | --- |
-| Termux missing | Empty hero: “The Termux app is not installed. Leftover FluxLinux ≤ v1.8.0 containers lived there.” No Scan button. `startSafely` never called. |
+| Termux missing | Empty hero: “The Termux app is not installed. Leftover Kuro ≤ v1.8.0 containers lived there.” No Scan button. `startSafely` never called. |
 | Permission denied / `startSafely` false | Banner + Grant. Do not claim “no leftovers”. Stay `idle`/`timed_out`, not `empty`. |
 | List timeout (15s) | State `timed_out`. “Termux did not respond. Enable `allow-external-apps = true` and grant RUN_COMMAND.” Show one-liner + Copy & Open Termux (Prerequisites 644–659). Keep last cache dimmed. |
 | Success, `ids` empty or missing | State `empty`. “No leftover PRoot containers found in Termux.” `ping_ok=true`. |
@@ -616,16 +616,16 @@ sleep 1
 pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
 
 # Start VirGL server (required for GPU acceleration inside PRoot)
-echo "FluxLinux: Starting VirGL server..."
+echo "Kuro: Starting VirGL server..."
 virgl_test_server_android &
 VIRGL_PID=$!
 sleep 2
 
 # Verify VirGL socket appeared (--shared-tmp exposes Termux $TMPDIR as /tmp inside proot)
 if [ -S "${TMPDIR}/.virgl_test" ]; then
-    echo "FluxLinux: VirGL socket ready at /tmp/.virgl_test"
+    echo "Kuro: VirGL socket ready at /tmp/.virgl_test"
 else
-    echo "FluxLinux: [WARN] VirGL socket not found — GPU acceleration may not work"
+    echo "Kuro: [WARN] VirGL socket not found — GPU acceleration may not work"
 fi
 
 # Prepare termux-x11 session
@@ -669,7 +669,7 @@ Hard rules:
 - Shebang stays `/data/data/com.termux/files/usr/bin/bash`.
 - Do **not** source `fluxlinux-host.env`.
 - Do **not** set `TERMUX_X11_OVERRIDE_PACKAGE`.
-- Do **not** mention `com.ivarna.fluxlinux` or `com.zenithblue.fluxlinux`.
+- Do **not** mention `com.kuro.app` or `com.kuro.app`.
 - Activity is `com.termux.x11/com.termux.x11.MainActivity` (v1.8 used this component string).
 - Kotlin never passes `id=termux`, so the native branch is dead on this page.
 
@@ -688,7 +688,7 @@ After `startSafely`, do **not** call `DesktopLauncher.reopenDisplay`, `EmbeddedX
 DISTRO=${1:-debian}
 
 echo "========================================"
-echo "FluxLinux: Stopping GUI for $DISTRO"
+echo "Kuro: Stopping GUI for $DISTRO"
 echo "========================================"
 
 # Step 1: Kill XFCE processes inside proot
@@ -717,11 +717,11 @@ echo "========================================"
 exit 0
 ```
 
-UID isolation: this script runs **as Termux**. `pkill` / `killall` from Termux cannot signal FluxLinux’s embedded X11 (different UID; Android hides other-app processes). The package-scoped broadcast is `-p com.termux.x11`, **not** `-p com.ivarna.fluxlinux` (HEAD `TermuxIntentFactory.buildStopKdeGuiIntent` line 945 broadcasts to the **embedded** package — do not copy that). Do not `am force-stop` FluxLinux.
+UID isolation: this script runs **as Termux**. `pkill` / `killall` from Termux cannot signal Kuro’s embedded X11 (different UID; Android hides other-app processes). The package-scoped broadcast is `-p com.termux.x11`, **not** `-p com.kuro.app` (HEAD `TermuxIntentFactory.buildStopKdeGuiIntent` line 945 broadcasts to the **embedded** package — do not copy that). Do not `am force-stop` Kuro.
 
 #### `uninstall_proot.sh`
 
-v1.8.0 proot branch (tag 149–167) plus **both** directory names. Newer proot-distro uses `containers/`; v1.8 fallback used `installed-rootfs/`. Never `rm -rf` anything under FluxLinux’s prefix (the script never runs there).
+v1.8.0 proot branch (tag 149–167) plus **both** directory names. Newer proot-distro uses `containers/`; v1.8 fallback used `installed-rootfs/`. Never `rm -rf` anything under Kuro’s prefix (the script never runs there).
 
 ```bash
 #!/data/data/com.termux/files/usr/bin/bash
@@ -729,7 +729,7 @@ ID="${1:-}"
 if ! echo "$ID" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*$'; then
     echo "bad id"
     am start -a android.intent.action.VIEW \
-      -d "fluxlinux://callback?result=error&name=legacy_termux_uninstall_bad&reason=bad_id"
+      -d "kuro://callback?result=error&name=legacy_termux_uninstall_bad&reason=bad_id"
     exit 2
 fi
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
@@ -738,17 +738,17 @@ NEW="$PREFIX/var/lib/proot-distro/containers/$ID"
 
 echo "Attempting to remove $ID..."
 if proot-distro remove "$ID" 2>/dev/null; then
-    echo "FluxLinux: $ID Uninstalled."
+    echo "Kuro: $ID Uninstalled."
 else
     echo "First attempt failed, retrying..."
     sleep 1
     if proot-distro remove "$ID" 2>/dev/null; then
-        echo "FluxLinux: $ID Uninstalled."
+        echo "Kuro: $ID Uninstalled."
     else
         echo "proot-distro command failed, using manual removal..."
         rm -rf "$OLD"
         rm -rf "$NEW"
-        echo "FluxLinux: $ID manually removed."
+        echo "Kuro: $ID manually removed."
     fi
 fi
 # proot-distro remove can leave a dir; sweep both names (Termux PREFIX only)
@@ -757,11 +757,11 @@ rm -rf "$NEW"
 sleep 2
 if [ ! -e "$OLD" ] && [ ! -e "$NEW" ]; then
     am start -a android.intent.action.VIEW \
-      -d "fluxlinux://callback?result=success&name=legacy_termux_uninstall_${ID}"
+      -d "kuro://callback?result=success&name=legacy_termux_uninstall_${ID}"
 else
-    echo "FluxLinux: $ID still present after remove."
+    echo "Kuro: $ID still present after remove."
     am start -a android.intent.action.VIEW \
-      -d "fluxlinux://callback?result=error&name=legacy_termux_uninstall_${ID}&reason=unknown"
+      -d "kuro://callback?result=error&name=legacy_termux_uninstall_${ID}&reason=unknown"
 fi
 ```
 
@@ -770,16 +770,16 @@ Quoted v1.8.0 body for implementers who need the historical text:
 ```
 echo "Attempting to remove $distroId..."
 if proot-distro remove $distroId 2>/dev/null; then
-    echo "FluxLinux: $distroId Uninstalled."
+    echo "Kuro: $distroId Uninstalled."
 else
     echo "First attempt failed, retrying..."
     sleep 1
     if proot-distro remove $distroId 2>/dev/null; then
-        echo "FluxLinux: $distroId Uninstalled."
+        echo "Kuro: $distroId Uninstalled."
     else
         echo "proot-distro command failed, using manual removal..."
         rm -rf $PREFIX/var/lib/proot-distro/installed-rootfs/$distroId
-        echo "FluxLinux: $distroId manually removed."
+        echo "Kuro: $distroId manually removed."
     fi
 fi
 sleep 2
@@ -851,7 +851,7 @@ UI layer loads assets via `ScriptManager.getScriptContent("legacy-termux/…")`,
 
 `hostPath("debian", "installed-rootfs")` → `/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/debian`. `hostPath("debian", "containers")` → `…/containers/debian`. Unknown layout → `null` (row still shows the raw id).
 
-Intent extras **byte-compatible** with Termux `RunCommandService` at the versions FluxLinux 1.8 documented (F-Droid Termux ≥ 0.118.3):
+Intent extras **byte-compatible** with Termux `RunCommandService` at the versions Kuro 1.8 documented (F-Droid Termux ≥ 0.118.3):
 
 | Extra | Value |
 | --- | --- |
@@ -864,7 +864,7 @@ Intent extras **byte-compatible** with Termux `RunCommandService` at the version
 
 Do **not** set `RUN_COMMAND_SESSION_ACTION`, `RUN_COMMAND_STDIN`, or result-directory extras. v1.8 did not. Adding them risks breaking older 0.118.3 builds.
 
-`arguments[1]` (the `-c` script) must contain the distro id for login/start/stop/uninstall, must contain `flux_legacy_`, and must **not** contain `com.ivarna.fluxlinux`, `com.zenithblue.fluxlinux`, `fluxlinux-host.env`, or `TERMUX_X11_OVERRIDE_PACKAGE`.
+`arguments[1]` (the `-c` script) must contain the distro id for login/start/stop/uninstall, must contain `flux_legacy_`, and must **not** contain `com.kuro.app`, `com.kuro.app`, `fluxlinux-host.env`, or `TERMUX_X11_OVERRIDE_PACKAGE`.
 
 ### Callback handler (MainActivity)
 
@@ -891,7 +891,7 @@ if (savedInstanceState == null) {
     dispatchLegacyTermuxCallback(intent)  // no-op unless name starts with legacy_termux_
 }
 
-// onNewIntent — unchanged owner of ALL fluxlinux://callback names (including distro_uninstall_*)
+// onNewIntent — unchanged owner of ALL kuro://callback names (including distro_uninstall_*)
 handleScriptCallback(intent)
 
 private fun consumeCallbackIntent() {
@@ -973,7 +973,7 @@ Display: **raw proot id** + History glyph + absolute Termux `hostPath`. Do **not
 | Settings → Chroot / PRoot storage (in-progress) | No edits to those composables, `GuestStorageCatalog`, `ProotInfoStore`, `ChrootInfoStore`, `storageTargetId` semantics. One new hub card only. |
 | Home KDE Termux residual | `HomeScreen.kt` 683–737 and DistroSettings `buildLaunchKdeGui*` / `buildStopKdeGui*` stay on `TermuxIntentFactory`. New bridge is unused there. |
 | `PrerequisitesScreen` | Untouched. Leftover page may **copy** the allow-external-apps one-liner as a fix CTA; it does not restore Prerequisites as the primary path. Tweaks button still uses `TermuxIntentFactory.buildRunCommandIntent`. |
-| `fluxlinux://callback` `distro_uninstall_*` handler | Early-return for `legacy_termux_*` **before** that branch. Body of `distro_uninstall_*` unchanged. |
+| `kuro://callback` `distro_uninstall_*` handler | Early-return for `legacy_termux_*` **before** that branch. Body of `distro_uninstall_*` unchanged. |
 | Flavor PREFIX / `TermuxHostPaths` | Scripts hardcode Termux paths only. Grep gate forbids flavor package + `fluxlinux-host.env`. `TermuxHostPaths.PACKAGE` stays `BuildConfig.APPLICATION_ID`. |
 | `HostScriptDeployer.HOST_SCRIPTS` | Leftover assets are **not** added. Embedded `$HOME` must not receive `flux_legacy_*.sh`. |
 | Home session card / Terminal tab | No `setGuiRunning`, no `openSessionAfterHost`, no `openTerminalTab` / `BottomTab.TERMINAL`. Copy & Open uses `getLaunchIntentForPackage("com.termux")`. |
@@ -987,10 +987,10 @@ Display: **raw proot id** + History glyph + absolute Termux `hostPath`. Do **not
 Reuse `buildLaunchCliIntent` / `buildLaunchGuiIntent` / `buildStopGuiIntent` / `buildUninstallIntent`.
 
 - **Pros:** Less new Kotlin; v1.8 commands already live there.
-- **Cons:** Product comment forbids re-wiring debian uninstall/run through this factory. HEAD `buildUninstallIntent` still emits `name=distro_uninstall_$id` (line 113) — that **will** flip embedded state. HEAD `buildLaunchGuiIntent` still runs **pre-deployed** `$HOME/start_gui.sh` (may be missing or stale). HEAD KDE stop already broadcasts to `com.ivarna.fluxlinux` (line 945). Mixing leftover and residual KDE in one object invites the next caller to “just use the factory”.
+- **Cons:** Product comment forbids re-wiring debian uninstall/run through this factory. HEAD `buildUninstallIntent` still emits `name=distro_uninstall_$id` (line 113) — that **will** flip embedded state. HEAD `buildLaunchGuiIntent` still runs **pre-deployed** `$HOME/start_gui.sh` (may be missing or stale). HEAD KDE stop already broadcasts to `com.kuro.app` (line 945). Mixing leftover and residual KDE in one object invites the next caller to “just use the factory”.
 - **Decision:** reject. New `LegacyTermuxBridge` copies only the three v1.8 actions (+ list-as-ping).
 
-### B. Walk `/data/data/com.termux/…` from FluxLinux (or `run-as`)
+### B. Walk `/data/data/com.termux/…` from Kuro (or `run-as`)
 
 - **Pros:** no RUN_COMMAND, no allow-external-apps.
 - **Cons:** Different UID + SELinux. `run-as com.termux` is not available to a third-party app. Would fail closed on every production device.
@@ -1000,7 +1000,7 @@ Reuse `buildLaunchCliIntent` / `buildLaunchGuiIntent` / `buildStopGuiIntent` / `
 
 - **Pros:** simple parse.
 - **Cons:** leftover names + sizes on shared storage; scoped-storage pain; not the v1.8 protocol.
-- **Decision:** reject. Stay on `am start fluxlinux://callback`.
+- **Decision:** reject. Stay on `am start kuro://callback`.
 
 ### D. List → detail like Settings → PRoot
 
@@ -1029,7 +1029,7 @@ Reuse `buildLaunchCliIntent` / `buildLaunchGuiIntent` / `buildStopGuiIntent` / `
 | `allow-external-apps` false looks like “no leftovers” | **Med** | Timeout ≠ empty. Distinct copy. |
 | List callback writes `setScriptStatus` / toasts / `clear()` stale queue UI | **Med** | Early-return **before** `processNextInstallTask`. Queue `enqueue` has zero callers — not a live-install abort. |
 | Privacy: leftover names in prefs / logcat | **Low** | Prefs are app-private. Do not log full callback URIs at info. Names are distro ids, not PII. |
-| Stop leftover kills embedded X11 | **Low** (UID isolation) | Scripts run as Termux; cannot signal FluxLinux. Broadcast `-p com.termux.x11` only. Device smoke S6. |
+| Stop leftover kills embedded X11 | **Low** (UID isolation) | Scripts run as Termux; cannot signal Kuro. Broadcast `-p com.termux.x11` only. Device smoke S6. |
 | Start leftover while embedded XFCE is up (Pulse 4713 + two X11 UIs) | **Med** | Disable Start when `isEmbeddedDesktopActive`. S8. Known audio conflict, not a blocker. |
 
 Auth: leftover actions are local IPC to Termux, gated by the user-granted `com.termux.permission.RUN_COMMAND` and Termux’s `allow-external-apps`. No network. No new manifest permission.
@@ -1067,13 +1067,13 @@ Walk `app/src/main/assets/scripts/legacy-termux/**`.
 
 | Assert | Detail |
 | --- | --- |
-| No `com.ivarna.fluxlinux` | grep |
-| No `com.zenithblue.fluxlinux` | grep |
+| No `com.kuro.app` | grep |
+| No `com.kuro.app` | grep |
 | No `fluxlinux-host.env` | grep |
 | No `TERMUX_X11_OVERRIDE_PACKAGE` | grep |
 | Shebang | every `.sh` starts with `#!/data/data/com.termux/files/usr/bin/bash` |
 | `start_display.sh` | **must** contain `com.termux.x11/com.termux.x11.MainActivity`, `virgl_test_server_android`, `proot-distro login`, `su - flux`, `startxfce4`. **must not** contain `TERMUX_X11_OVERRIDE`, `fluxlinux-host.env`, flavor packages. Prefer byte-identical to `git show v1.8.0:…/start/start_gui.sh` (optional `diff`). No “equals **or** contains” fallback that would pass a HEAD copy. |
-| `stop_display.sh` | contains `ACTION_STOP -p com.termux.x11` and does **not** contain `-p com.ivarna.fluxlinux` |
+| `stop_display.sh` | contains `ACTION_STOP -p com.termux.x11` and does **not** contain `-p com.kuro.app` |
 | `uninstall_proot.sh` | `proot-distro remove`, `installed-rootfs`, `containers`, `legacy_termux_uninstall_`, success gated on `! -e` both dirs, `reason=unknown` / `reason=bad_id`. **No** `/system/bin/su`. |
 | `login_proot.sh` | `proot-distro login` and `--user flux`. **No** `/system/bin/su`. |
 | `list_proot.sh` | `legacy_termux_list`, both directory names, `du -sb`. **No** `/system/bin/su`. |
@@ -1091,7 +1091,7 @@ Assert `RunCommandSpec` for each builder:
 - `arguments[0] == "-c"`
 - `arguments[1]` contains the distro id (`debian`)
 - `arguments[1]` contains `flux_legacy_`
-- `arguments[1]` does **not** contain `com.ivarna.fluxlinux`, `fluxlinux-host.env`, `TERMUX_X11_OVERRIDE_PACKAGE`
+- `arguments[1]` does **not** contain `com.kuro.app`, `fluxlinux-host.env`, `TERMUX_X11_OVERRIDE_PACKAGE`
 - Unsafe ids (`debian;rm`, `../etc`, empty) → `buildLoginSpec` / `buildStartDisplaySpec` / `buildStopDisplaySpec` / `buildUninstallSpec` / `wrapDeploy` return **`null`**. **Never** interpolates them.
 - `wrapDeploy` is pure (no `Context`).
 
@@ -1145,7 +1145,7 @@ Ivarna release, `adb install -r`. Serial / APK size recorded in the PR3 notes, s
 | **S1** | Termux present with leftover `debian` (v1.8-era or `proot-distro install debian`). External Termux:X11 installed. RUN_COMMAND granted. `allow-external-apps=true`. | Scan lists `debian`. Open terminal → Termux session `proot-distro login debian --user flux` (or root fallback). Start display → **external** Termux:X11 + XFCE, not embedded X11. Stop display → Termux:X11 stops. Uninstall confirm → Termux removes the leftover; page empties. |
 | **S2** | Termux **absent** | Card visible. Page explains leftover location. No crash. Scan disabled. |
 | **S3** | Termux present, RUN_COMMAND **denied** | Grant CTA. `startSafely` failure does not crash. No “no leftovers” claim. |
-| **S4** | Embedded debian **kept**. Leftover is a **throwaway** Termux name (`ubuntu` or `alpine` via `proot-distro install` in Termux — **not** the embedded `debian` identity). | Uninstall the throwaway leftover. `adb shell run-as com.ivarna.fluxlinux ls files/usr/var/lib/proot-distro/containers/debian` still exists. Home/Distros still show embedded debian installed. Settings → PRoot size unchanged (order of magnitude). **Do not skip S4** when both prefixes exist; never make embedded debian the victim. |
+| **S4** | Embedded debian **kept**. Leftover is a **throwaway** Termux name (`ubuntu` or `alpine` via `proot-distro install` in Termux — **not** the embedded `debian` identity). | Uninstall the throwaway leftover. `adb shell run-as com.kuro.app ls files/usr/var/lib/proot-distro/containers/debian` still exists. Home/Distros still show embedded debian installed. Settings → PRoot size unchanged (order of magnitude). **Do not skip S4** when both prefixes exist; never make embedded debian the victim. |
 | **S5** | `allow-external-apps` false | 15s list timeout copy (not empty-success). After user pastes the one-liner via Copy & Open (`getLaunchIntentForPackage("com.termux")`), scan works. |
 | **S6** | Embedded XFCE running, then **Stop leftover** | Embedded X11 / `DesktopLauncher` session still up (UID isolation). |
 | **S7** | Termux installed, no proot leftovers | Empty success copy. `ping_ok` becomes true. |
@@ -1223,10 +1223,10 @@ Follow-ups (not this plan): Termux Native pkg uninstall; leftover KDE start (`st
 1. **v1.8.0 is still external Termux.** Embedded landed after the tag (`784fa45` / PR #36). Protocol SSOT is the tag, not HEAD scripts.
 2. **New `LegacyTermuxBridge`, not a factory resurrection.** Leaves KDE / Prerequisites callers on `TermuxIntentFactory` untouched. Avoids `distro_uninstall_*` and pre-deployed `$HOME/start_gui.sh`.
 3. **Callback prefix `legacy_termux_*` + early-return in PR1.** Protects session/component prefs and blocks `setScriptStatus`. Does **not** delete files or abort a live rootfs install. `onCreate` dispatches leftover names only, and only when `savedInstanceState == null`.
-4. **Discovery only via RUN_COMMAND + callback.** FluxLinux cannot read Termux’s data dir. **List is the ping**; missing `ids` == empty; late callbacks apply.
+4. **Discovery only via RUN_COMMAND + callback.** Kuro cannot read Termux’s data dir. **List is the ping**; missing `ids` == empty; late callbacks apply.
 5. **Always redeploy `flux_legacy_*.sh` via pure `wrapDeploy`.** Do not trust leftover v1.8 home scripts; do not overwrite `$HOME/start_gui.sh`.
 6. **Copy tag `start_gui.sh` / `stop_gui.sh` into new assets.** Must contain `com.termux.x11/com.termux.x11.MainActivity`; must not contain `TERMUX_X11_OVERRIDE`. Stop only `com.termux.x11`.
-7. **Uninstall: `proot-distro remove` then both dirs; success only if both gone.** Never `rm` under FluxLinux PREFIX. No `/system/bin/su`.
+7. **Uninstall: `proot-distro remove` then both dirs; success only if both gone.** Never `rm` under Kuro PREFIX. No `/system/bin/su`.
 8. **v1 page = Termux proot-distro containers only.** Termux Native is a follow-up so “uninstall debian” ≠ “wipe Termux desktop packages”. Start display is **XFCE-only** (button disclaimer).
 9. **Single Settings page, no detail route.** Mirror Terminal/X11; avoid `storageTargetId` collision.
 10. **External X11 package check ≠ `StateManager.isTermuxX11Installed()`.** That helper is hardcoded `true` for embedded X11.

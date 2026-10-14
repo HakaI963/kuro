@@ -1,8 +1,8 @@
-# Fedora 44 in FluxLinux
+# Fedora 44 in Kuro
 
 | | |
 |---|---|
-| Cards | `fedora` (proot) · `fedora_chroot` (`/data/local/tmp/chrootFedora`) |
+| Cards | `fedora` (proot) · `fedora_chroot` (`/data/local/kuro/chroot/fedora_chroot/rootfs`) |
 | Rootfs | `fedora_44_rootfs.tar.xz` (Fedora 44 Generic-Minimal container, aarch64) |
 | Package manager | `dnf` / `dnf5` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

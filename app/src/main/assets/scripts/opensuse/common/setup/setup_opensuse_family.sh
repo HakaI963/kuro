@@ -20,10 +20,10 @@ fi
 # setup_opensuse_family.sh — openSUSE Tumbleweed XFCE (proot + chroot). zypper.
 
 DISTRO_NAME="${1:-opensuse}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (openSUSE Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (openSUSE Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -32,7 +32,7 @@ _flux_ensure_tmp
 _flux_ensure_dns
 
 if ! command -v zypper >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: zypper not found"
+    echo "Kuro: ERROR: zypper not found"
     exit 1
 fi
 
@@ -108,8 +108,8 @@ _flux_opensuse_protect_zypper
 _flux_opensuse_install_md2_stub
 
 if ! zypper --non-interactive --version >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: zypper unusable (libcurl/libldap vs OpenSSL 3.5)."
-    echo "FluxLinux: Reinstall the openSUSE rootfs (libcurl-mini must be restored)."
+    echo "Kuro: ERROR: zypper unusable (libcurl/libldap vs OpenSSL 3.5)."
+    echo "Kuro: Reinstall the openSUSE rootfs (libcurl-mini must be restored)."
     exit 1
 fi
 
@@ -125,7 +125,7 @@ fi
 
 _flux_log "zypper refresh..."
 zypper --non-interactive --gpg-auto-import-keys refresh || {
-    echo "FluxLinux: zypper refresh failed (network / repos)"
+    echo "Kuro: zypper refresh failed (network / repos)"
     exit 1
 }
 
@@ -134,7 +134,7 @@ zypper --non-interactive install --no-recommends --auto-agree-with-licenses \
     bash sudo shadow wget unzip tar \
     dbus-1 \
     || {
-        echo "FluxLinux: base package install failed"
+        echo "Kuro: base package install failed"
         exit 1
     }
 zypper --non-interactive install --no-recommends --auto-agree-with-licenses dbus-1-daemon 2>/dev/null || true
@@ -149,7 +149,7 @@ zypper --non-interactive install --no-recommends --auto-agree-with-licenses \
     adwaita-icon-theme \
     Mesa-dri Mesa-libGL1 \
     || {
-        echo "FluxLinux: XFCE package install failed"
+        echo "Kuro: XFCE package install failed"
         exit 1
     }
 zypper --non-interactive install --no-recommends --auto-agree-with-licenses \
@@ -158,12 +158,12 @@ _flux_opensuse_protect_zypper
 
 # TW GTK/glycin uses bwrap; replace with Alpine-style proot-safe shim.
 if [ -x /usr/bin/bwrap ] && [ ! -e /usr/bin/bwrap.real ] && \
-   ! grep -q 'FluxLinux proot' /usr/bin/bwrap 2>/dev/null; then
+   ! grep -q 'Kuro proot' /usr/bin/bwrap 2>/dev/null; then
     mv /usr/bin/bwrap /usr/bin/bwrap.real 2>/dev/null || true
 fi
 cat > /usr/bin/bwrap <<'BWRAP_EOF'
 #!/bin/sh
-# FluxLinux: exec the real glycin loader, not an earlier --ro-bind source.
+# Kuro: exec the real glycin loader, not an earlier --ro-bind source.
 while [ $# -gt 0 ]; do
   case "$1" in
     /usr/libexec/glycin-loaders/*|/usr/lib/glycin-loaders/*|/usr/bin/true|/bin/true)
@@ -200,5 +200,5 @@ _flux_setup_pulse
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} openSUSE setup complete!"
+echo "Kuro: ${DISTRO_NAME} openSUSE setup complete!"
 exit 0

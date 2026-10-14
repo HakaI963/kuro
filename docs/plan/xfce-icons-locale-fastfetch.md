@@ -3,7 +3,7 @@
 **Date:** 2026-08-13  
 **Status:** PLAN ONLY — device-diagnosed, not implemented.  
 **Parents:** [`fedora-void-opensuse.md`](./fedora-void-opensuse.md) (FVO still DEVICE PASS for I1–D3/D5/T2/T3), [`deepin-chimera-manjaro.md`](./deepin-chimera-manjaro.md) (DCM DEVICE PASS; Manjaro D4 icons incomplete).  
-**Package:** `com.ivarna.fluxlinux`. **APK:** `assembleIvarnaRelease` + `adb install -r` only.
+**Package:** `com.kuro.app`. **APK:** `assembleIvarnaRelease` + `adb install -r` only.
 
 **Not in this plan:** Ubuntu/Kali/Parrot/Arch. PulseAudio. First-X SIGSYS. Stale Terminal tabs. DDE/KDE.
 
@@ -397,12 +397,12 @@ Shared script change → Deepin proot Start + `sudo -n id` + Applications menu n
 ## 8. Worker agent prompt (paste)
 
 ```
-You are the FluxLinux icons/locale/fastfetch worker.
+You are the Kuro icons/locale/fastfetch worker.
 
 Repo: /home/abhaybyte/repos/fluxlinux
 Plan (SSOT): docs/plan/xfce-icons-locale-fastfetch.md
 Parents: docs/plan/fedora-void-opensuse.md , docs/plan/deepin-chimera-manjaro.md
-Package: com.ivarna.fluxlinux
+Package: com.kuro.app
 APK: ./gradlew :app:assembleIvarnaRelease --no-daemon
      adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
 Device: adb -s Y5WWBMJVOZSK4HU8 (Xiaomi). KernelSU for chroot.

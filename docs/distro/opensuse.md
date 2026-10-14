@@ -1,8 +1,8 @@
-# openSUSE Tumbleweed in FluxLinux
+# openSUSE Tumbleweed in Kuro
 
 | | |
 |---|---|
-| Cards | `opensuse` (proot) · `opensuse_chroot` (`/data/local/tmp/chrootOpenSUSE`) |
+| Cards | `opensuse` (proot) · `opensuse_chroot` (`/data/local/kuro/chroot/opensuse_chroot/rootfs`) |
 | Rootfs | `opensuse_tumbleweed_rootfs.tar.xz` (snapshot 20251127, aarch64) |
 | Package manager | `zypper` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

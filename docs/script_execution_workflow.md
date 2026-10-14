@@ -1,6 +1,6 @@
-# FluxLinux Script Execution Workflow
+# Kuro Script Execution Workflow
 
-This document provides a comprehensive overview of how the FluxLinux Android app handles script execution, from user interaction to script completion and callback handling.
+This document provides a comprehensive overview of how the Kuro Android app handles script execution, from user interaction to script completion and callback handling.
 
 ---
 
@@ -26,7 +26,7 @@ This document provides a comprehensive overview of how the FluxLinux Android app
 
 ```mermaid
 flowchart TB
-    subgraph "FluxLinux App"
+    subgraph "Kuro App"
         UI[UI Screen<br/>HomeScreen, DistroScreen,<br/>InstallConfigScreen]
         TIF[TermuxIntentFactory]
         SM[ScriptManager]
@@ -53,7 +53,7 @@ flowchart TB
     
     subgraph "Callback Path"
         AM[am start<br/>Deep Link]
-        DL[fluxlinux://callback]
+        DL[kuro://callback]
     end
     
     UI --> |1. User Action| TIF
@@ -167,7 +167,7 @@ A lightweight HTTP server for serving large scripts to Termux:
 
 ```mermaid
 sequenceDiagram
-    participant App as FluxLinux App
+    participant App as Kuro App
     participant Server as LocalInstallServer
     participant Clipboard as Clipboard
     participant Termux as Termux
@@ -206,7 +206,7 @@ override fun onNewIntent(intent: Intent) {
 
 private fun handleScriptCallback(intent: Intent) {
     if (intent.action == Intent.ACTION_VIEW && 
-        intent.data?.scheme == "fluxlinux") {
+        intent.data?.scheme == "kuro") {
         val result = uri?.getQueryParameter("result")
         val scriptName = uri?.getQueryParameter("name")
         // Process result, update state, advance queue
@@ -249,7 +249,7 @@ sequenceDiagram
     LIS-->>Termux: Script content
     Termux->>Script: Execute
     Note over Script: Install distro, configure, etc.
-    Script->>Script: am start fluxlinux://callback
+    Script->>Script: am start kuro://callback
     Script-->>MA: Deep Link Callback
     MA->>MA: handleScriptCallback()
     MA->>QM: next()
@@ -290,7 +290,7 @@ sequenceDiagram
     Termux->>PROOT: proot-distro login distro --shared-tmp
     PROOT->>Script: bash /tmp/flux_feature.sh
     Script->>Script: Install components...
-    Script->>Script: am start fluxlinux://callback
+    Script->>Script: am start kuro://callback
     Script-->>MA: Callback
     MA->>MA: Update StateManager
     MA->>UI: Trigger refresh
@@ -307,7 +307,7 @@ flowchart TD
         B -->|PRoot| C[buildLaunchGuiIntent]
         B -->|Chroot| D[buildLaunchGuiIntent<br/>+ VirGL + PulseAudio]
         C --> E["bash $HOME/start_gui.sh distroId"]
-        D --> F["su -c 'sh /data/local/tmp/start_*.sh'"]
+        D --> F["su -c 'sh /data/local/kuro/start_*.sh'"]
         E --> G[start_gui.sh]
         F --> H[start_*_gui.sh]
         G --> I[Kill old X11 processes]
@@ -324,7 +324,7 @@ flowchart TD
     subgraph "GUI Stop Flow"
         P[User clicks Stop GUI] --> Q{Distro Type?}
         Q -->|PRoot| R["bash $HOME/stop_gui.sh distroId"]
-        Q -->|Chroot| S["su -c 'sh /data/local/tmp/stop_*.sh'"]
+        Q -->|Chroot| S["su -c 'sh /data/local/kuro/stop_*.sh'"]
         R --> T[Kill XFCE4 processes]
         S --> T
         T --> U[Stop Termux:X11]
@@ -342,9 +342,9 @@ flowchart LR
     A[User clicks CLI] --> B{Distro Type?}
     B -->|termux| C[Echo message]
     B -->|PRoot| D["proot-distro login distroId --user flux"]
-    B -->|debian13_chroot| E["su -c 'sh /data/local/tmp/enter_debian13.sh'"]
-    B -->|debian_chroot| F["su -c 'sh /data/local/tmp/enter_debian.sh'"]
-    B -->|arch_chroot| G["su -c 'sh /data/local/tmp/enter_arch.sh'"]
+    B -->|debian13_chroot| E["su -c 'sh /data/local/kuro/enter_debian13.sh'"]
+    B -->|debian_chroot| F["su -c 'sh /data/local/kuro/enter_debian.sh'"]
+    B -->|arch_chroot| G["su -c 'sh /data/local/kuro/enter_arch.sh'"]
     D --> H[Interactive Shell]
     E --> H
     F --> H
@@ -386,7 +386,7 @@ flowchart TD
 
 ## Script Delivery Methods
 
-FluxLinux uses multiple methods to deliver scripts to Termux:
+Kuro uses multiple methods to deliver scripts to Termux:
 
 ### 1. Direct Intent (Small Scripts)
 
@@ -439,7 +439,7 @@ flowchart LR
 ### Deep Link Format
 
 ```
-fluxlinux://callback?result=<result>&name=<name>[&components=<list>]
+kuro://callback?result=<result>&name=<name>[&components=<list>]
 ```
 
 | Parameter | Values | Description |
@@ -453,11 +453,11 @@ fluxlinux://callback?result=<result>&name=<name>[&components=<list>]
 ```bash
 # Success callback
 am start -a android.intent.action.VIEW \
-    -d "fluxlinux://callback?result=success&name=component_id"
+    -d "kuro://callback?result=success&name=component_id"
 
 # Failure callback
 am start -a android.intent.action.VIEW \
-    -d "fluxlinux://callback?result=failure&name=component_id"
+    -d "kuro://callback?result=failure&name=component_id"
 ```
 
 ### Callback Processing Flow
@@ -600,12 +600,12 @@ proot-distro login $distroId --shared-tmp -- bash -c "
 
 ```bash
 # Command wrapping for Chroot (via run_debian13_root.sh helper)
-ROOT_RUNNER="/data/local/tmp/run_debian13_root.sh"
+ROOT_RUNNER="/data/local/kuro/run_debian13_root.sh"
 if [ -f "$ROOT_RUNNER" ]; then
     sh "$ROOT_RUNNER" "bash /tmp/flux_feature.sh"
 else
     # Fallback: inline mounts
-    mnt=/data/local/tmp/chrootDebian13
+    mnt=/data/local/kuro/chroot/debian13_chroot/rootfs
     mount -t proc proc $mnt/proc
     mount -o bind /dev $mnt/dev
     # ... more mounts ...
@@ -618,10 +618,10 @@ fi
 ```bash
 # Direct root execution
 su -c '
-    echo "BASE64_SCRIPT" | base64 -d > /data/local/tmp/task.sh
-    chmod +x /data/local/tmp/task.sh
-    sh /data/local/tmp/task.sh
-    rm -f /data/local/tmp/task.sh
+    echo "BASE64_SCRIPT" | base64 -d > /data/local/kuro/task.sh
+    chmod +x /data/local/kuro/task.sh
+    sh /data/local/kuro/task.sh
+    rm -f /data/local/kuro/task.sh
 '
 ```
 
@@ -634,7 +634,7 @@ su -c '
 ```mermaid
 sequenceDiagram
     actor User
-    participant App as FluxLinux
+    participant App as Kuro
     participant Queue as QueueManager
     participant Server as LocalInstallServer  
     participant Termux
@@ -685,7 +685,7 @@ sequenceDiagram
 ```bash
 # Pattern used in scripts
 handle_error() {
-    echo "❌ FluxLinux Error: Script failed at step: $1"
+    echo "❌ Kuro Error: Script failed at step: $1"
     read -p "Press Enter to acknowledge error and exit..."
     exit 1
 }

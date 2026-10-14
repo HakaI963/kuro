@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13  
 **Status:** DEVICE PASS — 2026-08-14. Eight new cards (Ubuntu/Kali/Parrot/Arch × proot+chroot) live in Ivarna release. Arch family needed `DisableSandbox` (pacman 7 alpm/Landlock on Android).  
-**Scope:** First-class FluxLinux guests for **Ubuntu 26.04 LTS (Resolute)**, **Kali Rolling 2026.2** (NetHunter-minimal rootfs, treated as Kali), **Parrot Security 7.2**, and **Arch Linux ARM** (already-slimmed xz) — same product shape as Alpine / Debian / FVO / Deepin-Chimera-Manjaro: install → internal terminal → XFCE on the **embedded Termux:X11** display.
+**Scope:** First-class Kuro guests for **Ubuntu 26.04 LTS (Resolute)**, **Kali Rolling 2026.2** (NetHunter-minimal rootfs, treated as Kali), **Parrot Security 7.2**, and **Arch Linux ARM** (already-slimmed xz) — same product shape as Alpine / Debian / FVO / Deepin-Chimera-Manjaro: install → internal terminal → XFCE on the **embedded Termux:X11** display.
 
 **Feasibility (inspected 2026-08-13):**
 
@@ -200,13 +200,13 @@ Replace coming-soon stubs. **Split** dual-mode cards. Do not leave `prootSupport
 | Card id | UI name | Method | proot name | Chroot path | Color | Icon |
 |---------|---------|--------|------------|-------------|-------|------|
 | `ubuntu` | Ubuntu | proot | `ubuntu` | — | `0xFFE95420` | `R.drawable.distro_ubuntu` |
-| `ubuntu_chroot` | Ubuntu (Rooted) | chroot | — | `/data/local/tmp/chrootUbuntu` | same | same |
+| `ubuntu_chroot` | Ubuntu (Rooted) | chroot | — | `/data/local/kuro/chroot/ubuntu_chroot/rootfs` | same | same |
 | `kali` | Kali | proot | `kali` | — | `0xFF367BF5` | `R.drawable.distro_kali` |
-| `kali_chroot` | Kali (Rooted) | chroot | — | `/data/local/tmp/chrootKali` | same | same |
+| `kali_chroot` | Kali (Rooted) | chroot | — | `/data/local/kuro/chroot/kali_chroot/rootfs` | same | same |
 | `parrot` | Parrot | proot | `parrot` | — | `0xFF00D9FF` | `R.drawable.distro_parrot` |
-| `parrot_chroot` | Parrot (Rooted) | chroot | — | `/data/local/tmp/chrootParrot` | same | same |
+| `parrot_chroot` | Parrot (Rooted) | chroot | — | `/data/local/kuro/chroot/parrot_chroot/rootfs` | same | same |
 | `archlinux` | Arch | proot | `archlinux` | — | `0xFF1793D1` | `R.drawable.distro_arch` |
-| `archlinux_chroot` | Arch (Rooted) | chroot | — | `/data/local/tmp/chrootArch` | same | same |
+| `archlinux_chroot` | Arch (Rooted) | chroot | — | `/data/local/kuro/chroot/archlinux_chroot/rootfs` | same | same |
 
 Descriptions (short): Ubuntu 26.04 / Kali Rolling / Parrot 7.2 / Arch Linux ARM + “with XFCE4 (proot)” / “chroot environment (Requires Root).”
 
@@ -463,10 +463,10 @@ Eight profiles. Shared `XFCE_CUSTOM` + `HW_ACCEL_GUEST`. Generic chroot trio.
 ### `ChrootPaths`
 
 ```
-UBUNTU_CHROOT_PATH = /data/local/tmp/chrootUbuntu
-KALI_CHROOT_PATH   = /data/local/tmp/chrootKali
-PARROT_CHROOT_PATH = /data/local/tmp/chrootParrot
-ARCH_CHROOT_PATH   = /data/local/tmp/chrootArch
+UBUNTU_CHROOT_PATH = /data/local/kuro/chroot/ubuntu_chroot/rootfs
+KALI_CHROOT_PATH   = /data/local/kuro/chroot/kali_chroot/rootfs
+PARROT_CHROOT_PATH = /data/local/kuro/chroot/parrot_chroot/rootfs
+ARCH_CHROOT_PATH   = /data/local/kuro/chroot/archlinux_chroot/rootfs
 ```
 
 ### `DistroRepository`
@@ -519,7 +519,7 @@ Copy the four xz files (Arch already there; three new). Inputs/outputs next to D
 
 ### 9.3 Device matrix — **every** path, every category
 
-Package `com.ivarna.fluxlinux`. Build `:app:assembleIvarnaRelease`. Install `adb install -r`. Launch `MainActivity`.
+Package `com.kuro.app`. Build `:app:assembleIvarnaRelease`. Install `adb install -r`. Launch `MainActivity`.
 
 For **each** of `{ubuntu, kali, parrot, archlinux}` × `{proot, chroot}` (8 rows):
 
@@ -552,7 +552,7 @@ Reports under `docs/plans/results/`:
 
 plus `*_xfce_pass.png` screenshots.
 
-**Storage:** 8 XFCE trees plus existing guests. Test sequentially. Uninstall a finished **chroot** via in-app uninstall only if `/data` is exhausted. Never uninstall the FluxLinux APK.
+**Storage:** 8 XFCE trees plus existing guests. Test sequentially. Uninstall a finished **chroot** via in-app uninstall only if `/data` is exhausted. Never uninstall the Kuro APK.
 
 ---
 

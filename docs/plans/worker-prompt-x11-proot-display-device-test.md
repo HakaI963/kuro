@@ -1,7 +1,7 @@
 # Worker agent prompt — Proot X11 display + VIEW LOGS (device)
 
 **Repo:** `/home/abhaybyte/repos/fluxlinux`  
-**Package:** `com.ivarna.fluxlinux`  
+**Package:** `com.kuro.app`  
 **Reference:** `~/repos/termux-lib` MainActivity `startGui` / `stopGui` / `displayBtn` / `guiLog*`  
 **Plan:** `docs/plans/x11-proot-display-logs-nativecode-parity.md`  
 **APK:** release only — `assembleIvarnaRelease` + `adb install -r` (uninstall only if signature mismatch)  
@@ -32,7 +32,7 @@ Device-test **proot X11 / Graphical Desktop** after the termux-lib parity implem
 cd /home/abhaybyte/repos/fluxlinux
 adb devices
 # Debian proot present?
-adb shell "ls /data/data/com.ivarna.fluxlinux/files/usr/var/lib/proot-distro/containers/debian/rootfs/usr/bin/startxfce4"
+adb shell "ls /data/data/com.kuro.app/files/usr/var/lib/proot-distro/containers/debian/rootfs/usr/bin/startxfce4"
 ```
 
 If missing: run onboarding install Debian proot (long) OR Distros install wizard.
@@ -66,7 +66,7 @@ Automation hints:
 ```bash
 adb logcat -c
 adb logcat -s DesktopLauncher:* EmbeddedX11:* GUI:* AndroidRuntime:E
-adb shell am start -n com.ivarna.fluxlinux/.MainActivity
+adb shell am start -n com.kuro.app/.MainActivity
 adb shell dumpsys activity activities | rg -i 'termux.x11|fluxlinux|mResumed'
 adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
 # screenshots

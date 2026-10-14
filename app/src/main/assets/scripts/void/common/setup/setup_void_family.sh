@@ -20,10 +20,10 @@ fi
 # setup_void_family.sh — Void Linux glibc aarch64 XFCE (proot + chroot). xbps.
 
 DISTRO_NAME="${1:-void}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Void Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Void Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -32,7 +32,7 @@ _flux_ensure_tmp
 _flux_ensure_dns
 
 if ! command -v xbps-install >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: xbps-install not found"
+    echo "Kuro: ERROR: xbps-install not found"
     exit 1
 fi
 
@@ -53,7 +53,7 @@ export SYSTEMD_OFFLINE=1
 
 _flux_log "xbps-install sync..."
 xbps-install -Sy || {
-    echo "FluxLinux: xbps sync failed (network / repos)"
+    echo "Kuro: xbps sync failed (network / repos)"
     exit 1
 }
 # Rolling Void often requires updating xbps itself before any other transaction.
@@ -77,7 +77,7 @@ xbps-install -y \
     xfce4-session xfce4-panel xfce4-settings xfce4-terminal \
     xfdesktop xfwm4 \
     || {
-        echo "FluxLinux: XFCE package install failed"
+        echo "Kuro: XFCE package install failed"
         exit 1
     }
 xbps-install -y Thunar 2>/dev/null || xbps-install -y thunar 2>/dev/null || true
@@ -99,5 +99,5 @@ _flux_setup_pulse
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Void setup complete!"
+echo "Kuro: ${DISTRO_NAME} Void setup complete!"
 exit 0

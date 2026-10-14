@@ -21,8 +21,8 @@
 ### Build / F-Droid
 - All native code (host packages, loader.apk, guest helpers, terminal-emulator, libXlorie) is built from source without Docker
 - All native libraries are 16 KB page aligned
-- Reproducible release: the APK is built from the tagged commit with the F-Droid recipe (`com.ivarna.fluxlinux.yml`) and signed with the release key
+- Reproducible release: the APK is built from the tagged commit with the F-Droid recipe (`com.kuro.app.yml`) and signed with the release key
 
 ## Verification
-- Version 2.0.1 (versionCode 13): `app/build.gradle.kts`, `com.ivarna.fluxlinux.yml`, `fastlane/.../changelogs/13.txt`.
+- Version 2.0.1 (versionCode 13): `app/build.gradle.kts`, `com.kuro.app.yml`, `fastlane/.../changelogs/13.txt`.
 - GitHub asset `app-release.apk` (F-Droid `Binaries:`) is byte-identical to the F-Droid build apart from the signature (`apksigcopier compare`).

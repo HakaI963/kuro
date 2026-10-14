@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Author** | FluxLinux |
+| **Author** | Kuro |
 | **Date** | 2026-08-16 |
 | **Status** | **COMPLETE** — see [results/pulseaudio-device-report.md](results/pulseaudio-device-report.md) |
 | **Repo** | `/home/abhaybyte/repos/fluxlinux` |
 | **Audience** | Implementers of host bootstrap + desktop launch + guest family scripts |
-| **Flavor / package** | Ivarna (`com.ivarna.fluxlinux`) first; zenithblue bootstrap must get the same package-list / overlay fix |
-| **APK policy** | `:app:assembleIvarnaRelease` + `adb install -r` only. Do **not** uninstall the existing APK. Do **not** wipe `usr/var/lib/proot-distro` or `/data/local/tmp/chroot*`. |
+| **Flavor / package** | Ivarna (`com.kuro.app`) first; zenithblue bootstrap must get the same package-list / overlay fix |
+| **APK policy** | `:app:assembleIvarnaRelease` + `adb install -r` only. Do **not** uninstall the existing APK. Do **not** wipe `usr/var/lib/proot-distro` or `/data/local/kuro/chroot*`. |
 | **Device used for this plan** | `Y5WWBMJVOZSK4HU8` · Xiaomi 2311DRK48I (duchamp) · Android 16 · uid `10303` / `u0_a303` · SELinux `u:r:untrusted_app:s0:c47,c257,c512,c768` |
 | **Scope lock** | Audio only. Do not reopen X11/VirGL, W^X loaders, guest-shell toggle, or storage settings. |
 
@@ -24,7 +24,7 @@
 
 Audio works the same way on **every** installed distro, **PRoot and chroot**, from both the **native host shell** and a **guest login / XFCE session**:
 
-1. Host `pulseaudio` is running as the FluxLinux app uid (never root, never inside the guest).
+1. Host `pulseaudio` is running as the Kuro app uid (never root, never inside the guest).
 2. Default sink is a real Android output (`AAudio_sink` on this device; SLES if AAudio is missing).
 3. TCP native protocol listens on **127.0.0.1:4713** only (`auth-anonymous=1`, `auth-ip-acl=127.0.0.1`).
 4. Guest env always has `PULSE_SERVER=tcp:127.0.0.1` (builders, chroot helper, profile.d, GUI wrappers).
@@ -41,7 +41,7 @@ Audio works the same way on **every** installed distro, **PRoot and chroot**, fr
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ FluxLinux app uid (u0_a303)  —  $filesDir/usr  = PREFIX         │
+│ Kuro app uid (u0_a303)  —  $filesDir/usr  = PREFIX         │
 │                                                                 │
 │  pulseaudio  (user daemon, --exit-idle-time=-1)                 │
 │    ├─ module-aaudio-sink     → Android speaker  (primary)       │
@@ -71,7 +71,7 @@ Unix sockets are the wrong guest transport. Chroot `XDG_RUNTIME_DIR=/tmp` is oft
 
 ## 3. Device evidence (2026-08-16) — point of failure
 
-All probes on `com.ivarna.fluxlinux` (release, not debuggable) via `adb` + KernelSU. Native commands used `nsenter -t <app-pid> -m` + `runcon u:r:untrusted_app:…` + `setuidgid 10303` so the linker namespace and uid match a real in-app shell.
+All probes on `com.kuro.app` (release, not debuggable) via `adb` + KernelSU. Native commands used `nsenter -t <app-pid> -m` + `runcon u:r:untrusted_app:…` + `setuidgid 10303` so the linker namespace and uid match a real in-app shell.
 
 ### 3.1 Layer 0 — host daemon does not start (primary break, all distros)
 
@@ -95,9 +95,9 @@ CANNOT LINK EXECUTABLE "pactl": library "libandroid-execinfo.so" not found
 
 After dropping in `libsoxr.so` the next missing lib was `libFLAC.so` (via `libsndfile.so`), then `libmp3lame.so`.
 
-Recursive `readelf -d NEEDED` of the **local** extracted bootstrap root (`native/bootstrap/com.ivarna.fluxlinux/root/…/usr`) vs `bootstrap.tar`:
+Recursive `readelf -d NEEDED` of the **local** extracted bootstrap root (`native/bootstrap/com.kuro.app/root/…/usr`) vs `bootstrap.tar`:
 
-| Missing `.so` | Needed by | Deb already in `native/output/com.ivarna.fluxlinux/` | In SSOT / `bootstrap.tar`? |
+| Missing `.so` | Needed by | Deb already in `native/output/com.kuro.app/` | In SSOT / `bootstrap.tar`? |
 | --- | --- | --- | --- |
 | `libsoxr.so` | `libpulsecore-17.0.so` | `libsoxr_0.1.3-8_aarch64.deb` | **no** (never listed) |
 | `libandroid-execinfo.so` | `libpulsecommon-17.0.so` | `libandroid-execinfo_0.1-3_aarch64.deb` | **no** (never listed) |
@@ -213,7 +213,7 @@ Fix in that order. (5) and (6) are useless while (1)–(3) are broken.
 | Do not | Why |
 | --- | --- |
 | Uninstall the APK / wipe PREFIX blindly | Destroys PRoot containers and host state. `BootstrapInstaller` already preserves `usr/var/lib/proot-distro` on force extract — still prefer an **overlay**, not `EXTRACT_VERSION` bump, just to add four `.so` files. |
-| Touch `/data/local/tmp/chroot*` trees except guest config/packages | Storage / kill work is in flight. |
+| Touch `/data/local/kuro/chroot*` trees except guest config/packages | Storage / kill work is in flight. |
 | Start Pulse as root or `pulseaudio --system` | Docs + `start_gui.sh` `IS_ROOT` branch are wrong. SLES/AAudio need the app uid. Delete the `--system` fallback. |
 | Start Pulse **inside** the guest | No Android sink; fights the host on 4713 / cookies. |
 | `pkill -f pulseaudio` from stop-desktop as a hard requirement | That is the current `stop_gui.sh` step 4. After this plan Pulse is a **host service**; stop-desktop kills X11 + VirGL only. |
@@ -221,7 +221,7 @@ Fix in that order. (5) and (6) are useless while (1)–(3) are broken.
 | `auth-anonymous=0` / cookie-only | Chroot uid 1000 cannot use the app-uid cookie. Keep `auth-anonymous=1` **and** `auth-ip-acl=127.0.0.1`. |
 | Install the guest `pulseaudio` **daemon** (or enable `pipewire-pulse`) | Autospawn / socket activation steals clients. Client packages only. |
 | Fall back to `apt install xfce4` / `apk add xfce4` to “get audio” | Pulls gvfs/udisks/ffmpeg; known proot hangs. Add **named** client packages. |
-| Block XFCE start if Pulse fails | Desktop must still paint. Log `FluxLinux: [AUDIO] …` as a first-class line (DesktopLauncher already surfaces stdout). |
+| Block XFCE start if Pulse fails | Desktop must still paint. Log `Kuro: [AUDIO] …` as a first-class line (DesktopLauncher already surfaces stdout). |
 | Change VirGL / X11 / `libXlorie` / loader.apk / W^X | Out of scope. |
 | Add `RECORD_AUDIO` | Playback (AAudio/SLES sink) does not need it. Mic is a later slice. |
 | Route product GUI through `TermuxIntentFactory` / `com.termux` | Embedded host is SSOT. |
@@ -249,7 +249,7 @@ PR1 host libs + verify
 | ID | Work |
 | --- | --- |
 | H1 | Add to **all** assemble lists that include Pulse: `native/package-lists/termux-lib-ssot.txt`, `bootstrap-host.txt`, `scripts/assemble_bootstrap.py` `DEFAULT_PACKAGES`: `libsoxr`, `libandroid-execinfo`, `libflac`, `libmp3lame`. Keep `flac` (CLI) if already listed; it is **not** a substitute for `libflac`. |
-| H2 | Re-assemble `bootstrap.tar` for `com.ivarna.fluxlinux` (and zenithblue in the same change or a follow-up with the same list). Debs already exist under `native/output/<appid>/`. |
+| H2 | Re-assemble `bootstrap.tar` for `com.kuro.app` (and zenithblue in the same change or a follow-up with the same list). Debs already exist under `native/output/<appid>/`. |
 | H3 | Extend `scripts/verify_bootstrap.sh`: require `usr/lib/libsoxr.so`, `usr/lib/libandroid-execinfo.so`, `usr/lib/libFLAC.so`, `usr/lib/libmp3lame.so`, `usr/lib/pulseaudio/modules/module-aaudio-sink.so`, `usr/lib/pulseaudio/modules/module-sles-sink.so`, `usr/lib/pulseaudio/modules/module-native-protocol-tcp.so`. Optionally walk `readelf NEEDED` from `usr/bin/pulseaudio` and fail on unresolved non-system libs. |
 | H4 | **Existing devices:** do **not** bump `BootstrapInstaller.EXTRACT_VERSION` only for this. Ship a tiny overlay (`assets/pulse-runtime/<appid>/*.so` **or** copy from the new bootstrap tar members) applied by `HostScriptDeployer` / `start_pulse_host.sh` if a required `.so` is missing. Preserve proot containers. |
 | H5 | `setup_termux.sh`: after `command -v pulseaudio`, run a link smoke (`pulseaudio --version` or `ldd`/`readelf` check). Fail host setup if Pulse cannot exec. |
@@ -263,7 +263,7 @@ New host script (deployed next to `start_gui.sh`): `$HOME/start_pulse_host.sh`.
 Contract:
 
 1. Source `fluxlinux-host.env`. Set `HOME=$TERMUX__HOME`, `TMPDIR=$PREFIX/tmp`, `PULSE_RUNTIME_PATH=$HOME/.pulse`, `XDG_RUNTIME_DIR=$TMPDIR` (or `$HOME/.pulse-runtime` at 0700 — do not use a root-owned `/tmp`).
-2. If `pactl info` already talks to this PREFIX and default sink is not `auto_null` and TCP `127.0.0.1:4713` is up → print `FluxLinux: [AUDIO] already running` and exit 0.
+2. If `pactl info` already talks to this PREFIX and default sink is not `auto_null` and TCP `127.0.0.1:4713` is up → print `Kuro: [AUDIO] already running` and exit 0.
 3. Otherwise start (no `--system`, no `2>/dev/null`):
 
    ```bash
@@ -275,7 +275,7 @@ Contract:
    - `module-aaudio-sink`
    - if still no real sink: `module-sles-sink`
    - `module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1 listen=127.0.0.1`
-5. Print one line the desktop log already captures: `FluxLinux: [AUDIO] sink=<name> tcp=127.0.0.1:4713` or `FluxLinux: [AUDIO] FAIL <reason>`.
+5. Print one line the desktop log already captures: `Kuro: [AUDIO] sink=<name> tcp=127.0.0.1:4713` or `Kuro: [AUDIO] FAIL <reason>`.
 6. Exit 0 even on audio fail (desktop must continue). Non-zero only if the script itself cannot run.
 
 Wire-up:
@@ -347,7 +347,7 @@ For **native**, **one PRoot** (openSUSE is the current fixture), and **every ins
 | A6 | PRoot login (in-app or `proot-distro` + same env as builder) `pactl info` | host server + real sink |
 | A7 | Each chroot `fluxlinux_chroot.sh sh --user flux -- 'PULSE_SERVER=tcp:127.0.0.1 pactl info'` | same. Distros without a client yet fail A7 until PR4 lands — that is expected if PR5 is split. |
 | A8 | Start XFCE, stop XFCE | Pulse **still running**; X11 gone |
-| A9 | `start_gui` log contains `FluxLinux: [AUDIO]` | no silent `2>/dev/null` |
+| A9 | `start_gui` log contains `Kuro: [AUDIO]` | no silent `2>/dev/null` |
 | A10 | Host pid / app still alive after A6–A8 | no `am force-stop`, no PREFIX wipe |
 
 Write a short `docs/plans/results/pulseaudio-device-report.md` with log pointers. Status of this plan flips to COMPLETE only with those pointers.

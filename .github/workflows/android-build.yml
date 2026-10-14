@@ -3,7 +3,7 @@ name: Android Build
 on:
   push:
     branches:
-      - kuro/step-6-fluxlinux-integration
+      - kuro/step-7-complete-redesign
   workflow_dispatch:
 
 jobs:
@@ -43,8 +43,8 @@ jobs:
 
       - name: Assemble host bootstrap (bootstrap.tar from tracked .debs)
         run: |
-          python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
-          bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+          python3 scripts/assemble_bootstrap.py --package-name com.kuro.app --source-package com.ivarna.fluxlinux --mode full
+          bash scripts/verify_bootstrap.sh com.kuro.app
 
       - name: Gradle configure check (no resolution)
         run: |
@@ -67,7 +67,7 @@ jobs:
       - name: Gradle resolve main classpath (dependency check)
         run: |
           set +e
-          ./gradlew :app:dependencies --configuration ivarnaDebugRuntimeClasspath --stacktrace > /tmp/g-resolve.log 2>&1
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath --stacktrace > /tmp/g-resolve.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -79,12 +79,12 @@ jobs:
           fi
 
       - name: Gradle resolve test classpath (dependency check)
-        run: ./gradlew :app:dependencies --configuration ivarnaDebugUnitTestRuntimeClasspath --stacktrace
+        run: ./gradlew :app:dependencies --configuration debugUnitTestRuntimeClasspath --stacktrace
 
-      - name: Compile app Kotlin (ivarna debug)
+      - name: Compile app Kotlin (debug)
         run: |
           set +e
-          ./gradlew :app:compileIvarnaDebugKotlin --stacktrace > /tmp/g-compile-app.log 2>&1
+          ./gradlew :app:compileDebugKotlin --stacktrace > /tmp/g-compile-app.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -96,10 +96,10 @@ jobs:
             exit "$code"
           fi
 
-      - name: Compile test Kotlin (ivarna debug)
+      - name: Compile test Kotlin (debug)
         run: |
           set +e
-          ./gradlew :app:compileIvarnaDebugUnitTestKotlin --stacktrace > /tmp/g-compile-test.log 2>&1
+          ./gradlew :app:compileDebugUnitTestKotlin --stacktrace > /tmp/g-compile-test.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -114,7 +114,7 @@ jobs:
       - name: Unit tests group 1 (install/desktop/gpu/data)
         run: |
           set +e
-          ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.install.*" --tests "com.ivarna.fluxlinux.core.desktop.*" --tests "com.ivarna.fluxlinux.core.gpu.*" --tests "com.ivarna.fluxlinux.core.data.*" --stacktrace > /tmp/g-test-1.log 2>&1
+          ./gradlew :app:testDebugUnitTest --tests "com.kuro.app.core.install.*" --tests "com.kuro.app.core.desktop.*" --tests "com.kuro.app.core.gpu.*" --tests "com.kuro.app.core.data.*" --stacktrace > /tmp/g-test-1.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -129,7 +129,7 @@ jobs:
       - name: Unit tests group 2 (legacy/root/chroot/proot/utils)
         run: |
           set +e
-          ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.legacy.*" --tests "com.ivarna.fluxlinux.core.root.*" --tests "com.ivarna.fluxlinux.core.chroot.*" --tests "com.ivarna.fluxlinux.core.proot.*" --tests "com.ivarna.fluxlinux.core.utils.*" --stacktrace > /tmp/g-test-2.log 2>&1
+          ./gradlew :app:testDebugUnitTest --tests "com.kuro.app.core.legacy.*" --tests "com.kuro.app.core.root.*" --tests "com.kuro.app.core.chroot.*" --tests "com.kuro.app.core.proot.*" --tests "com.kuro.app.core.utils.*" --stacktrace > /tmp/g-test-2.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -144,7 +144,7 @@ jobs:
       - name: Unit tests group 3 (terminal)
         run: |
           set +e
-          ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.terminal.*" --stacktrace > /tmp/g-test-3.log 2>&1
+          ./gradlew :app:testDebugUnitTest --tests "com.kuro.app.core.terminal.*" --stacktrace > /tmp/g-test-3.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -159,7 +159,7 @@ jobs:
       - name: Unit tests group 4 (ui)
         run: |
           set +e
-          ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.ui.*" --stacktrace > /tmp/g-test-4.log 2>&1
+          ./gradlew :app:testDebugUnitTest --tests "com.kuro.app.ui.*" --stacktrace > /tmp/g-test-4.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -171,10 +171,10 @@ jobs:
             exit "$code"
           fi
 
-      - name: Build ivarna debug APK
+      - name: Build Kuro debug APK
         run: |
           set +e
-          ./gradlew :app:assembleIvarnaDebug --stacktrace > /tmp/g-assemble.log 2>&1
+          ./gradlew :app:assembleDebug --stacktrace > /tmp/g-assemble.log 2>&1
           code=$?
           if [ "$code" -ne "0" ]; then
             python3 -c "
@@ -186,8 +186,8 @@ jobs:
             exit "$code"
           fi
 
-      - name: Upload ivarna debug APK
+      - name: Upload Kuro debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: kuro-ivarna-debug-apk
-          path: app/build/outputs/apk/ivarna/debug/*.apk
+          name: kuro-debug-apk
+          path: app/build/outputs/apk/debug/*.apk

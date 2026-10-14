@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-19  
 **Status:** **IN DESIGN & IMPLEMENTATION**  
-**Target:** `com.ivarna.fluxlinux.ui.onboarding.OnboardingFlowScreen.kt`, `InstallProgressPanel.kt`, and related UI components  
+**Target:** `com.kuro.app.ui.onboarding.OnboardingFlowScreen.kt`, `InstallProgressPanel.kt`, and related UI components  
 **Goal:** Redesign all onboarding pages with a unified Material 3 + Glassmorphism design system, responsive scaling, consistent button & typography hierarchy, step indicator, and zero changes to underlying business/install logic.
 
 ---
@@ -67,7 +67,7 @@
 ## 3. Detailed Page Redesigns
 
 ### Page 1: Welcome
-- **Hero**: Glowing app logo icon badge + "FluxLinux" title + tagline.
+- **Hero**: Glowing app logo icon badge + "Kuro" title + tagline.
 - **Feature Cards**: 3 structured cards in a responsive vertical or 3-column layout with glass cards and magenta/cyan icon accents.
 - **Hero Graphic**: Flexible height-constrained illustration with smooth gradient fade.
 - **Bottom Bar**: Primary "Get Started" button.

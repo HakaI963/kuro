@@ -3,22 +3,20 @@
 # Called by start_gui_chroot.sh after host Pulse/VirGL/X11 are up.
 # Paths: app package via FLUX_PACKAGE / TARGET_PREFIX (ivarna or zenithblue). Sticky guest /tmp preserved.
 
-CHROOT_ROOT="${CHROOT_ROOT:-${FLUX_CHROOT:-/data/local/tmp/chrootGuest}}"
+CHROOT_ROOT="${CHROOT_ROOT:-${FLUX_CHROOT:-/data/local/kuro/chrootGuest}}"
 if [ -z "${TARGET_PREFIX:-}" ]; then
   if [ -n "${FLUX_PREFIX:-}" ]; then
     TARGET_PREFIX="$FLUX_PREFIX"
   elif [ -n "${FLUX_PACKAGE:-}" ]; then
     TARGET_PREFIX="/data/data/${FLUX_PACKAGE}/files/usr"
-  elif [ -d /data/data/com.zenithblue.fluxlinux/files/usr ]; then
-    TARGET_PREFIX="/data/data/com.zenithblue.fluxlinux/files/usr"
   else
-    TARGET_PREFIX="/data/data/com.ivarna.fluxlinux/files/usr"
+    TARGET_PREFIX="/data/data/com.kuro.app/files/usr"
   fi
 fi
 USERNAME="${USERNAME:-flux}"
 
 echo "========================================"
-echo "FluxLinux: Chroot XFCE (root stage)"
+echo "Kuro: Chroot XFCE (root stage)"
 echo "  rootfs=$CHROOT_ROOT"
 echo "========================================"
 
@@ -27,7 +25,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -40,9 +38,9 @@ if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ] &&
      "$FLUX_BB" --list >/dev/null 2>&1; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -61,28 +59,28 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 
-echo "FluxLinux: busybox=$BB"
+echo "Kuro: busybox=$BB"
 
 if [ ! -d "$CHROOT_ROOT" ]; then
-  echo "FluxLinux: ERROR — chroot missing: $CHROOT_ROOT"
+  echo "Kuro: ERROR — chroot missing: $CHROOT_ROOT"
   exit 1
 fi
 if [ ! -e "$CHROOT_ROOT/usr/bin/startxfce4" ] && [ ! -e "$CHROOT_ROOT/usr/sbin/startxfce4" ]; then
-  echo "FluxLinux: ERROR — startxfce4 missing. Re-run chroot environment setup."
+  echo "Kuro: ERROR — startxfce4 missing. Re-run chroot environment setup."
   exit 1
 fi
 
 # Soft SELinux (HyperOS / enforcing) — flux pattern; fail soft
 if command -v getenforce >/dev/null 2>&1; then
   SELINUX_STATUS=$(getenforce 2>/dev/null || true)
-  echo "FluxLinux: SELinux=$SELINUX_STATUS"
+  echo "Kuro: SELinux=$SELINUX_STATUS"
   if [ "$SELINUX_STATUS" = "Enforcing" ]; then
-    setenforce 0 2>/dev/null && echo "FluxLinux: SELinux → Permissive (until reboot)" \
-      || echo "FluxLinux: [WARN] setenforce 0 failed"
+    setenforce 0 2>/dev/null && echo "Kuro: SELinux → Permissive (until reboot)" \
+      || echo "Kuro: [WARN] setenforce 0 failed"
   fi
 fi
 # PREFIX/tmp must stay app_data_file. Labeling it tmpfs:s0 makes termux-x11
@@ -95,7 +93,7 @@ if command -v chcon >/dev/null 2>&1; then
 fi
 restorecon -RF "$TARGET_PREFIX/tmp" 2>/dev/null || true
 
-HELPER="${HELPER:-/data/local/tmp/fluxlinux_chroot.sh}"
+HELPER="${HELPER:-/data/local/kuro/fluxlinux_chroot.sh}"
 echo "[1/5] Mounts (SSOT if available)..."
 # Wait for host Loader to create X0 before --x11 bind
 mkdir -p "$TARGET_PREFIX/tmp/.X11-unix" 2>/dev/null || true
@@ -103,14 +101,14 @@ chmod 1777 "$TARGET_PREFIX/tmp/.X11-unix" 2>/dev/null || true
 i=0
 while [ $i -lt 15 ]; do
   if [ -S "$TARGET_PREFIX/tmp/.X11-unix/X0" ]; then
-    echo "FluxLinux: host X0 socket ready"
+    echo "Kuro: host X0 socket ready"
     break
   fi
   i=$((i + 1))
   sleep 1
 done
 if [ ! -S "$TARGET_PREFIX/tmp/.X11-unix/X0" ]; then
-  echo "FluxLinux: [WARN] host X0 not seen yet — continuing"
+  echo "Kuro: [WARN] host X0 not seen yet — continuing"
 fi
 
 if [ -f "$HELPER" ]; then
@@ -160,7 +158,7 @@ else
     >/dev/null 2>&1
 fi
 
-# su/sudo need suid on /data (KernelSU guests live under /data/local/tmp).
+# su/sudo need suid on /data (KernelSU guests live under /data/local/kuro).
 /system/bin/mount -o remount,dev,suid /data 2>/dev/null || true
 # TW minirootfs can ship an empty /etc/machine-id; dbus-broker then refuses.
 _midf="$CHROOT_ROOT/etc/machine-id"
@@ -169,7 +167,7 @@ if [ "${#_mid}" -ne 32 ]; then
   _mid=$(tr -d '-' < /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '\n')
   printf '%s\n' "$_mid" > "$_midf"
   chmod 644 "$_midf" 2>/dev/null || true
-  echo "FluxLinux: wrote /etc/machine-id"
+  echo "Kuro: wrote /etc/machine-id"
 fi
 echo "[4/5] GPU mode + launch XFCE as $USERNAME..."
 # Fedora 43 / Tumbleweed glycin execs bwrap. Keep a compiled native shim
@@ -189,7 +187,7 @@ if [ "$_keep" = 0 ]; then
   fi
   cat > "$_bwrap" <<'BWRAP_EOF'
 #!/bin/sh
-# FluxLinux: exec the real glycin loader, not an earlier --ro-bind source.
+# Kuro: exec the real glycin loader, not an earlier --ro-bind source.
 while [ $# -gt 0 ]; do
   case "$1" in
     /usr/libexec/glycin-loaders/*|/usr/lib/glycin-loaders/*|/usr/bin/true|/bin/true)
@@ -281,18 +279,18 @@ _runas '
     else
       export LIBGL_ALWAYS_SOFTWARE=1
       export GALLIUM_DRIVER=llvmpipe
-      echo \"FluxLinux(guest): software GL fallback\"
+      echo \"Kuro(guest): software GL fallback\"
     fi
     export GPU_MODE
   fi
-  echo \"FluxLinux(guest): GPU mode=\$GPU_MODE\"
+  echo \"Kuro(guest): GPU mode=\$GPU_MODE\"
 
   if command -v dbus-run-session >/dev/null 2>&1; then
     exec dbus-run-session -- startxfce4
   elif command -v dbus-launch >/dev/null 2>&1; then
     exec dbus-launch --exit-with-session startxfce4
   else
-    echo \"FluxLinux(guest): no dbus-launch; starting XFCE without session wrapper\"
+    echo \"Kuro(guest): no dbus-launch; starting XFCE without session wrapper\"
     exec startxfce4
   fi
 '

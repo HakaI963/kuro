@@ -5,10 +5,10 @@
 
 DISTRO_NAME="${1:-alpine}"
 
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Alpine Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Alpine Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -22,7 +22,7 @@ export TMPDIR=/tmp
 
 # 1. DNS (minirootfs ships without resolv.conf; keep multi-NS for proot flakiness)
 if [ ! -s /etc/resolv.conf ] || ! grep -q nameserver /etc/resolv.conf 2>/dev/null; then
-    echo "FluxLinux: Writing /etc/resolv.conf"
+    echo "Kuro: Writing /etc/resolv.conf"
     printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\nnameserver 8.8.4.4\n' > /etc/resolv.conf
 fi
 
@@ -33,14 +33,14 @@ if [ -f /etc/apk/repositories ]; then
     fi
 fi
 
-echo "FluxLinux: apk update..."
+echo "Kuro: apk update..."
 apk update || {
-    echo "FluxLinux: apk update failed (network / repos)"
+    echo "Kuro: apk update failed (network / repos)"
     exit 1
 }
 
 # 3. Bootstrap tools (bash for later scripts; shadow for useradd; sudo)
-echo "FluxLinux: Installing base packages..."
+echo "Kuro: Installing base packages..."
 apk add --no-cache \
     bash \
     sudo \
@@ -55,7 +55,7 @@ apk add --no-cache \
     dbus \
     dbus-x11 \
     || {
-        echo "FluxLinux: base package install failed"
+        echo "Kuro: base package install failed"
         exit 1
     }
 
@@ -74,7 +74,7 @@ if [ ! -e /var/lib/dbus/machine-id ]; then
 fi
 
 # 4. XFCE desktop (always include xfce4-session for failsafe session name)
-echo "FluxLinux: Installing XFCE4..."
+echo "Kuro: Installing XFCE4..."
 apk add --no-cache \
     xfce4 \
     xfce4-session \
@@ -90,7 +90,7 @@ apk add --no-cache \
     mesa-dri-gallium \
     mesa-gl \
     || {
-        echo "FluxLinux: XFCE package install failed"
+        echo "Kuro: XFCE package install failed"
         exit 1
     }
 # Named Pulse *client* only — do not pull the xfce4 metapackage for audio.
@@ -98,21 +98,21 @@ apk add --no-cache libpulse pulseaudio-utils xfce4-pulseaudio 2>/dev/null \
     || apk add --no-cache libpulse pulseaudio-utils 2>/dev/null || true
 
 if [ ! -e /usr/bin/startxfce4 ]; then
-    echo "FluxLinux: ERROR: startxfce4 missing after apk install"
+    echo "Kuro: ERROR: startxfce4 missing after apk install"
     exit 1
 fi
 
 # Glycin image loaders invoke bubblewrap; real bwrap fails under proot and aborts
 # GTK (exit 134). Install a shim that drops sandbox flags but keeps --dbus-fd.
-echo "FluxLinux: Installing proot-safe bwrap shim for glycin loaders..."
+echo "Kuro: Installing proot-safe bwrap shim for glycin loaders..."
 apk add --no-cache glycin-image-rs glycin-svg gdk-pixbuf 2>/dev/null || true
 if [ -x /usr/bin/bwrap ] && [ ! -e /usr/bin/bwrap.real ] && \
-   ! grep -q 'FluxLinux proot' /usr/bin/bwrap 2>/dev/null; then
+   ! grep -q 'Kuro proot' /usr/bin/bwrap 2>/dev/null; then
     cp -a /usr/bin/bwrap /usr/bin/bwrap.real 2>/dev/null || true
 fi
 cat > /usr/bin/bwrap <<'BWRAP_EOF'
 #!/bin/sh
-# FluxLinux proot: skip sandbox; run glycin loader (regular file only — not /).
+# Kuro proot: skip sandbox; run glycin loader (regular file only — not /).
 while [ $# -gt 0 ]; do
   case "$1" in
     /*)
@@ -129,7 +129,7 @@ chmod 755 /usr/bin/bwrap
 
 # 5. User flux (prefer uid 1000 when free — matches common XFCE defaults)
 if ! id flux >/dev/null 2>&1; then
-    echo "FluxLinux: Creating user flux..."
+    echo "Kuro: Creating user flux..."
     if command -v useradd >/dev/null 2>&1; then
         if ! id -u 1000 >/dev/null 2>&1; then
             useradd -m -u 1000 -s /bin/bash flux 2>/dev/null \
@@ -228,12 +228,12 @@ _flux_fix_apk_writable() {
     touch /var/log/apk.log 2>/dev/null || true
     chmod 666 /var/log/apk.log 2>/dev/null || true
 }
-echo "FluxLinux: Ensuring apk database is writable (proot-safe)…"
+echo "Kuro: Ensuring apk database is writable (proot-safe)…"
 _flux_fix_apk_writable
 
 mkdir -p /etc/fluxlinux
 printf '%s\n' virgl > /etc/fluxlinux/gpu_mode
-echo "FluxLinux: gpu_mode=virgl (first-paint; hw-accel may upgrade)"
+echo "Kuro: gpu_mode=virgl (first-paint; hw-accel may upgrade)"
 
-echo "FluxLinux: ${DISTRO_NAME} Alpine setup complete!"
+echo "Kuro: ${DISTRO_NAME} Alpine setup complete!"
 exit 0

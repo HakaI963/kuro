@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13  
 **Status:** SLICES A–F LANDED. **Pass 2 OPEN** — code review + full device matrix (all installed guests). Do not re-implement A–F.  
-**Package:** `com.ivarna.fluxlinux`. **APK:** `assembleIvarnaRelease` + `adb install -r` only.  
+**Package:** `com.kuro.app`. **APK:** `assembleIvarnaRelease` + `adb install -r` only.  
 **Native reference (read-only):** `~/repos/termux-lib`  
 **Upstream tarballs:** [lfdevs/mesa-for-android-container](https://github.com/lfdevs/mesa-for-android-container)  
 **Prior device note (Mali only, incomplete):** [`docs/plans/results/hw-accel-all-distros-report.md`](../plans/results/hw-accel-all-distros-report.md)
@@ -59,7 +59,7 @@ ls $PREFIX/var/lib/proot-distro/containers/
 # each must have startxfce4 to count as installed
 
 # chroot (root)
-ls /data/local/tmp/chroot*/
+ls /data/local/kuro/chroot*/
 ```
 
 For **each** installed proot name `D` and each installed chroot path:
@@ -73,7 +73,7 @@ For **each** installed proot name `D` and each installed chroot path:
 
    Prefer host-resolved mode. On Mali: `FLUX_GPU=virgl`. Also once per **family** (not every card): `FLUX_GPU=turnip` to prove map/no-tarball.
 3. Record: `cat /etc/fluxlinux/gpu_mode`, `cat /etc/fluxlinux/gpu_vendor`, whether `/usr/local/lib/fluxlinux/apply_gpu_env.sh` exists, `gpu-launch` exists, last log lines (`no-tarball` / extract / virgl).
-4. **Start XFCE** for that card (app Start, or host `start_gui.sh D` / `start_gui_chroot.sh <id>`). Capture guest log line `FluxLinux(guest): GPU mode=…`. Stop desktop after the line (or ~20s). Do not leave sessions hanging.
+4. **Start XFCE** for that card (app Start, or host `start_gui.sh D` / `start_gui_chroot.sh <id>`). Capture guest log line `Kuro(guest): GPU mode=…`. Stop desktop after the line (or ~20s). Do not leave sessions hanging.
 5. Expected on **this Mali phone**: every guest `gpu_mode=virgl`, Start log `GPU mode=virgl` (or llvmpipe if VirGL socket missing — then note host `virgl_test_server_android`).
 6. Expected if **`FLUX_GPU=turnip`** on Chimera/openSUSE: log `no-tarball`, stay virgl. On Debian/Fedora/Alpine/Void/Manjaro/Deepin: **will try download**. On Mali that is optional (Turnip will not help); **do it on one glibc + Alpine only** to prove the URL/extract path, then leave `gpu_mode=virgl` (re-run with `FLUX_GPU=virgl`) so daily Start stays correct.
 7. Snapdragon (if present): Settings-equivalent `FLUX_GPU=turnip` (or detect) on Debian proot **and** one chroot. Require `gpu_mode=turnip`, `kgsl_dri.so` **or** freedreno ICD, Start log `GPU mode=turnip`, no black screen. Confirm `/dev/kgsl-3d0` inside that chroot.
@@ -120,7 +120,7 @@ The sections below are the original A–F design. **Do not re-do them.** They re
 
 ---
 
-## 0. Verdict (current FluxLinux is wrong)
+## 0. Verdict (current Kuro is wrong)
 
 GPU detection is **not implemented on the host** and **not correct in the guest**. Start scripts already honor `/etc/fluxlinux/gpu_mode`, but almost every install writes `virgl` (or writes nothing) and never installs Turnip except a Fedora-only best-effort download.
 
@@ -132,7 +132,7 @@ Settings “Auto Detect” sends `FLUX_GPU=auto`. Guest scripts only accept exac
 
 ## 1. What nativecode does (source of truth for detect + env)
 
-Read these files before editing FluxLinux:
+Read these files before editing Kuro:
 
 | File | Role |
 |------|------|
@@ -188,13 +188,13 @@ lfdevs README (2026) is newer than nativecode:
 - Full Mesa tarball: prefer `MESA_LOADER_DRIVER_OVERRIDE=kgsl` (Freedreno GL, no Zink tax).
 - Turnip-only ICD: keep Zink (`MESA_LOADER_DRIVER_OVERRIDE=zink` + `VK_ICD_FILENAMES=…/freedreno_icd.aarch64.json`).
 - Direct-extract suffixes now include **`void`** and **`alpine_3.24`**, not just debian/ubuntu/fedora.
-- Pin version to **`26.2.0-devel-20260709`** (native). FluxLinux still has `20260610`.
+- Pin version to **`26.2.0-devel-20260709`** (native). Kuro still has `20260610`.
 
-FluxLinux start scripts already apply Zink/virpipe/llvmpipe like native. After this plan, `apply_gpu_env` prefers **kgsl** when the Freedreno DRI/kgsl driver file exists, else Zink, else virgl.
+Kuro start scripts already apply Zink/virpipe/llvmpipe like native. After this plan, `apply_gpu_env` prefers **kgsl** when the Freedreno DRI/kgsl driver file exists, else Zink, else virgl.
 
 ---
 
-## 2. FluxLinux audit (what is actually wired)
+## 2. Kuro audit (what is actually wired)
 
 ### 2.1 Scripts
 
@@ -339,7 +339,7 @@ Do in this order. Each PR-sized slice should compile and keep existing guests bo
 
 **New file:** `app/src/main/kotlin/com/ivarna/fluxlinux/core/terminal/GpuAccelDetector.kt`
 
-Port native object. Package `com.ivarna.fluxlinux.core.terminal`. Public API:
+Port native object. Package `com.kuro.app.core.terminal`. Public API:
 
 ```kotlin
 object GpuAccelDetector {
@@ -365,7 +365,7 @@ fun persist(ctx: Context, d: Detection) {
 }
 ```
 
-**Find the real prefs file name** FluxLinux already uses (`StateManager` / `ThemePreferences`). Do not invent a second prefs file. Put persist/read next to that SSOT or on the detector with an injected `SharedPreferences`.
+**Find the real prefs file name** Kuro already uses (`StateManager` / `ThemePreferences`). Do not invent a second prefs file. Put persist/read next to that SSOT or on the detector with an injected `SharedPreferences`.
 
 `resolveFluxGpu`:
 
@@ -451,7 +451,7 @@ flux_gpu_apply_runtime() {
     else
       export LIBGL_ALWAYS_SOFTWARE=1
       export GALLIUM_DRIVER=llvmpipe
-      echo "FluxLinux(guest): VirGL socket missing — llvmpipe fallback"
+      echo "Kuro(guest): VirGL socket missing — llvmpipe fallback"
     fi
   else
     export LIBGL_ALWAYS_SOFTWARE=1
@@ -660,7 +660,7 @@ If no device: unit tests + `sh -n` on every touched script. State that in the re
 ## 11. Worker agent prompt — Pass 2 (copy-paste)
 
 ```
-You are on Pass 2 of FluxLinux hardware acceleration. Slices A–F are already in the tree. Do NOT re-implement detect, onboarding, or a new installer.
+You are on Pass 2 of Kuro hardware acceleration. Slices A–F are already in the tree. Do NOT re-implement detect, onboarding, or a new installer.
 
 READ FIRST:
 - /home/abhaybyte/repos/fluxlinux/docs/plan/hw-accel-all-distros.md  (Pass 2 at the top is SSOT)
@@ -682,7 +682,7 @@ DEVICE (mandatory — user: all distros are installed; run the script on every g
    - Push/stage flux_gpu_common.sh + setup_hw_accel_guest.sh into guest /tmp
    - Run as root with FLUX_GPU=virgl on Mali (this Xiaomi is MT6897 Mali, no /dev/kgsl-3d0)
    - Record gpu_mode, gpu_vendor, apply_gpu_env.sh present, last log lines
-   - Start XFCE (app Start or start_gui.sh / start_gui_chroot.sh). Capture "FluxLinux(guest): GPU mode=". Stop the desktop after the line.
+   - Start XFCE (app Start or start_gui.sh / start_gui_chroot.sh). Capture "Kuro(guest): GPU mode=". Stop the desktop after the line.
 5. Once per family, force FLUX_GPU=turnip on Chimera and openSUSE → must log no-tarball and stay virgl. On one glibc + Alpine only, you may try turnip download to prove the URL; then re-run FLUX_GPU=virgl so Mali guests are not left on turnip.
 6. If a Snapdragon phone is attached: FLUX_GPU=turnip on Debian proot AND one chroot. Require gpu_mode=turnip, kgsl_dri.so or freedreno ICD, Start log GPU mode=turnip, kgsl node in that chroot. If no Snapdragon, write that explicitly.
 7. Replace/extend docs/plans/results/hw-accel-all-distros-report.md with the full table (every installed guest). SKIP only if not installed.

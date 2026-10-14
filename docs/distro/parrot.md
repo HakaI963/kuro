@@ -1,8 +1,8 @@
-# Parrot 7.2 in FluxLinux
+# Parrot 7.2 in Kuro
 
 | | |
 |---|---|
-| Cards | `parrot` (proot) · `parrot_chroot` (`/data/local/tmp/chrootParrot`) |
+| Cards | `parrot` (proot) · `parrot_chroot` (`/data/local/kuro/chroot/parrot_chroot/rootfs`) |
 | Rootfs | `parrot_7.2_rootfs.tar.xz` (Parrot Security 7.2 echo, flattened) |
 | Package manager | `apt-get` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

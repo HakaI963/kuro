@@ -18,15 +18,9 @@
 set -u
 
 VERSION_STR="fluxlinux-chroot v2.9"
-# Prefer caller-pinned env (RootShell / start_gui). Fallbacks cover both store flavors.
-if [ -z "${FLUX_PACKAGE:-}" ]; then
-  if [ -d /data/data/com.zenithblue.fluxlinux/files/usr ]; then
-    FLUX_PACKAGE=com.zenithblue.fluxlinux
-  else
-    FLUX_PACKAGE=com.ivarna.fluxlinux
-  fi
-fi
-FLUX_CHROOT="${FLUX_CHROOT:-/data/local/tmp/chrootDebian13}"
+# Prefer caller-pinned env (RootShell / start_gui); default to the Kuro package.
+FLUX_PACKAGE="${FLUX_PACKAGE:-com.kuro.app}"
+FLUX_CHROOT="${FLUX_CHROOT:-/data/local/kuro/chroot/debian13_chroot/rootfs}"
 FLUX_HOST_TMP="${FLUX_HOST_TMP:-/data/data/${FLUX_PACKAGE}/files/usr/tmp}"
 FLUX_PREFIX="${FLUX_PREFIX:-/data/data/${FLUX_PACKAGE}/files/usr}"
 LOGIN_SHELL="${FLUX_SHELL:-zsh}"
@@ -62,7 +56,7 @@ require_root() {
 _rr=""
 for _c in \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -86,8 +80,8 @@ if [ "$_RESOLVE_BB_SOURCED" != "1" ]; then
     BB=""
     if [ -n "${FLUX_BB:-}" ] && bb_ok "$FLUX_BB"; then
       BB="$FLUX_BB"
-    elif bb_ok /data/local/tmp/flux_busybox; then
-      BB=/data/local/tmp/flux_busybox
+    elif bb_ok /data/local/kuro/flux_busybox; then
+      BB=/data/local/kuro/flux_busybox
     else
       for path in \
         /data/adb/ksu/bin/busybox \
@@ -122,11 +116,11 @@ if [ "$_RESOLVE_BB_SOURCED" != "1" ]; then
       fi
     fi
     [ -n "$BB" ] || return 1
-    if [ "$BB" != /data/local/tmp/flux_busybox ]; then
-      cp -f "$BB" /data/local/tmp/flux_busybox 2>/dev/null \
-        && chmod 755 /data/local/tmp/flux_busybox 2>/dev/null \
-        && bb_ok /data/local/tmp/flux_busybox \
-        && BB=/data/local/tmp/flux_busybox || true
+    if [ "$BB" != /data/local/kuro/flux_busybox ]; then
+      cp -f "$BB" /data/local/kuro/flux_busybox 2>/dev/null \
+        && chmod 755 /data/local/kuro/flux_busybox 2>/dev/null \
+        && bb_ok /data/local/kuro/flux_busybox \
+        && BB=/data/local/kuro/flux_busybox || true
     fi
     return 0
   }
@@ -401,7 +395,7 @@ guest_login_user() {
   guest_userspec /bin/sh -c "cd 2>/dev/null || true; $_inner"
 }
 
-# App uid cannot stat /data/local/tmp (SELinux). Resolve as root from the rootfs.
+# App uid cannot stat /data/local/kuro (SELinux). Resolve as root from the rootfs.
 resolve_login_shell() {
   _req="${1:-zsh}"
   case "$_req" in

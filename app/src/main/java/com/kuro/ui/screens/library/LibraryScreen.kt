@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ivarna.fluxlinux.R
+import com.kuro.app.R
 import com.kuro.app.ui.components.CloneCard
 import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroBottomSheet
@@ -108,7 +108,8 @@ fun LibraryScreen(
             // Step 5: "Available sources" section deleted. The tab shows the
             // header, the New-clone action and the clones list only; source
             // picking lives inside the New clone flow.
-            item { Spacer(modifier = Modifier.height(90.dp)) }
+            // Bottom-bar clearance for the New-clone action.
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 

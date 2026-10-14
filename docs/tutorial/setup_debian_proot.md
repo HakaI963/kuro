@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="../../assets/logo/logo.webp" width="160" alt="FluxLinux Logo" />
+  <img src="../../assets/logo/logo.webp" width="160" alt="Kuro Logo" />
   <h1>🐧 Setting up Debian PRoot</h1>
-  <p>This tutorial will guide you step-by-step through configuring and installing a Debian PRoot (non-rooted) distribution on your Android device using FluxLinux.</p>
+  <p>This tutorial will guide you step-by-step through configuring and installing a Debian PRoot (non-rooted) distribution on your Android device using Kuro.</p>
 </div>
 
 ---
@@ -24,7 +24,7 @@
 
 ## 🐧 Step 1: Select Debian Distribution
 
-Launch the FluxLinux app and navigate to the **Distributions** tab or page. Here you will see a list of available Linux distributions that you can install.
+Launch the Kuro app and navigate to the **Distributions** tab or page. Here you will see a list of available Linux distributions that you can install.
 
 1. Select **Debian** from the list of distributions.
 2. Tap on the Debian option to open its configuration and installation settings.
@@ -61,10 +61,10 @@ Before generating the installation commands, you need to set up the container co
 
 ## 🖥️ Step 3: Install in Flux Terminal
 
-FluxLinux now ships its own embedded Linux host (bootstrap) inside the APK — no separate Termux app is required for Debian installs.
+Kuro now ships its own embedded Linux host (bootstrap) inside the APK — no separate Termux app is required for Debian installs.
 
 1. On the configuration screen, tap **Install in Flux Terminal**.
-2. FluxLinux extracts the embedded host environment and opens an in-app terminal session running the install: the pinned Debian rootfs is resolved **local-first** (a verified archive under `$HOME/debian_13_rootfs.tar.xz` needs no network) and otherwise downloaded on demand from the GitHub release tag `rootfs`, then installed via `proot-distro install <archive> --name debian` — no paste-into-Termux.
+2. Kuro extracts the embedded host environment and opens an in-app terminal session running the install: the pinned Debian rootfs is resolved **local-first** (a verified archive under `$HOME/debian_13_rootfs.tar.xz` needs no network) and otherwise downloaded on demand from the GitHub release tag `rootfs`, then installed via `proot-distro install <archive> --name debian` — no paste-into-Termux.
 3. Watch the progress in the terminal; the session stays alive even when you switch apps (foreground notification).
 4. On success the app marks Debian as installed automatically.
 
@@ -100,7 +100,7 @@ In the distribution configuration settings, you can customize your installation 
 
 ## 🚀 Step 6: Select Launch Mode
 
-Once the installation is complete, tapping the **Launch** button on the Debian distribution page inside FluxLinux will present you with options to choose your launch mode:
+Once the installation is complete, tapping the **Launch** button on the Debian distribution page inside Kuro will present you with options to choose your launch mode:
 - **CLI (Command Line Interface)**: Starts a lightweight terminal session.
 - **GUI (Graphical User Interface)**: Launches a full XFCE4 desktop environment.
 
@@ -132,7 +132,7 @@ Selecting GUI mode launches the X11 server backend and starts the XFCE4 desktop 
 
 ## 🛑 Step 9: Controlling the Session
 
-While the distribution is running in GUI or CLI mode, you can control and monitor the active background session directly from the FluxLinux interface.
+While the distribution is running in GUI or CLI mode, you can control and monitor the active background session directly from the Kuro interface.
 - **Open X11**: Reopen the graphical display viewer window if you accidentally swiped it away (GUI requires the Termux:X11 companion app — optional, CLI shells do not).
 - **Stop**: Safely shut down all background Debian processes and host services.
 

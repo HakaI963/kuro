@@ -2,7 +2,7 @@
 
 - Date: 2026-08-14
 - Device: Xiaomi 2311DRK48I (duchamp), serial `Y5WWBMJVOZSK4HU8`
-- Card: `archlinux_chroot` → `/data/local/tmp/chrootArch`
+- Card: `archlinux_chroot` → `/data/local/kuro/chroot/archlinux_chroot/rootfs`
 
 ## Result matrix
 
@@ -20,12 +20,12 @@
 D5 **PASS**.
 
 ```
-FluxLinux: STOP XFCE (chroot mode)
-  distro=archlinux_chroot path=/data/local/tmp/chrootArch
-FluxLinux: Stopping Chroot XFCE
+Kuro: STOP XFCE (chroot mode)
+  distro=archlinux_chroot path=/data/local/kuro/chroot/archlinux_chroot/rootfs
+Kuro: Stopping Chroot XFCE
 ```
 
-- XFCE roots before Stop: `/data/local/tmp/chrootArch` (pids 14652/14694/14722/14736). After Stop: none.
+- XFCE roots before Stop: `/data/local/kuro/chroot/archlinux_chroot/rootfs` (pids 14652/14694/14722/14736). After Stop: none.
 - Log does not name `chrootDebian13`. Card returned to Start.
 - Debian chroot still present. Screenshots: `archlinux_chroot_xfce_retest.png`, `archlinux_chroot_stopped_retest.png`.
 

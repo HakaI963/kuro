@@ -1,9 +1,9 @@
-#!/data/data/com.ivarna.fluxlinux/files/usr/bin/bash
+#!/data/data/com.kuro.app/files/usr/bin/bash
 # stop_gui.sh - Stop XFCE4 Desktop Environment in PRoot Distro
 # Paths: TermuxHostPaths via fluxlinux-host.env (SSOT)
 
 DISTRO=${1:-debian}
-PKG="${TERMUX_APP__PACKAGE_NAME:-com.ivarna.fluxlinux}"
+PKG="${TERMUX_APP__PACKAGE_NAME:-com.kuro.app}"
 _HOST_ENV="${TERMUX__PREFIX:-/data/data/${PKG}/files/usr}/etc/fluxlinux-host.env"
 [ -r "$_HOST_ENV" ] && . "$_HOST_ENV"
 
@@ -11,12 +11,12 @@ export TERMUX_APP__PACKAGE_NAME="${TERMUX_APP__PACKAGE_NAME:-$PKG}"
 export TERMUX__PREFIX="${TERMUX__PREFIX:-/data/data/${TERMUX_APP__PACKAGE_NAME}/files/usr}"
 export TERMUX__HOME="${TERMUX__HOME:-/data/data/${TERMUX_APP__PACKAGE_NAME}/files/home}"
 export HOME="${HOME:-$TERMUX__HOME}"
-export PROOT_TMP_DIR="${PROOT_TMP_DIR:-$(dirname "${TERMUX__PREFIX:-/data/data/com.ivarna.fluxlinux/files/usr}")/proot-tmp}"
+export PROOT_TMP_DIR="${PROOT_TMP_DIR:-$(dirname "${TERMUX__PREFIX:-/data/data/com.kuro.app/files/usr}")/proot-tmp}"
 mkdir -p "$PROOT_TMP_DIR" 2>/dev/null || true
 PKG="$TERMUX_APP__PACKAGE_NAME"
 
 echo "========================================"
-echo "FluxLinux: Stopping GUI for $DISTRO"
+echo "Kuro: Stopping GUI for $DISTRO"
 echo "========================================"
 
 # Step 1: Kill XFCE inside the guest (targeted login — does NOT pkill proot).

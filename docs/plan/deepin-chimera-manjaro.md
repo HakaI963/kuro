@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13  
 **Status:** DEVICE PASS — 2026-08-13. Code review 2026-08-13: tree matches this contract. **New follow-up (not a DCM re-install):** Manjaro Applications menu ⊘ icons (stub Papirus + `Inherits=breeze-dark`) — same shared script as Fedora/openSUSE. SSOT: [`xfce-icons-locale-fastfetch.md`](./xfce-icons-locale-fastfetch.md). Other leftovers (operator docs, host `tar`/`xz`, Pulse, first-X SIGSYS, stale Terminal tabs) stay in §17–§19.  
-**Scope:** First-class FluxLinux guests for **Deepin 25 (crimson/beige)**, **Chimera Linux (2025-12-20 bootstrap)**, and **Manjaro ARM** — same product shape as Alpine / Debian / Fedora / Void / openSUSE: install → internal terminal → XFCE on the **embedded Termux:X11** display.
+**Scope:** First-class Kuro guests for **Deepin 25 (crimson/beige)**, **Chimera Linux (2025-12-20 bootstrap)**, and **Manjaro ARM** — same product shape as Alpine / Debian / Fedora / Void / openSUSE: install → internal terminal → XFCE on the **embedded Termux:X11** display.
 
 **Device snapshot (2026-08-13, Ivarna release, `adb install -r`, UI only):** All six cards I1–D5 + OMZ/pokemon PASS. Manjaro chroot I1 needed CheckSpace disabled without `sed` (bootstrap has none; Android bind mounts lie about free space). Agnosterzak `@flux` on Manjaro needs generated `en_US.UTF-8` (`locale.gen` ships fully commented). Chimera T2/T3 need `/etc/doas.conf` mode **0644** (OpenDoas reads the file as `flux`). Guest `timeout(1)` on Chimera dies with `sigaction(32)` — customization uses a portable watchdog.
 
@@ -143,11 +143,11 @@ Replace the three **Coming Soon** stubs. Do **not** leave a dual-mode card. Same
 | Card id | UI name | Method | proot-distro name | Chroot path | Color (existing stub) | Icon (already in tree) |
 |---------|---------|--------|-------------------|-------------|-----------------------|------------------------|
 | `deepin` | Deepin | proot | `deepin` | — | `0xFF2CA7F8` | `R.drawable.distro_deepin` |
-| `deepin_chroot` | Deepin (Rooted) | chroot | — | `/data/local/tmp/chrootDeepin` | same | same |
+| `deepin_chroot` | Deepin (Rooted) | chroot | — | `/data/local/kuro/chroot/deepin_chroot/rootfs` | same | same |
 | `chimera` | Chimera | proot | `chimera` | — | `0xFFFF6B35` | `R.drawable.distro_chimera` |
-| `chimera_chroot` | Chimera (Rooted) | chroot | — | `/data/local/tmp/chrootChimera` | same | same |
+| `chimera_chroot` | Chimera (Rooted) | chroot | — | `/data/local/kuro/chroot/chimera_chroot/rootfs` | same | same |
 | `manjaro` | Manjaro | proot | `manjaro` | — | `0xFF35BF5C` | `R.drawable.distro_manjaro` |
-| `manjaro_chroot` | Manjaro (Rooted) | chroot | — | `/data/local/tmp/chrootManjaro` | same | same |
+| `manjaro_chroot` | Manjaro (Rooted) | chroot | — | `/data/local/kuro/chroot/manjaro_chroot/rootfs` | same | same |
 
 Descriptions (short):
 
@@ -501,9 +501,9 @@ Chroot trio = generic guest scripts + new `ChrootPaths`.
 ### `ChrootPaths`
 
 ```
-DEEPIN_CHROOT_PATH   = /data/local/tmp/chrootDeepin
-CHIMERA_CHROOT_PATH  = /data/local/tmp/chrootChimera
-MANJARO_CHROOT_PATH  = /data/local/tmp/chrootManjaro
+DEEPIN_CHROOT_PATH   = /data/local/kuro/chroot/deepin_chroot/rootfs
+CHIMERA_CHROOT_PATH  = /data/local/kuro/chroot/chimera_chroot/rootfs
+MANJARO_CHROOT_PATH  = /data/local/kuro/chroot/manjaro_chroot/rootfs
 ```
 
 `pathForDistro` covers the three new chroot ids.
@@ -572,7 +572,7 @@ No Android instrumentation in this pass. Device E2E is the gate.
 
 ## 11. Device test matrix (must all pass)
 
-Package: `com.ivarna.fluxlinux`. Build: `:app:assembleIvarnaRelease`. Install: `adb install -r`. Launch: `com.ivarna.fluxlinux/.MainActivity`.
+Package: `com.kuro.app`. Build: `:app:assembleIvarnaRelease`. Install: `adb install -r`. Launch: `com.kuro.app/.MainActivity`.
 
 For **each** of `{deepin, chimera, manjaro}` × `{proot, chroot}`:
 
@@ -618,7 +618,7 @@ Manjaro chroot I1 (fixed this pass): CheckSpace on Android bind mounts reports `
 
 Reports: `docs/plans/results/{deepin,chimera,manjaro}-{proot,chroot}-device-report.md`. Screenshots: `*_omz_pokemon.png`, `*_xfce_pass.png`, `manjaro_chroot_t2_t3.png`, `manjaro_proot_t2_t3.png`.
 
-**Storage:** Manjaro uncompressed + XFCE is the largest guest. Install/test **sequentially**. Uninstall a finished chroot via the in-app uninstall script only if `/data` is exhausted. Do **not** uninstall the FluxLinux APK. Do not delete Debian/Alpine/FVO guests unless the device is actually full.
+**Storage:** Manjaro uncompressed + XFCE is the largest guest. Install/test **sequentially**. Uninstall a finished chroot via the in-app uninstall script only if `/data` is exhausted. Do **not** uninstall the Kuro APK. Do not delete Debian/Alpine/FVO guests unless the device is actually full.
 
 **APK size:** three more xz archives will grow the Ivarna APK significantly (Manjaro alone is ~200 MiB gzip / likely 150–190 MiB xz). Acceptable for this device-test track; do not split APKs.
 
@@ -775,7 +775,7 @@ Reviewed the tree against this plan after DEVICE PASS. **No DCM functional gaps.
 |------|-------------|
 | Cards | Six live ids, `comingSoon=false`, mutually exclusive `prootSupported`/`chrootSupported`. Catalog installable count **16**. |
 | SSOT | `DistroInstallProfile` six profiles; xz SHA pins match §1; `allRootfsProfiles` size **8**. `DistroFamily.CHIMERA`; `PackageManager.APK` reused (no `APK3`). |
-| Paths | `/data/local/tmp/chroot{Deepin,Chimera,Manjaro}`. Host trio = generic `setup_guest_chroot.sh` + `start_guest_gui.sh`. |
+| Paths | `/data/local/kuro/chroot{Deepin,Chimera,Manjaro}`. Host trio = generic `setup_guest_chroot.sh` + `start_guest_gui.sh`. |
 | Family | `setup_{deepin,chimera,manjaro}_family.sh`. Deepin never adds debian.org / DDE. Chimera apk v3 + `chimera-repo-user` + targeted XFCE (no meta). Manjaro never rewrites to ALARM; `pacman-key --init`; POSIX CheckSpace; `dbus-broker-units`. |
 | Shared | Portable `stat`; PM writable paths include apk v3 / pacman / apt; doas 0644 + `/usr/local/bin/sudo` shim. |
 | Customization | Shared `setup_customization_xfce.sh`: Chimera pkg map (`wget2`/`gtar`/`opendoas`), fail-closed `git`/`zsh`, python for pokemon, `FLUX_SKIP_POKEMON:-0`, OMZ clone + plugins + agnosterzak, pokemon gitlab clone + `install.sh`, timeout probe. |
@@ -820,7 +820,7 @@ Reviewed the tree against this plan after DEVICE PASS. **No DCM functional gaps.
 
 ## 18. Manual testing (operator)
 
-Package `com.ivarna.fluxlinux`. Device Xiaomi 2311DRK48I (or any aarch64 + KernelSU for chroot).
+Package `com.kuro.app`. Device Xiaomi 2311DRK48I (or any aarch64 + KernelSU for chroot).
 
 ### 18.1 Build / install
 
@@ -829,7 +829,7 @@ cd /home/abhaybyte/repos/fluxlinux
 ./gradlew :app:assembleIvarnaRelease --no-daemon
 adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
 # INSTALL_FAILED_UPDATE_INCOMPATIBLE → uninstall then install (signature only)
-adb shell am start -n com.ivarna.fluxlinux/.MainActivity
+adb shell am start -n com.kuro.app/.MainActivity
 ```
 
 No debug APK. No APK uninstall unless signature mismatch. Sequential installs — Manjaro is the largest guest. Uninstall a finished **chroot** via in-app uninstall only if `/data` is exhausted. Do not delete Debian/Alpine/FVO guests unless the device is actually full.
@@ -881,22 +881,22 @@ Filesystem probes (root for chroot; proot rootfs under app files):
 
 ```sh
 # proot example
-RF=/data/data/com.ivarna.fluxlinux/files/usr/var/lib/proot-distro/containers/deepin/rootfs
+RF=/data/data/com.kuro.app/files/usr/var/lib/proot-distro/containers/deepin/rootfs
 ls "$RF/usr/bin/startxfce4"
 ls "$RF/home/flux/.oh-my-zsh/oh-my-zsh.sh"
 grep ThemeName "$RF/home/flux/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml"
 
 # chroot example
-su -c 'ls /data/local/tmp/chrootChimera/.flux_configured /data/local/tmp/chrootChimera/usr/bin/startxfce4'
-su -c 'stat /data/local/tmp/chrootChimera/etc/doas.conf'   # expect -rw-r--r--
-su -c 'cat /data/local/tmp/chrootChimera/etc/doas.conf'    # permit nopass flux
+su -c 'ls /data/local/kuro/chroot/chimera_chroot/rootfs/.flux_configured /data/local/kuro/chroot/chimera_chroot/rootfs/usr/bin/startxfce4'
+su -c 'stat /data/local/kuro/chroot/chimera_chroot/rootfs/etc/doas.conf'   # expect -rw-r--r--
+su -c 'cat /data/local/kuro/chroot/chimera_chroot/rootfs/etc/doas.conf'    # permit nopass flux
 ```
 
 ### 18.3 Distro Settings re-run
 
 If first-boot customization aborted (historical: Icons Archive Missing): Distros → gear → XFCE4 Customization → Dark → Apply. Confirm log: `Oh My Zsh already valid` or clone success; `pokemon-colorscripts already present` or installed. Open a **new** User shell (old tabs may be pre-OMZ).
 
-Chroot re-run must log staging into `/data/local/tmp/chroot<Name>/tmp/flux_xfce_assets/`, not the proot container.
+Chroot re-run must log staging into `/data/local/kuro/chroot<Name>/tmp/flux_xfce_assets/`, not the proot container.
 
 ### 18.4 Shared-script sibling smoke
 
@@ -920,11 +920,11 @@ D3/D4 without a screenshot reader: `xsettings.xml` + process list (`xfce4-sessio
 Copy everything in the fence below into a new worker.
 
 ```
-You are the FluxLinux DCM (Deepin / Chimera / Manjaro) worker.
+You are the Kuro DCM (Deepin / Chimera / Manjaro) worker.
 
 Repo: /home/abhaybyte/repos/fluxlinux
 Plan (SSOT): docs/plan/deepin-chimera-manjaro.md
-Package: com.ivarna.fluxlinux
+Package: com.kuro.app
 APK: ./gradlew :app:assembleIvarnaRelease --no-daemon
      adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
 Device: Xiaomi 2311DRK48I (or current aarch64). KernelSU for chroot.
@@ -968,7 +968,7 @@ C) Optional non-blockers (only if asked, or if you finish A and still have time)
 
 CONTRACT FACTS (do not regress):
 - Cards: deepin, deepin_chroot, chimera, chimera_chroot, manjaro, manjaro_chroot
-- Chroot paths: /data/local/tmp/chroot{Deepin,Chimera,Manjaro}
+- Chroot paths: /data/local/kuro/chroot{Deepin,Chimera,Manjaro}
 - Customization: scripts/common/setup/setup_customization_xfce.sh
   FLUX_SKIP_POKEMON default 0; guest git clone ohmyzsh + gitlab pokemon-colorscripts;
   _flux_timeout_works (Chimera timeout dies: sigaction(32)).

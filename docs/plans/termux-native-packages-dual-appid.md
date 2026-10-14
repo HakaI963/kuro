@@ -1,18 +1,18 @@
-# Plan: Custom Termux Packages for FluxLinux Native Terminal
+# Plan: Custom Termux Packages for Kuro Native Terminal
 
 **Date:** 2026-08-05  
-**Status:** **COMPLETE** — full termux-lib SSOT + `bootstrap.tar` + jniLibs for **both** `com.ivarna.fluxlinux` and `com.zenithblue.fluxlinux` (2026-08-05)  
+**Status:** **COMPLETE** — full termux-lib SSOT + `bootstrap.tar` + jniLibs for **both** `com.kuro.app` and `com.kuro.app` (2026-08-05)  
 **Reference implementation:** `~/repos/termux-lib` (`assemble_bootstrap.py` `PACKAGES` = SSOT)  
-**Goal:** Build a Termux userland (bootstrap + jniLibs) for an **embedded native terminal** inside FluxLinux, with correct `$PREFIX` for **both** shipped application IDs.
+**Goal:** Build a Termux userland (bootstrap + jniLibs) for an **embedded native terminal** inside Kuro, with correct `$PREFIX` for **both** shipped application IDs.
 
 ### Progress log
 
 | When | What |
 |------|------|
 | 2026-08-05 | Added `native/` layout, scripts (`build_packages_for_appid`, `set_termux_package_name`, `verify_deb_prefix`, `assemble_bootstrap`, `verify_bootstrap`), package list, gitignore. |
-| 2026-08-05 | `FORCE_DEPS=1` dry-run: built **bash + full dep chain** for `com.ivarna.fluxlinux`. Verified deb paths + `RUNPATH` under `/data/data/com.ivarna.fluxlinux/files/usr`. |
-| 2026-08-05 | **Terminal+proot stack complete** for `com.ivarna.fluxlinux`: `libandroid-shmem`, `libtalloc` (pinned 2.4.2 via Debian; samba.org unreachable), `proot`, `python`, `proot-distro` + deps. Assembled `bootstrap-terminal-proot.tar` (~82 MB) + jniLibs. ~143 mirrored debs. |
-| 2026-08-05 | **Verify vs termux-lib:** 45/62 SSOT debs present for ivarna; 17 missing (GUI/audio/XKB + TLS extras). Prefix/RUNPATH OK for terminal stack. `com.zenithblue.fluxlinux` not started. |
+| 2026-08-05 | `FORCE_DEPS=1` dry-run: built **bash + full dep chain** for `com.kuro.app`. Verified deb paths + `RUNPATH` under `/data/data/com.kuro.app/files/usr`. |
+| 2026-08-05 | **Terminal+proot stack complete** for `com.kuro.app`: `libandroid-shmem`, `libtalloc` (pinned 2.4.2 via Debian; samba.org unreachable), `proot`, `python`, `proot-distro` + deps. Assembled `bootstrap-terminal-proot.tar` (~82 MB) + jniLibs. ~143 mirrored debs. |
+| 2026-08-05 | **Verify vs termux-lib:** 45/62 SSOT debs present for ivarna; 17 missing (GUI/audio/XKB + TLS extras). Prefix/RUNPATH OK for terminal stack. `com.kuro.app` not started. |
 | 2026-08-05 | **This session:** force-rebuild 17 missing for ivarna → assemble full `bootstrap.tar` → FORCE rebuild full SSOT for zenithblue → assemble + verify both. |
 | 2026-08-05 | **ivarna COMPLETE:** SSOT 62/62 debs; full `bootstrap.tar` 122 MB; jniLibs; pulseaudio + xkb; `verify_bootstrap.sh` **PASS**. Patched `libacl` SRCURL→Debian (savannah 502). `libtalloc` remains Debian-pinned. Build script: reuse docker container by default (`RECREATE_BUILDER=1` to reset). |
 | 2026-08-05 | **zenithblue COMPLETE:** SSOT 62/62 debs; full `bootstrap.tar` 122 MB; jniLibs; `verify_bootstrap.sh` **PASS**. `libcap` built from local `file://` tarball (kernel.org DNS broken in container). Subpackage names (`curl`, `xz-utils`, `flac`, `libltdl`) come from parents `libcurl`/`liblzma`/`libflac`/`libtool`. |
@@ -21,15 +21,15 @@
 
 | App ID | SSOT debs | bootstrap.tar | jniLibs | verify_bootstrap |
 |--------|-----------|---------------|---------|------------------|
-| `com.ivarna.fluxlinux` | **62/62** (~196 mirrored) | **122 MB** | bash/proot/loader{,32} | **PASS** |
-| `com.zenithblue.fluxlinux` | **62/62** (~196 mirrored) | **122 MB** | bash/proot/loader{,32} | **PASS** |
+| `com.kuro.app` | **62/62** (~196 mirrored) | **122 MB** | bash/proot/loader{,32} | **PASS** |
+| `com.kuro.app` | **62/62** (~196 mirrored) | **122 MB** | bash/proot/loader{,32} | **PASS** |
 
 **Artifacts:**
 ```text
-native/output/com.ivarna.fluxlinux/*.deb
-native/bootstrap/com.ivarna.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/}
-native/output/com.zenithblue.fluxlinux/*.deb
-native/bootstrap/com.zenithblue.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/}
+native/output/com.kuro.app/*.deb
+native/bootstrap/com.kuro.app/{bootstrap.tar,jniLibs/arm64-v8a/}
+native/output/com.kuro.app/*.deb
+native/bootstrap/com.kuro.app/{bootstrap.tar,jniLibs/arm64-v8a/}
 native/package-lists/termux-lib-ssot.txt   # exact termux-lib PACKAGES
 ```
 
@@ -54,34 +54,34 @@ Package lists in repo:
 | Terminal-only | `native/package-lists/terminal-proot.txt` | Shell + proot (no pulse/xkb) |
 | Ivarna gap | `native/package-lists/ivarna-missing.txt` | 17 packages still nativecode-prefix only |
 
-### Phase A — `com.ivarna.fluxlinux` (complete full host)
+### Phase A — `com.kuro.app` (complete full host)
 
 1. **Force-rebuild missing 17** (shared `termux-packages/output` still has `com.zenithblue.nativecode` debs for these; must use `FORCE=1`):
    - TLS: `libidn2`, `libunistring`, `libnettle`, `libunbound`
    - Audio chain: `libogg`, `flac`, `libvorbis`, `libopus`, `speexdsp`, `libsndfile`, `libltdl`, `libcap`, `libevent`, `dbus`, `glib`, `pulseaudio`
    - XKB: `xkeyboard-config`
-2. **Mirror** all debs whose archive paths match `com.ivarna.fluxlinux` → `native/output/com.ivarna.fluxlinux/`.
+2. **Mirror** all debs whose archive paths match `com.kuro.app` → `native/output/com.kuro.app/`.
 3. **Verify** every SSOT package has an ivarna-prefix deb (62/62).
 4. **Assemble full bootstrap:**
    ```bash
-   ./scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux \
+   ./scripts/assemble_bootstrap.py --package-name com.kuro.app \
      --list native/package-lists/termux-lib-ssot.txt --mode full
    ```
-5. **Verify bootstrap:** `./scripts/verify_bootstrap.sh com.ivarna.fluxlinux`  
+5. **Verify bootstrap:** `./scripts/verify_bootstrap.sh com.kuro.app`  
    Required: bash, python, proot, proot-distro, pulseaudio, loader.apk, jniLibs, RUNPATH.
 
 **Exit criteria A:** full `bootstrap.tar` + jniLibs PASS for ivarna.
 
-### Phase B — `com.zenithblue.fluxlinux` (full rebuild)
+### Phase B — `com.kuro.app` (full rebuild)
 
-1. **Set package name** to `com.zenithblue.fluxlinux` (`set_termux_package_name.sh`).
+1. **Set package name** to `com.kuro.app` (`set_termux_package_name.sh`).
 2. **Force rebuild full SSOT** (all ELFs/paths must embed Play app id; cannot reuse ivarna debs):
    ```bash
    FORCE=1 CONTINUE_ON_FAIL=1 ./scripts/build_packages_for_appid.sh \
-     com.zenithblue.fluxlinux --list termux-lib-ssot
+     com.kuro.app --list termux-lib-ssot
    ```
    Prefer `FORCE=1` package-by-package (faster than `FORCE_DEPS=1` if ivarna-built headers already exist); escalate to `FORCE_DEPS=1` on seed failures.
-3. **Mirror** → `native/output/com.zenithblue.fluxlinux/`.
+3. **Mirror** → `native/output/com.kuro.app/`.
 4. **Assemble + verify** same as Phase A for zenithblue.
 
 **Exit criteria B:** full `bootstrap.tar` + jniLibs PASS for zenithblue.
@@ -105,13 +105,13 @@ Package lists in repo:
 ### Artifact targets
 
 ```text
-native/output/com.ivarna.fluxlinux/*.deb
-native/bootstrap/com.ivarna.fluxlinux/bootstrap.tar
-native/bootstrap/com.ivarna.fluxlinux/jniLibs/arm64-v8a/{libbash,libproot,libloader,libloader32}.so
+native/output/com.kuro.app/*.deb
+native/bootstrap/com.kuro.app/bootstrap.tar
+native/bootstrap/com.kuro.app/jniLibs/arm64-v8a/{libbash,libproot,libloader,libloader32}.so
 
-native/output/com.zenithblue.fluxlinux/*.deb
-native/bootstrap/com.zenithblue.fluxlinux/bootstrap.tar
-native/bootstrap/com.zenithblue.fluxlinux/jniLibs/arm64-v8a/...
+native/output/com.kuro.app/*.deb
+native/bootstrap/com.kuro.app/bootstrap.tar
+native/bootstrap/com.kuro.app/jniLibs/arm64-v8a/...
 ```
 
 ### Command cheat-sheet
@@ -119,33 +119,33 @@ native/bootstrap/com.zenithblue.fluxlinux/jniLibs/arm64-v8a/...
 ```bash
 # A1 — missing for ivarna
 FORCE=1 CONTINUE_ON_FAIL=1 ./scripts/build_packages_for_appid.sh \
-  com.ivarna.fluxlinux --list ivarna-missing
+  com.kuro.app --list kuro-missing
 
 # A4 — assemble full
-./scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux \
+./scripts/assemble_bootstrap.py --package-name com.kuro.app \
   --list native/package-lists/termux-lib-ssot.txt --mode full
-./scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+./scripts/verify_bootstrap.sh com.kuro.app
 
 # B — zenithblue full
 FORCE=1 CONTINUE_ON_FAIL=1 ./scripts/build_packages_for_appid.sh \
-  com.zenithblue.fluxlinux --list termux-lib-ssot
-./scripts/assemble_bootstrap.py --package-name com.zenithblue.fluxlinux \
+  com.kuro.app --list termux-lib-ssot
+./scripts/assemble_bootstrap.py --package-name com.kuro.app \
   --list native/package-lists/termux-lib-ssot.txt --mode full
-./scripts/verify_bootstrap.sh com.zenithblue.fluxlinux
+./scripts/verify_bootstrap.sh com.kuro.app
 ```
 
 ---
 
 ## 1. Context
 
-### 1.1 Current FluxLinux model
+### 1.1 Current Kuro model
 
-Today FluxLinux is an **orchestrator**: it drives external **Termux** + **Termux:X11** via scripts and intents.
+Today Kuro is an **orchestrator**: it drives external **Termux** + **Termux:X11** via scripts and intents.
 
 | Channel | Application ID | Notes |
 |---------|----------------|-------|
-| F-Droid / open APK | `com.ivarna.fluxlinux` | Default `applicationId` in `app/build.gradle.kts` |
-| Google Play | `com.zenithblue.fluxlinux` | Store listing / separate product identity |
+| F-Droid / open APK | `com.kuro.app` | Default `applicationId` in `app/build.gradle.kts` |
+| Google Play | `com.kuro.app` | Store listing / separate product identity |
 
 Paths hard-coded into Termux packages always include the app package name:
 
@@ -154,7 +154,7 @@ PREFIX = /data/data/<APPLICATION_ID>/files/usr
 HOME   = /data/data/<APPLICATION_ID>/files/home
 ```
 
-Stock Termux binaries are compiled for `com.termux`. They **cannot** run natively under either FluxLinux ID without rebuild (or fragile proot/patchelf hacks).
+Stock Termux binaries are compiled for `com.termux`. They **cannot** run natively under either Kuro ID without rebuild (or fragile proot/patchelf hacks).
 
 ### 1.2 What termux-lib already proved
 
@@ -171,12 +171,12 @@ In `~/repos/termux-lib` (`com.zenithblue.nativecode`):
 5. Runtime still rewrites residual stock `com.termux` strings in bootstrap text  
    (`TermuxHostPaths.applyPackageToExtractedPrefix`) as a safety net.
 
-FluxLinux should **repeat that pipeline twice** (or once per flavor) with:
+Kuro should **repeat that pipeline twice** (or once per flavor) with:
 
 | Flavor / product | `TERMUX_APP__PACKAGE_NAME` | Intended distribution |
 |------------------|----------------------------|------------------------|
-| **fdroid** (open) | `com.ivarna.fluxlinux` | F-Droid, GitHub release |
-| **play** | `com.zenithblue.fluxlinux` | Google Play |
+| **fdroid** (open) | `com.kuro.app` | F-Droid, GitHub release |
+| **play** | `com.kuro.app` | Google Play |
 
 ### 1.3 Path length check (Termux build system limits)
 
@@ -187,27 +187,27 @@ Termux validates:
 
 | Application ID | `/data/data/<id>/files` | `…/files/usr` |
 |----------------|-------------------------|---------------|
-| `com.ivarna.fluxlinux` | 37 | 41 |
-| `com.zenithblue.fluxlinux` | 41 | 45 |
+| `com.kuro.app` | 37 | 41 |
+| `com.kuro.app` | 41 | 45 |
 | `com.zenithblue.nativecode` (ref) | 42 | 46 |
 
-Both FluxLinux IDs are **well under limits**. No path-layout hacks required.
+Both Kuro IDs are **well under limits**. No path-layout hacks required.
 
 ---
 
 ## 2. Objectives
 
 1. **Build-time correctness:** every ELF `RPATH`/`RUNPATH`, shebang, and script path embeds  
-   `/data/data/com.ivarna.fluxlinux/...` **or**  
-   `/data/data/com.zenithblue.fluxlinux/...` — not `com.termux`.
+   `/data/data/com.kuro.app/...` **or**  
+   `/data/data/com.kuro.app/...` — not `com.termux`.
 2. **Ship two bootstraps** (or two full APK flavors) so each store listing never installs the wrong prefix.
 3. **Reuse termux-lib playbook:** Docker package builder, package set, bootstrap assembly, jniLibs W^X layout, host env SSOT.
-4. **Keep packaging reproducible enough** for F-Droid (`com.ivarna.fluxlinux`) where binary blobs may need scanignore / separate assets pipeline.
+4. **Keep packaging reproducible enough** for F-Droid (`com.kuro.app`) where binary blobs may need scanignore / separate assets pipeline.
 5. **Do not mix** stock Termux repos at runtime for host-critical packages without rebuild/hold policy (same lesson as nativecode).
 
 Out of scope for **this** plan (follow-on docs):
 
-- Full UI port of nativecode terminal / onboarding into FluxLinux Compose screens.
+- Full UI port of nativecode terminal / onboarding into Kuro Compose screens.
 - Complete marketplace / guest Debian feature parity.
 - Multi-arch (`arm`, `x86_64`) — start **`aarch64` only**.
 
@@ -233,7 +233,7 @@ Out of scope for **this** plan (follow-on docs):
               │                                         │
               ▼                                         ▼
    productFlavor fdroid                      productFlavor play
-   applicationId com.ivarna.fluxlinux        applicationId com.zenithblue.fluxlinux
+   applicationId com.kuro.app        applicationId com.kuro.app
 ```
 
 **Runtime layout (either flavor):**
@@ -276,14 +276,14 @@ Canonical values per flavor:
 
 ```text
 # fdroid
-PACKAGE = com.ivarna.fluxlinux
-PREFIX  = /data/data/com.ivarna.fluxlinux/files/usr
-HOME    = /data/data/com.ivarna.fluxlinux/files/home
+PACKAGE = com.kuro.app
+PREFIX  = /data/data/com.kuro.app/files/usr
+HOME    = /data/data/com.kuro.app/files/home
 
 # play
-PACKAGE = com.zenithblue.fluxlinux
-PREFIX  = /data/data/com.zenithblue.fluxlinux/files/usr
-HOME    = /data/data/com.zenithblue.fluxlinux/files/home
+PACKAGE = com.kuro.app
+PREFIX  = /data/data/com.kuro.app/files/usr
+HOME    = /data/data/com.kuro.app/files/home
 ```
 
 ---
@@ -348,7 +348,7 @@ Prerequisites (same as termux-lib):
 In `termux-packages/scripts/properties.sh`:
 
 ```bash
-TERMUX_APP__PACKAGE_NAME="com.ivarna.fluxlinux"   # or com.zenithblue.fluxlinux
+TERMUX_APP__PACKAGE_NAME="com.kuro.app"   # or com.kuro.app
 ```
 
 Derived paths become:
@@ -371,7 +371,7 @@ Automated pattern (adapt from termux-lib `custom_package_build_plan.md` and `scr
 # scripts/build_packages_for_appid.sh
 set -euo pipefail
 
-CUSTOM_PACKAGE="${1:?usage: $0 com.ivarna.fluxlinux|com.zenithblue.fluxlinux [pkg…]}"
+CUSTOM_PACKAGE="${1:?usage: $0 com.kuro.app|com.kuro.app [pkg…]}"
 ARCH="${ARCH:-aarch64}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TP="$ROOT/native/termux-packages"   # or path to termux-packages
@@ -413,7 +413,7 @@ Resume/failure logging: copy termux-lib `scripts/resume_bootstrap_packages.sh` p
 deb=output/bash_*_aarch64.deb
 d=$(ar t "$deb" | grep '^data.tar' | head -1)
 ar p "$deb" "$d" | tar -tf - | head
-# Expect: data/data/com.ivarna.fluxlinux/files/usr/...
+# Expect: data/data/com.kuro.app/files/usr/...
 # Never:  data/data/com.termux/...
 ```
 
@@ -431,15 +431,15 @@ readelf -d usr/bin/bash | grep -E 'RPATH|RUNPATH'
 native/
   termux-packages/          # shared sources; package name rewritten per build
   output/
-    com.ivarna.fluxlinux/
+    com.kuro.app/
       *.deb
-    com.zenithblue.fluxlinux/
+    com.kuro.app/
       *.deb
   bootstrap/
-    com.ivarna.fluxlinux/
+    com.kuro.app/
       bootstrap.tar
       jniLibs/arm64-v8a/*.so
-    com.zenithblue.fluxlinux/
+    com.kuro.app/
       bootstrap.tar
       jniLibs/arm64-v8a/*.so
   loader/
@@ -454,7 +454,7 @@ Port `termux-lib/assemble_bootstrap.py` → `fluxlinux/scripts/assemble_bootstra
 
 | Arg | Meaning |
 |-----|---------|
-| `--package-name` | `com.ivarna.fluxlinux` or `com.zenithblue.fluxlinux` |
+| `--package-name` | `com.kuro.app` or `com.kuro.app` |
 | `--deb-dir` | `native/output/<package-name>` |
 | `--out-tar` | assets path for that flavor |
 | `--jni-dir` | jniLibs path for that flavor |
@@ -489,19 +489,19 @@ Introduce flavors so one repo produces both store APKs:
 ```kotlin
 // app/build.gradle.kts (sketch)
 android {
-    namespace = "com.ivarna.fluxlinux" // or shared; sources may stay under one package
+    namespace = "com.kuro.app" // or shared; sources may stay under one package
 
     flavorDimensions += "store"
     productFlavors {
         create("fdroid") {
             dimension = "store"
-            applicationId = "com.ivarna.fluxlinux"
-            // assets: bootstrap from native/bootstrap/com.ivarna.fluxlinux/
+            applicationId = "com.kuro.app"
+            // assets: bootstrap from native/bootstrap/com.kuro.app/
         }
         create("play") {
             dimension = "store"
-            applicationId = "com.zenithblue.fluxlinux"
-            // assets: bootstrap from native/bootstrap/com.zenithblue.fluxlinux/
+            applicationId = "com.kuro.app"
+            // assets: bootstrap from native/bootstrap/com.kuro.app/
         }
     }
 
@@ -528,7 +528,7 @@ Build outputs:
 ./gradlew :app:assemblePlayRelease
 ```
 
-F-Droid metadata (`com.ivarna.fluxlinux.yml`) must pin the **fdroid** flavor (or default config that only builds ivarna).
+F-Droid metadata (`com.kuro.app.yml`) must pin the **fdroid** flavor (or default config that only builds ivarna).
 
 ---
 
@@ -545,7 +545,7 @@ These are app changes that **consume** the packages (detailed UI plan can be sep
 | Terminal | Embed terminal-emulator/view (from termux-app modules, as nativecode) |
 | W^X | Always exec from `nativeLibraryDir` for bash/proot/loader |
 | X11 | Bundle termux-x11 module or intent; loader.apk path + read-only chmod |
-| Scripts | Port FluxLinux orchestration scripts off external Termux → host prefix |
+| Scripts | Port Kuro orchestration scripts off external Termux → host prefix |
 | Hold policy | `apt-mark hold` on custom-prefix critical packages if host apt enabled |
 
 Do **not** sed-replace Java class names in `am` / `termux-x11` wrappers (nativecode regression: broke `com.termux.x11.Loader` / `com.termux.termuxam.Am`).
@@ -561,16 +561,16 @@ Do **not** sed-replace Java class names in `am` / `termux-x11` wrappers (nativec
 - [ ] Add `scripts/build_packages_for_appid.sh`, `scripts/assemble_bootstrap.py`.
 - [ ] Document host prerequisites (Docker, disk, network host mode).
 
-### Phase 1 — Build `com.ivarna.fluxlinux` packages (P0 F-Droid ID)
+### Phase 1 — Build `com.kuro.app` packages (P0 F-Droid ID)
 
-- [ ] Set `TERMUX_APP__PACKAGE_NAME=com.ivarna.fluxlinux`.
+- [ ] Set `TERMUX_APP__PACKAGE_NAME=com.kuro.app`.
 - [ ] Clean docker builder + output.
 - [ ] Build seed + dependency closure for bootstrap package list.
 - [ ] Verify deb path prefixes and ELF RUNPATH.
 - [ ] Assemble bootstrap + jniLibs; run verification list.
 - [ ] Smoke-extract on device/emulator with a minimal harness APK if full app not ready.
 
-### Phase 2 — Build `com.zenithblue.fluxlinux` packages (P0 Play ID)
+### Phase 2 — Build `com.kuro.app` packages (P0 Play ID)
 
 - [ ] Repeat Phase 1 with second package name.
 - [ ] **Separate** output and bootstrap trees; never overwrite ivarna artifacts.
@@ -587,7 +587,7 @@ Do **not** sed-replace Java class names in `am` / `termux-x11` wrappers (nativec
 
 - [ ] Port `TermuxHostPaths` / `HostCommandBuilder` patterns.
 - [ ] First-run bootstrap extract + rewrite residual stock strings.
-- [ ] Port `setup_termux.sh` gate to FluxLinux scripts under app assets.
+- [ ] Port `setup_termux.sh` gate to Kuro scripts under app assets.
 
 ### Phase 5 — Terminal + X11 shell integration
 
@@ -609,8 +609,8 @@ Do **not** sed-replace Java class names in `am` / `termux-x11` wrappers (nativec
 
 | Check | ivarna | zenithblue |
 |-------|--------|------------|
-| `properties.sh` package name | `com.ivarna.fluxlinux` | `com.zenithblue.fluxlinux` |
-| Deb archive paths | `/data/data/com.ivarna.fluxlinux/files/usr` | `/data/data/com.zenithblue.fluxlinux/files/usr` |
+| `properties.sh` package name | `com.kuro.app` | `com.kuro.app` |
+| Deb archive paths | `/data/data/com.kuro.app/files/usr` | `/data/data/com.kuro.app/files/usr` |
 | `readelf` RUNPATH on bash/proot | contains ivarna prefix | contains zenithblue prefix |
 | `tar -tf bootstrap.tar` required bins | present | present |
 | jniLibs four `.so` files | present | present |
@@ -670,11 +670,11 @@ Large `.deb` / `bootstrap.tar` may stay **out of git**; CI or release scripts pr
 | `custom_package_build_plan.md` | Pattern for `properties.sh` + Docker |
 | `assemble_bootstrap.py` | Port; parameterize package name |
 | `scripts/build_live.sh` / resume scripts | Port |
-| `docs/plan/host-setup-termux-package-env.md` | Port SSOT ideas to FluxLinux IDs |
+| `docs/plan/host-setup-termux-package-env.md` | Port SSOT ideas to Kuro IDs |
 | `docs/target_sdk_36_wx_bypass.md` | Required for Play/fdroid modern SDK |
-| Existing `output/*.deb` for **nativecode** | **Do not reuse** for FluxLinux — wrong prefix |
+| Existing `output/*.deb` for **nativecode** | **Do not reuse** for Kuro — wrong prefix |
 
-Reuse source tree and operational knowledge; **rebuild all packages** for each FluxLinux application ID.
+Reuse source tree and operational knowledge; **rebuild all packages** for each Kuro application ID.
 
 ---
 
@@ -691,8 +691,8 @@ Reuse source tree and operational knowledge; **rebuild all packages** for each F
 ## 16. Immediate next actions
 
 1. Confirm `termux-packages` location (link `~/repos/termux-lib/termux-packages` vs clone under `fluxlinux/native/`).
-2. Implement `scripts/build_packages_for_appid.sh` and run a **single** package (`bash`) for `com.ivarna.fluxlinux` as a dry run.
-3. If path layout in deb looks correct, expand to full bootstrap set, then repeat for `com.zenithblue.fluxlinux`.
+2. Implement `scripts/build_packages_for_appid.sh` and run a **single** package (`bash`) for `com.kuro.app` as a dry run.
+3. If path layout in deb looks correct, expand to full bootstrap set, then repeat for `com.kuro.app`.
 4. Only after both bootstraps verify: land Gradle flavors and asset wiring.
 
 ---
@@ -707,6 +707,6 @@ Reuse source tree and operational knowledge; **rebuild all packages** for each F
 | `~/repos/termux-lib/docs/plan/host-setup-termux-package-env.md` | Runtime host path SSOT |
 | `~/repos/termux-lib/docs/target_sdk_36_wx_bypass.md` | jniLibs execution model |
 | `~/repos/termux-lib/docs/agent-handoff.md` | Bootstrap required file list |
-| `fluxlinux/app/build.gradle.kts` | Current `com.ivarna.fluxlinux` id |
+| `fluxlinux/app/build.gradle.kts` | Current `com.kuro.app` id |
 | `fluxlinux/README.md` | Dual store IDs (F-Droid vs Play) |
 | `fluxlinux/docs/architecture.md` | Historical orchestrator vs monolithic decision |

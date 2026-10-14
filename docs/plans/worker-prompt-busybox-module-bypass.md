@@ -7,12 +7,12 @@ Implementation SSOT: [`docs/plans/busybox-module-bypass-impl.md`](./busybox-modu
 Research (why only): [`docs/plans/busybox-module-bypass.md`](./busybox-module-bypass.md). Do not re-research, do not implement Option B (ship ELF) or Option C (Java xz).
 
 ```
-You are the FluxLinux worker for the BusyBox NDK-module bypass.
+You are the Kuro worker for the BusyBox NDK-module bypass.
 
 Repo:     /home/abhaybyte/repos/fluxlinux
 Plan:     docs/plans/busybox-module-bypass-impl.md   ← SSOT, read it whole first
 Research: docs/plans/busybox-module-bypass.md        ← why only; do not re-litigate
-Package:  com.ivarna.fluxlinux
+Package:  com.kuro.app
 Tests:    ./gradlew :app:testIvarnaDebugUnitTest --no-daemon
 Signing:  keystore.properties → ~/repos/keys/fluxlinux.jks
 Do not git push. Stop Gradle daemons when done. Do not implement extra features.
@@ -29,7 +29,7 @@ Those managers already ship a static BusyBox:
   KernelSU /data/adb/ksu/bin/busybox
   APatch   /data/adb/ap/bin/busybox
 
-FluxLinux already runs "$BB mount" / "$BB chroot" / "$BB tar". The extra module
+Kuro already runs "$BB mount" / "$BB chroot" / "$BB tar". The extra module
 only puts applet names on PATH. Detection lists disagree (Debian/GUI miss KSU;
 APatch is nowhere). The UI says rooted users MUST flash the zip. That is false.
 
@@ -45,7 +45,7 @@ LOCKED CONTRACTS (do not invent alternatives)
 
 B1  Candidate order EXACT (first bb_ok wins):
       FLUX_BB (if bb_ok)
-      /data/local/tmp/flux_busybox
+      /data/local/kuro/flux_busybox
       /data/adb/ksu/bin/busybox
       /data/adb/ap/bin/busybox
       /data/adb/magisk/busybox
@@ -61,10 +61,10 @@ B2  bb_ok = -x AND path is not *com.termux* / *fluxlinux* / *nativecode*
     AND "$bb --list" (split on space/tab/newline) contains BOTH chroot AND mount.
 
 B3  Never exec BusyBox from /data/data/<pkg>/files/… (W^X). Pin/helper stay
-    under /data/local/tmp.
+    under /data/local/kuro.
 
 B4  After resolve, best-effort:
-      cp -f "$BB" /data/local/tmp/flux_busybox && chmod 755
+      cp -f "$BB" /data/local/kuro/flux_busybox && chmod 755
     Pin failure is NOT fatal.
 
 B5  Version stamp + VERSION_STR + ChrootPaths.CHROOT_HELPER_VERSION all
@@ -102,9 +102,9 @@ New file:
   app/src/main/kotlin/com/ivarna/fluxlinux/core/root/BusyBoxPaths.kt
 
 object BusyBoxPaths {
-    const val PINNED = "/data/local/tmp/flux_busybox"
+    const val PINNED = "/data/local/kuro/flux_busybox"
     const val RESOLVER_ASSET = "scripts/chroot/resolve_bb.sh"
-    const val RESOLVER_ON_DEVICE = "/data/local/tmp/fluxlinux_resolve_bb.sh"
+    const val RESOLVER_ON_DEVICE = "/data/local/kuro/fluxlinux_resolve_bb.sh"
     val CANDIDATES: List<String> = listOf(
         "/data/adb/ksu/bin/busybox",
         "/data/adb/ap/bin/busybox",
@@ -166,13 +166,13 @@ Other scripts — TWO snippets (impl §1 "How other scripts consume it"):
   Setup/start/stop: source sidecar if present; if BB still empty, INLINE B1 walk
   (ksu → ap → magisk → ndk → ramdisk → sbin → /system). Then exit 1 if still empty.
   Do NOT last-resort FLUX_BB/PINNED only. Desktop copies only start_*_gui.sh to
-  /data/local/tmp; dirname $0/resolve_bb.sh will miss.
+  /data/local/kuro; dirname $0/resolve_bb.sh will miss.
 
   Uninstall: same source + inline walk, but NEVER exit 1 because BB is empty.
   Umount: $BB umount -l then /system/bin/umount -l (today’s || umount -l).
 
 Also change start_gui_chroot.sh / stop_gui_chroot.sh (~L205–229):
-  cp $TERMUX_HOME/resolve_bb.sh → /data/local/tmp/fluxlinux_resolve_bb.sh
+  cp $TERMUX_HOME/resolve_bb.sh → /data/local/kuro/fluxlinux_resolve_bb.sh
   export FLUX_BB and FLUX_RESOLVE_BB on the su -c line next to HELPER.
 
 ------------------------------------------------------------------------------
@@ -196,9 +196,9 @@ OnboardingInstallRunner.runChroot rootCmd:
   If non-null, export FLUX_BB in rootCmd.
   Do NOT postFail when null.
   Change the existing root-missing string from
-    "Root not available. Grant superuser to FluxLinux, install BusyBox if needed, then retry."
+    "Root not available. Grant superuser to Kuro, install BusyBox if needed, then retry."
   to
-    "Root not available. Grant superuser to FluxLinux, then retry."
+    "Root not available. Grant superuser to Kuro, then retry."
 
 DesktopLauncher (chroot start/stop):
   ensureBusyBoxResolver + resolveBusyBox BEFORE launching start_gui_chroot.sh.
@@ -209,7 +209,7 @@ UninstallSessionFactory inner su string:
   Export FLUX_BB and FLUX_RESOLVE_BB INSIDE the su string (su drops extraEnv).
 
 TermuxIntentFactory: replace the bare token "busybox chroot" with
-  BB="${FLUX_BB:-/data/local/tmp/flux_busybox}";
+  BB="${FLUX_BB:-/data/local/kuro/flux_busybox}";
   [ -x "$BB" ] || BB="$(command -v busybox)";
   "$BB" chroot …
 Do not rewrite the rest of that factory.
@@ -222,7 +222,7 @@ UI copy (exact)
 ------------------------------------------------------------------------------
 
 OnboardingFlowScreen chroot blurb — REPLACE the current sentence with:
-  Rooted path: grant superuser to FluxLinux. Magisk, KernelSU, and APatch already include BusyBox — a separate module is not required.
+  Rooted path: grant superuser to Kuro. Magisk, KernelSU, and APatch already include BusyBox — a separate module is not required.
 
 BusyBoxInstallStep:
   Probe via RootShell.probeBusyBox (NOT RootUtils).
@@ -242,7 +242,7 @@ only if setup cannot find a manager BusyBox. Do not say it is required.
 
 CHANGELOG Unreleased:
   - feat: chroot uses Magisk/KernelSU/APatch built-in BusyBox — NDK module no longer required
-  - fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/tmp/flux_busybox)
+  - fix: fluxlinux-chroot v2.8 — shared BusyBox resolver (APatch + KSU paths, applet probe, pin to /data/local/kuro/flux_busybox)
 
 ==============================================================================
 OUT OF SCOPE — do not touch
@@ -333,7 +333,7 @@ Device (ONLY if adb devices shows a device; do not block the task):
   1. ls manager busybox paths as root
   2. After APK install, open an already-installed chroot tab
   3. helper on device is v2.8
-  4. /data/local/tmp/flux_busybox and fluxlinux_resolve_bb.sh exist
+  4. /data/local/kuro/flux_busybox and fluxlinux_resolve_bb.sh exist
   Do NOT uninstall a working chroot to re-extract unless asked.
   APatch hardware is optional.
 

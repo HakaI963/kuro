@@ -1,7 +1,7 @@
 # Chimera proot — device report
 
 **Date:** 2026-08-13
-**Package:** `com.ivarna.fluxlinux` (release APK, 1.8.0 / versionCode 10)
+**Package:** `com.kuro.app` (release APK, 1.8.0 / versionCode 10)
 **Device:** Xiaomi 2311DRK48I, KernelSU (root available for diagnostics)
 **Card:** `chimera` — "Chimera Linux (musl, apk v3) with XFCE4 (proot)."
 

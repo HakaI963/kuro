@@ -15,13 +15,13 @@
 
 ## 0. Goal (what “done” means)
 
-FluxLinux stops depending on **external Termux** for Debian install/run. Instead:
+Kuro stops depending on **external Termux** for Debian install/run. Instead:
 
 1. **Ship** per-app-id host userland (`bootstrap.tar` + W^X jniLibs) inside the APK (like termux-lib).
 2. **Extract + pin** host paths at runtime via `TermuxHostPaths` SSOT (`BuildConfig.APPLICATION_ID`).
 3. **Install Debian** from the **same packaged rootfs** for both:
    - **PRoot** → `proot-distro install <abs-path> --name debian`
-   - **Chroot** → extract into `/data/local/tmp/chrootDebian13`
+   - **Chroot** → extract into `/data/local/kuro/chroot/debian13_chroot/rootfs`
 4. **Two terminal components** (cards/pages) replace “Copy & Open Termux”:
    - **`termux-flux-terminal`** — host + proot Debian sessions (flux / root guest).
    - **`chroot-root-shell`** — chroot install/run via SSOT helper + root shell (requires su + BusyBox).
@@ -56,7 +56,7 @@ FluxLinux stops depending on **external Termux** for Debian install/run. Instead
 
 ## 1. As-is vs to-be
 
-### 1.1 FluxLinux Pass 1 (after bulk port — still dual-path)
+### 1.1 Kuro Pass 1 (after bulk port — still dual-path)
 
 | Layer | Behavior after Pass 1 |
 |-------|------------------------|
@@ -91,7 +91,7 @@ FluxLinux stops depending on **external Termux** for Debian install/run. Instead
 
 | Item | Value |
 |------|--------|
-| FluxLinux | `assets/rootfs/debian_13_rootfs.tar.xz` |
+| Kuro | `assets/rootfs/debian_13_rootfs.tar.xz` |
 | termux-lib | `app/src/main/assets/rootfs/debian_13_rootfs.tar.xz` |
 | **SHA256** | `13e29f6099c3b805e84694507ede460c03886ffb364c03317272691cf84e6803` (**identical**) |
 | Size | 85 009 380 bytes (~82 MiB) |
@@ -101,14 +101,14 @@ No re-download needed — **copy into app assets** (or symlink via packaging scr
 ### 1.4 Bootstrap already built (both app IDs)
 
 ```text
-native/bootstrap/com.ivarna.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/*}
-native/bootstrap/com.zenithblue.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/*}
+native/bootstrap/com.kuro.app/{bootstrap.tar,jniLibs/arm64-v8a/*}
+native/bootstrap/com.kuro.app/{bootstrap.tar,jniLibs/arm64-v8a/*}
 ```
 
 | App ID | bootstrap.tar | verify |
 |--------|---------------|--------|
-| `com.ivarna.fluxlinux` | ~122 MB | PASS |
-| `com.zenithblue.fluxlinux` | ~122 MB | PASS |
+| `com.kuro.app` | ~122 MB | PASS |
+| `com.kuro.app` | ~122 MB | PASS |
 
 ---
 
@@ -116,8 +116,8 @@ native/bootstrap/com.zenithblue.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/*}
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  FluxLinux APK (flavor: ivarna | zenithblue)                            │
-│  applicationId = com.ivarna.fluxlinux | com.zenithblue.fluxlinux        │
+│  Kuro APK (flavor: ivarna | zenithblue)                            │
+│  applicationId = com.kuro.app | com.kuro.app        │
 │                                                                         │
 │  assets/bootstrap.tar          ← packaging script from native/bootstrap │
 │  assets/rootfs/debian_13…xz    ← same archive proot + chroot            │
@@ -135,7 +135,7 @@ native/bootstrap/com.zenithblue.fluxlinux/{bootstrap.tar,jniLibs/arm64-v8a/*}
            │                                      │
            │ proot                                │ chroot (root)
            ▼                                      ▼
-  proot-distro containers/debian          /data/local/tmp/chrootDebian13
+  proot-distro containers/debian          /data/local/kuro/chroot/debian13_chroot/rootfs
   + login --user flux|root                + fluxlinux_chroot.sh (SSOT)
            │                                      │
            └──────────────┬───────────────────────┘
@@ -181,13 +181,13 @@ Coming-soon cards (Ubuntu, Arch, …) stay listed as compact “soon” only; no
 | Sort boost | `DistroScreen` `thenByDescending { it.id == "termux" }` | Remove termux priority sort |
 | Spec enum | `SupportedDistro.TERMUX` | Remove or mark unused |
 | Scripts | `assets/scripts/termux/**` | Stop shipping as install path; can keep files orphaned until cleanup PR |
-| Prerequisites | `PrerequisitesScreen` Termux APK download / RUN_COMMAND permission as **hard gate** | **Remove hard dependency** on external Termux APK for using FluxLinux; keep optional X11 notes if still separate app for GUI later |
+| Prerequisites | `PrerequisitesScreen` Termux APK download / RUN_COMMAND permission as **hard gate** | **Remove hard dependency** on external Termux APK for using Kuro; keep optional X11 notes if still separate app for GUI later |
 | Settings | “Initialize Termux”, “Fix Termux Connection”, tweaks via `com.termux` | Replace with **host bootstrap / setup_termux (embedded)** status; drop external connection panel as required UX |
 | Home / install queue | Any path that treats `distroId == "termux"` | Delete or no-op |
 | State | `StateManager` markers for termux distro | Migrate/ignore legacy `termux` installed flag |
 | Tutorials / storelisting | Mentions of Termux Native distro | Drop or rewrite to embedded host |
 
-**Why drop:** Host bootstrap **is** the embedded Termux-class prefix inside FluxLinux. A separate “Termux Native” distro card reintroduces the external-app orchestrator model this plan replaces.
+**Why drop:** Host bootstrap **is** the embedded Termux-class prefix inside Kuro. A separate “Termux Native” distro card reintroduces the external-app orchestrator model this plan replaces.
 
 #### Wire Debian + Debian Rooted — CTA matrix (every button)
 
@@ -241,8 +241,8 @@ object TermuxHostPaths {
 
 | Flavor | `applicationId` | Bootstrap source |
 |--------|-----------------|------------------|
-| `ivarna` (F-Droid) | `com.ivarna.fluxlinux` | `native/bootstrap/com.ivarna.fluxlinux/` |
-| `zenithblue` (Play) | `com.zenithblue.fluxlinux` | `native/bootstrap/com.zenithblue.fluxlinux/` |
+| `ivarna` (F-Droid) | `com.kuro.app` | `native/bootstrap/com.kuro.app/` |
+| `zenithblue` (Play) | `com.kuro.app` | `native/bootstrap/com.kuro.app/` |
 
 **Never** hardcode `com.termux` at call sites for host PREFIX. Shell scripts **source** `$PREFIX/etc/fluxlinux-host.env`.
 
@@ -312,8 +312,8 @@ Exists (Pass 1). Keep as implementation detail of Gradle tasks.
 
 ```bash
 # Usage:
-#   ./scripts/package_host_assets.sh com.ivarna.fluxlinux
-#   ./scripts/package_host_assets.sh com.zenithblue.fluxlinux
+#   ./scripts/package_host_assets.sh com.kuro.app
+#   ./scripts/package_host_assets.sh com.kuro.app
 #   ./scripts/package_host_assets.sh --all
 #
 # Actions:
@@ -361,17 +361,17 @@ Port from termux-lib `app/build.gradle.kts`:
 | Optional local `:termux-x11` later | In-process X11; **phase later** — first ship CLI shells |
 | Guava empty listenablefuture conflict fix | Same as nativecode if using termux-app AAR |
 
-**License note:** termux-app is GPLv3 — FluxLinux is already GPL-compatible if published as open source; document in LICENSE/README.
+**License note:** termux-app is GPLv3 — Kuro is already GPL-compatible if published as open source; document in LICENSE/README.
 
 #### 0.4 Phase 0 acceptance tests
 
 | ID | Test | Pass criteria |
 |----|------|---------------|
-| P0-T1 | `package_host_assets.sh com.ivarna.fluxlinux` | assets + jniLibs present; sizes match native/bootstrap |
+| P0-T1 | `package_host_assets.sh com.kuro.app` | assets + jniLibs present; sizes match native/bootstrap |
 | P0-T2 | Same for zenithblue | no cross-copy (ivarna bootstrap not used for zenithblue) |
 | P0-T3 | `./gradlew :app:assembleIvarnaDebug` | APK contains `assets/bootstrap.tar`, `assets/rootfs/debian_13_rootfs.tar.xz`, `lib/arm64-v8a/libbash.so` etc. |
 | P0-T4 | `aapt2 dump assets` / unzip APK | `noCompress` → bootstrap stored STORED not DEFLATE (or size ≈ on-disk) |
-| P0-T5 | Flavor isolation | ivarna APK applicationId + bootstrap path strings contain only `com.ivarna.fluxlinux` (sample `strings` on extracted usr later in P1) |
+| P0-T5 | Flavor isolation | ivarna APK applicationId + bootstrap path strings contain only `com.kuro.app` (sample `strings` on extracted usr later in P1) |
 | **P0-T6** | **Gradle gate** | Missing `native/bootstrap/.../bootstrap.tar` → assemble **fails** (not success with empty host) |
 | **P0-T7** | **Task wiring** | `packageHostAssets*` runs as dependency of flavor assemble without manual script |
 
@@ -383,7 +383,7 @@ Port from termux-lib `app/build.gradle.kts`:
 
 #### 1.1 Kotlin files (package `…core.terminal` / `…core.root`)
 
-| File | Port from termux-lib | Notes for FluxLinux |
+| File | Port from termux-lib | Notes for Kuro |
 |------|----------------------|---------------------|
 | `TermuxHostPaths.kt` | `terminal/TermuxHostPaths.kt` | `PACKAGE = BuildConfig.APPLICATION_ID`; keep rewrite/env write |
 | `HostCommandBuilder.kt` | same | envMap + build(script) |
@@ -423,7 +423,7 @@ Network URL fallback in install scripts: allowed only if local archive missing; 
 
 #### 1.3 Host scripts in assets
 
-| Script | Dest in FluxLinux assets |
+| Script | Dest in Kuro assets |
 |--------|--------------------------|
 | `setup_termux.sh` | `scripts/host/setup_termux.sh` |
 | `flux_install.sh` | `scripts/debian/proot/setup/flux_install.sh` (local rootfs) |
@@ -480,7 +480,7 @@ User taps Install (Debian PRoot)
          or [libbash, $HOME/flux_install.sh, "debian", setupB64]
        **No shell quoting in argv** — TerminalSession is execve-style, not `sh -c`
   → on success marker ~/.fluxlinux_distro_debian_installed
-  → fluxlinux://callback updates installed state
+  → kuro://callback updates installed state
 ```
 
 **Pass 2 argv contract (critical):**
@@ -513,7 +513,7 @@ User taps Run / Open Shell on installed Debian proot
   → TerminalSession(libbash, home, args, env)
 ```
 
-#### 2.5 UI integration points (FluxLinux screens)
+#### 2.5 UI integration points (Kuro screens)
 
 | Screen / card | Change |
 |---------------|--------|
@@ -552,8 +552,8 @@ Port `assets/scripts/chroot/nativecode_chroot.sh` → rename for product:
 |------|--------|
 | Asset | `scripts/chroot/fluxlinux_chroot.sh` (or keep name + rebrand stamp) |
 | Version stamp | `fluxlinux-chroot v2.2` (match Kotlin constant) |
-| On-device path | `/data/local/tmp/fluxlinux_chroot.sh` |
-| Rootfs | `/data/local/tmp/chrootDebian13` |
+| On-device path | `/data/local/kuro/fluxlinux_chroot.sh` |
+| Rootfs | `/data/local/kuro/chroot/debian13_chroot/rootfs` |
 | Host tmp bridge | `$PREFIX/tmp` → guest `/mnt/host-tmp` |
 | Default user | `flux` (uid 1000) |
 
@@ -577,7 +577,7 @@ fluxlinux_chroot.sh b64   [--user flux|root] -- BASE64_PAYLOAD
 - Session outer exec: `/system/bin/sh` + WINCH trap (SELinux).
 - No nested `su` loops; host `timeout` on ADB tests.
 
-Docs to port as FluxLinux environment docs:
+Docs to port as Kuro environment docs:
 
 - `termux-lib/docs/environment/nativecode-chroot-ssot.md` → `docs/environment/fluxlinux-chroot-ssot.md`
 - Crash postmortem rules remain authoritative for device testing.
@@ -590,7 +590,7 @@ Docs to port as FluxLinux environment docs:
 | `ChrootCommandBuilder.kt` | ensureHelperScript; build login/sh/exec/b64; SESSION_EXEC |
 | Wire `LinuxCommandBuilder` | `method == "chroot"` → ChrootCommandBuilder |
 
-`ensureHelperScript`: stage from assets when version stamp missing/mismatched; root `cp` to `/data/local/tmp/…`.
+`ensureHelperScript`: stage from assets when version stamp missing/mismatched; root `cp` to `/data/local/kuro/…`.
 
 #### 3.3 Install path (chroot)
 
@@ -701,7 +701,7 @@ Shared Terminal page only: optional last-method UI default (never overrides card
 | Doc / screen | Change |
 |--------------|--------|
 | `docs/tutorial/setup_debian_proot.md` | In-app Flux Terminal; no paste-into-Termux as primary |
-| `docs/tutorial/setup_debian_chroot.md` | Root grant to **FluxLinux** + BusyBox; Root Shell install |
+| `docs/tutorial/setup_debian_chroot.md` | Root grant to **Kuro** + BusyBox; Root Shell install |
 | `docs/tutorial/setup_fluxlinux.md` | Init = extract bootstrap (not Termux APK) |
 | `PrerequisitesScreen` | **No** mandatory Termux APK / RUN_COMMAND for core CLI |
 | `SettingsScreen` | Host bootstrap status + re-extract; drop required external connection panel |
@@ -724,7 +724,7 @@ Shared Terminal page only: optional last-method UI default (never overrides card
 |------|----------|
 | Prefs say `debian` installed, no `…/containers/debian/rootfs/bin/sh` under **app** PREFIX | Treat **not installed**; offer Install (do not open empty shell as success) |
 | Prefs say `termux` installed | Ignore; no card |
-| Prefs say `debian13_chroot` installed, no `/data/local/tmp/chrootDebian13/bin/sh` | Treat not installed / repair CTA |
+| Prefs say `debian13_chroot` installed, no `/data/local/kuro/chroot/debian13_chroot/rootfs/bin/sh` | Treat not installed / repair CTA |
 | Installed only in external Termux from old app version | No automatic import; user reinstalls into embedded host |
 
 Installed-state SSOT for product cards = **filesystem** (`TerminalLauncher.isDebianProotInstalled` / chroot `bin/sh`), prefs are cache updated by callbacks.
@@ -737,7 +737,7 @@ Installed-state SSOT for product cards = **filesystem** (`TerminalLauncher.isDeb
 | P4-T1 | Debian Install CTA | Opens **termux-flux-terminal**, not `com.termux` |
 | P4-T2 | Debian Rooted Install CTA | Opens **chroot-root-shell** / root job; not Termux |
 | P4-T3 | Fresh install UX proot | Completes without Termux APK installed |
-| P4-T4 | Fresh install UX chroot | Root + BusyBox + in-app install; FluxLinux has su grant |
+| P4-T4 | Fresh install UX chroot | Root + BusyBox + in-app install; Kuro has su grant |
 | P4-T5 | Component install on debian | Runs in proot terminal session |
 | P4-T6 | Component install on debian13_chroot | Runs via chroot helper |
 | P4-T7 | Uninstall both | State + filesystem cleaned; no Termux intent |
@@ -793,7 +793,7 @@ app/src/main/kotlin/com/ivarna/fluxlinux/
     SettingsScreen.kt            # host status primary
 ```
 
-Namespace: package stays `com.ivarna.fluxlinux`; **runtime paths** from `BuildConfig.APPLICATION_ID`.
+Namespace: package stays `com.kuro.app`; **runtime paths** from `BuildConfig.APPLICATION_ID`.
 
 ### 4.3 Assets
 
@@ -814,7 +814,7 @@ app/src/<flavor>/jniLibs/arm64-v8a/
 ### 4.4 Manifest
 
 - `AppTerminalService` + `foregroundServiceType=specialUse` + property XML (Play policy — copy nativecode declaration pattern).
-- Deep link `fluxlinux://callback` keep for install completion.
+- Deep link `kuro://callback` keep for install completion.
 - `extractNativeLibs` / legacy packaging already via `useLegacyPackaging = true`.
 
 ### 4.5 Docs
@@ -859,17 +859,17 @@ Pass 2 note: **no device was available during Pass 2 code work** — R1–R11 no
 # ── R1: cold-start bootstrap extract ──
 ./gradlew :app:assembleIvarnaDebug
 adb install -r app/build/outputs/apk/ivarna/debug/app-ivarna-debug.apk
-adb shell monkey -p com.ivarna.fluxlinux 1   # open app → onboarding → Initialize Environment
-adb shell run-as com.ivarna.fluxlinux ls files/usr/bin/proot-distro   # expect present
-adb shell run-as com.ivarna.fluxlinux ls files/usr/bin/bash
+adb shell monkey -p com.kuro.app 1   # open app → onboarding → Initialize Environment
+adb shell run-as com.kuro.app ls files/usr/bin/proot-distro   # expect present
+adb shell run-as com.kuro.app ls files/usr/bin/bash
 
 # ── R2: setup_termux host gate ──
-adb shell run-as com.ivarna.fluxlinux cat files/home/.fluxlinux/setup_termux.done  # expect "2"
+adb shell run-as com.kuro.app cat files/home/.fluxlinux/setup_termux.done  # expect "2"
 
 # ── R3: Debian proot install OFFLINE (rootfs from app assets) ──
 adb shell "settings put global airplane_mode_on 1" || true
 # in-app: Distros → Debian → Install in Flux Terminal → wait for install session exit
-adb shell run-as com.ivarna.fluxlinux ls \
+adb shell run-as com.kuro.app ls \
   files/usr/var/lib/proot-distro/containers/debian/rootfs/bin/sh   # expect present
 adb shell "settings put global airplane_mode_on 0" || true
 
@@ -878,24 +878,24 @@ adb shell "settings put global airplane_mode_on 0" || true
 # expect: whoami → flux | root
 
 # ── R5–R6: chroot install + shells (ROOTED device, KSU/Magisk + BusyBox) ──
-# in-app: Distros → Debian (Rooted) → Install in Root Shell (grant su to FluxLinux)
-adb shell timeout 10 sh /data/local/tmp/fluxlinux_chroot.sh version        # fluxlinux-chroot v2.2
-adb shell timeout 15 sh /data/local/tmp/fluxlinux_chroot.sh sh --user flux -- 'whoami; id'
-adb shell timeout 15 sh /data/local/tmp/fluxlinux_chroot.sh login --user root --shell bash -c 'echo root-ok'
-adb shell ls /data/local/tmp/chrootDebian13/bin/sh
+# in-app: Distros → Debian (Rooted) → Install in Root Shell (grant su to Kuro)
+adb shell timeout 10 sh /data/local/kuro/fluxlinux_chroot.sh version        # fluxlinux-chroot v2.2
+adb shell timeout 15 sh /data/local/kuro/fluxlinux_chroot.sh sh --user flux -- 'whoami; id'
+adb shell timeout 15 sh /data/local/kuro/fluxlinux_chroot.sh login --user root --shell bash -c 'echo root-ok'
+adb shell ls /data/local/kuro/chroot/debian13_chroot/rootfs/bin/sh
 
 # ── R7: method switch proot ↔ chroot (rooted only) ──
 # open one proot tab + one chroot tab in Terminal; both must stay independent
 
 # ── R8: uninstall ──
 # proot: DistroSettings → Uninstall (proot-distro remove in Flux Terminal)
-adb shell run-as com.ivarna.fluxlinux test ! -e \
+adb shell run-as com.kuro.app test ! -e \
   files/usr/var/lib/proot-distro/containers/debian/rootfs/bin/sh && echo removed
 # chroot: DistroSettings → Uninstall (Root Shell) → expect umount + rm
-adb shell test ! -e /data/local/tmp/chrootDebian13/bin/sh && echo removed
+adb shell test ! -e /data/local/kuro/chroot/debian13_chroot/rootfs/bin/sh && echo removed
 
 # ── R9: no com.termux host PREFIX ──
-adb shell run-as com.ivarna.fluxlinux sh -c \
+adb shell run-as com.kuro.app sh -c \
   'grep -R com.termux files/usr/etc files/usr/bin 2>/dev/null | head'   # expect empty (or docs only)
 
 # ── R10–R11: UI gates ──
@@ -906,8 +906,8 @@ adb shell run-as com.ivarna.fluxlinux sh -c \
 # ── zenithblue package-id smoke ──
 ./gradlew :app:assembleZenithblueDebug
 adb install -r app/build/outputs/apk/zenithblue/debug/app-zenithblue-debug.apk
-adb shell run-as com.zenithblue.fluxlinux cat files/usr/etc/fluxlinux-host.env | grep PACKAGE
-# expect TERMUX_APP__PACKAGE_NAME=com.zenithblue.fluxlinux
+adb shell run-as com.kuro.app cat files/usr/etc/fluxlinux-host.env | grep PACKAGE
+# expect TERMUX_APP__PACKAGE_NAME=com.kuro.app
 ```
 
 ### 5.4 Regression matrix (release gate)
@@ -990,15 +990,15 @@ J. Status → COMPLETE only with log pointers
 
 ---
 
-## 7. Mapping from nativecode → FluxLinux (port table)
+## 7. Mapping from nativecode → Kuro (port table)
 
-| nativecode | FluxLinux target | Adapt |
+| nativecode | Kuro target | Adapt |
 |------------|------------------|-------|
 | `com.zenithblue.nativecode` | `BuildConfig.APPLICATION_ID` | dual flavor |
 | `OnboardingActivity` extract phases B–D | `BootstrapInstaller` + optional onboarding/settings | Compose UI |
 | `MainActivity` terminal | `TerminalScreen` + session manager | smaller surface first |
 | `nativecode_chroot.sh` | `fluxlinux_chroot.sh` | rename stamp + NC_* → FLUX_* env if desired |
-| `AppTerminalService` | same pattern | channel ids FluxLinux-prefixed |
+| `AppTerminalService` | same pattern | channel ids Kuro-prefixed |
 | `flux_install.sh` | replace stock-termux script | local rootfs SSOT |
 | `setup_debian13_chroot.sh` | update resolve list | same rootfs as proot |
 | Marketplace / AI / git | **defer** | not required for terminal/install |
@@ -1081,12 +1081,12 @@ Worker prompt: **Appendix C**.
 
 ```bash
 # Packages (already COMPLETE for both app ids)
-./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux
-./scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
-./scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+./scripts/build_packages_for_appid.sh com.kuro.app
+./scripts/assemble_bootstrap.py --package-name com.kuro.app --mode full
+./scripts/verify_bootstrap.sh com.kuro.app
 
 # Stage (or let Gradle task run)
-./scripts/package_host_assets.sh com.ivarna.fluxlinux
+./scripts/package_host_assets.sh com.kuro.app
 ./gradlew :app:assembleIvarnaDebug
 
 # Rootfs identity
@@ -1115,7 +1115,7 @@ rg -n 'com\.termux' app/src/main/kotlin/com/ivarna/fluxlinux/ui --glob '**/*.kt'
 Copy-paste the block below for the implementation agent.
 
 ```text
-You are implementing Pass 2 of the FluxLinux embedded terminal plan.
+You are implementing Pass 2 of the Kuro embedded terminal plan.
 
 READ FIRST (SSOT):
 - docs/plans/embedded-terminal-bootstrap-proot-chroot.md  (status PARTIAL; follow §6.2 Pass 2 order)

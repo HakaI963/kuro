@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# Shared BusyBox resolver for FluxLinux chroot.
+# Shared BusyBox resolver for Kuro chroot.
 # Magisk / KernelSU / APatch built-in busybox is enough — NDK module not required.
 # Safe to source under set -u. No set -e.
 
@@ -17,8 +17,8 @@ resolve_bb() {
   BB=""
   if [ -n "${FLUX_BB:-}" ] && bb_ok "$FLUX_BB"; then
     BB="$FLUX_BB"
-  elif bb_ok /data/local/tmp/flux_busybox; then
-    BB=/data/local/tmp/flux_busybox
+  elif bb_ok /data/local/kuro/flux_busybox; then
+    BB=/data/local/kuro/flux_busybox
   else
     for path in \
       /data/adb/ksu/bin/busybox \
@@ -53,11 +53,11 @@ resolve_bb() {
     fi
   fi
   [ -n "$BB" ] || return 1
-  if [ "$BB" != /data/local/tmp/flux_busybox ]; then
-    cp -f "$BB" /data/local/tmp/flux_busybox 2>/dev/null \
-      && chmod 755 /data/local/tmp/flux_busybox 2>/dev/null \
-      && bb_ok /data/local/tmp/flux_busybox \
-      && BB=/data/local/tmp/flux_busybox || true
+  if [ "$BB" != /data/local/kuro/flux_busybox ]; then
+    cp -f "$BB" /data/local/kuro/flux_busybox 2>/dev/null \
+      && chmod 755 /data/local/kuro/flux_busybox 2>/dev/null \
+      && bb_ok /data/local/kuro/flux_busybox \
+      && BB=/data/local/kuro/flux_busybox || true
   fi
   return 0
 }

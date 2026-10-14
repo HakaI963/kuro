@@ -1,6 +1,6 @@
-# FluxLinux Assets Reference
+# Kuro Assets Reference
 
-This document provides a comprehensive overview of all assets used in the FluxLinux project for distro customization, branding, and theming.
+This document provides a comprehensive overview of all assets used in the Kuro project for distro customization, branding, and theming.
 
 ---
 
@@ -59,7 +59,7 @@ assets/
 | `logo.png` | 5.3 MB | PNG | High-resolution, marketing materials |
 | `logo.webp` | 157 KB | WebP | Optimized, app usage |
 
-The FluxLinux logo is used throughout the app and promotional materials.
+The Kuro logo is used throughout the app and promotional materials.
 
 ---
 
@@ -124,7 +124,7 @@ The full SHA256 pins live in `DistroInstallProfile.kt` (Kotlin SSOT);
 
 **Location:** `assets/wallpaper/`
 
-Desktop wallpapers for the FluxLinux-themed desktop environment.
+Desktop wallpapers for the Kuro-themed desktop environment.
 
 | File | Size | Theme | Resolution |
 |------|------|-------|------------|
@@ -311,7 +311,7 @@ flowchart TD
 
 ## License
 
-All assets are subject to the FluxLinux project license (GPLv3).
+All assets are subject to the Kuro project license (GPLv3).
 
 Third-party assets retain their original licenses:
 - **Papirus Icons:** GPLv3

@@ -1,9 +1,9 @@
 # Chimera chroot — device report
 
 **Date:** 2026-08-13
-**Package:** `com.ivarna.fluxlinux` (release APK, `adb install -r`)
+**Package:** `com.kuro.app` (release APK, `adb install -r`)
 **Device:** Xiaomi 2311DRK48I, KernelSU
-**Card:** `chimera_chroot` — `/data/local/tmp/chrootChimera`
+**Card:** `chimera_chroot` — `/data/local/kuro/chroot/chimera_chroot/rootfs`
 
 ## Matrix
 
@@ -34,7 +34,7 @@ First guest clone failed in 2s because Chimera `timeout` hits `sigaction(32)` on
 
 ## doas
 
-`/data/local/tmp/chrootChimera/etc/doas.conf` is `-rw-r--r--` with `permit nopass flux`.
+`/data/local/kuro/chroot/chimera_chroot/rootfs/etc/doas.conf` is `-rw-r--r--` with `permit nopass flux`.
 
 ## D1–D5 (2026-08-13 later)
 

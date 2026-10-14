@@ -1,8 +1,8 @@
-# Void Linux in FluxLinux
+# Void Linux in Kuro
 
 | | |
 |---|---|
-| Cards | `void` (proot) · `void_chroot` (`/data/local/tmp/chrootVoid`) |
+| Cards | `void` (proot) · `void_chroot` (`/data/local/kuro/chroot/void_chroot/rootfs`) |
 | Rootfs | `void_20250202_rootfs.tar.xz` (glibc aarch64, 2025-02-02) |
 | Package manager | `xbps-install` (repo `…/current/aarch64`, not musl) |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

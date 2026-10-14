@@ -100,7 +100,7 @@ do
     fi
 done
 
-PKG="${TERMUX_APP__PACKAGE_NAME:-com.ivarna.fluxlinux}"
+PKG="${TERMUX_APP__PACKAGE_NAME:-com.kuro.app}"
 PREFIX_DEFAULT="${TERMUX__PREFIX:-/data/data/${PKG}/files/usr}"
 
 # SSOT env from Kotlin TermuxHostPaths
@@ -159,27 +159,27 @@ chmod 700 "$PROOT_TMP_DIR" 2>/dev/null || true
 PYTHON="${PREFIX}/bin/python"
 PROOT_DISTRO="${PREFIX}/bin/proot-distro"
 if [ ! -x "$PYTHON" ]; then
-    echo "FluxLinux: missing $PYTHON"
+    echo "Kuro: missing $PYTHON"
     exit 1
 fi
 if [ ! -f "$PROOT_DISTRO" ]; then
-    echo "FluxLinux: missing $PROOT_DISTRO"
+    echo "Kuro: missing $PROOT_DISTRO"
     exit 1
 fi
 
 # Fail early with a clear message if W^X proot paths are unset (host ProcessBuilder bug).
 if [ -z "${PD_PROOT_BIN:-}" ] || [ ! -e "${PD_PROOT_BIN}" ]; then
-    echo "FluxLinux: PD_PROOT_BIN missing or not found (${PD_PROOT_BIN:-unset})"
-    echo "FluxLinux: Host env must set PD_PROOT_BIN to libproot.so under nativeLibraryDir."
+    echo "Kuro: PD_PROOT_BIN missing or not found (${PD_PROOT_BIN:-unset})"
+    echo "Kuro: Host env must set PD_PROOT_BIN to libproot.so under nativeLibraryDir."
     exit 1
 fi
 if [ -z "${PROOT_LOADER:-}" ] || [ ! -e "${PROOT_LOADER}" ]; then
-    echo "FluxLinux: PROOT_LOADER missing or not found (${PROOT_LOADER:-unset})"
-    echo "FluxLinux: Host env must set PROOT_LOADER to libloader.so under nativeLibraryDir."
+    echo "Kuro: PROOT_LOADER missing or not found (${PROOT_LOADER:-unset})"
+    echo "Kuro: Host env must set PROOT_LOADER to libloader.so under nativeLibraryDir."
     exit 1
 fi
 
-echo "FluxLinux: Debugging Environment:"
+echo "Kuro: Debugging Environment:"
 echo "HOME=$HOME"
 echo "PREFIX=$PREFIX"
 echo "TERMUX__HOME=$TERMUX__HOME"
@@ -200,7 +200,7 @@ resolve_rootfs_archive() {
 
     if [ -n "${FLUX_ROOTFS_PATH:-}" ] && [ -f "$FLUX_ROOTFS_PATH" ] && [ -s "$FLUX_ROOTFS_PATH" ]; then
         ROOTFS_ARCHIVE="$FLUX_ROOTFS_PATH"
-        echo "FluxLinux: rootfs from FLUX_ROOTFS_PATH=$ROOTFS_ARCHIVE"
+        echo "Kuro: rootfs from FLUX_ROOTFS_PATH=$ROOTFS_ARCHIVE"
         return 0
     fi
 
@@ -218,7 +218,7 @@ resolve_rootfs_archive() {
     do
         if [ -f "$candidate" ] && [ -s "$candidate" ]; then
             ROOTFS_ARCHIVE="$candidate"
-            echo "FluxLinux: rootfs found: $ROOTFS_ARCHIVE"
+            echo "Kuro: rootfs found: $ROOTFS_ARCHIVE"
             return 0
         fi
     done
@@ -231,25 +231,25 @@ resolve_rootfs_archive() {
     CACHE_DIR="$PREFIX/var/lib/proot-distro/cache/rootfs"
     mkdir -p "$CACHE_DIR" 2>/dev/null || true
     DEST="$CACHE_DIR/$ROOTFS_NAME"
-    echo "FluxLinux: rootfs not in app paths — downloading $ROOTFS_URL"
+    echo "Kuro: rootfs not in app paths — downloading $ROOTFS_URL"
     if command -v curl >/dev/null 2>&1; then
         if curl -fL --retry 3 --retry-delay 2 -o "$DEST.partial" "$ROOTFS_URL" \
             && mv -f "$DEST.partial" "$DEST"; then
             ROOTFS_ARCHIVE="$DEST"
-            echo "FluxLinux: rootfs downloaded: $ROOTFS_ARCHIVE"
+            echo "Kuro: rootfs downloaded: $ROOTFS_ARCHIVE"
             return 0
         fi
         rm -f "$DEST.partial" 2>/dev/null || true
     elif command -v wget >/dev/null 2>&1; then
         if wget -O "$DEST.partial" "$ROOTFS_URL" && mv -f "$DEST.partial" "$DEST"; then
             ROOTFS_ARCHIVE="$DEST"
-            echo "FluxLinux: rootfs downloaded: $ROOTFS_ARCHIVE"
+            echo "Kuro: rootfs downloaded: $ROOTFS_ARCHIVE"
             return 0
         fi
         rm -f "$DEST.partial" 2>/dev/null || true
     fi
 
-    echo "FluxLinux: no rootfs archive found (expected $HOME/$ROOTFS_NAME from app assets)"
+    echo "Kuro: no rootfs archive found (expected $HOME/$ROOTFS_NAME from app assets)"
     return 1
 }
 
@@ -259,17 +259,17 @@ verify_rootfs_sha() {
     if command -v sha256sum >/dev/null 2>&1; then
         _got="$(sha256sum "$_file" | awk '{print $1}')"
         if [ "$_got" != "$ROOTFS_SHA256" ]; then
-            echo "FluxLinux: SHA256 mismatch for $_file"
+            echo "Kuro: SHA256 mismatch for $_file"
             echo "  expected $ROOTFS_SHA256"
             echo "  got      $_got"
             return 1
         fi
-        echo "FluxLinux: SHA256 OK"
+        echo "Kuro: SHA256 OK"
     fi
     return 0
 }
 
-echo "FluxLinux: Installing $DISTRO..."
+echo "Kuro: Installing $DISTRO..."
 
 # Alpine minirootfs: bin/sh -> /bin/busybox (absolute). Host-side test -e follows
 # the link into Android /bin/busybox (missing) and false-negatives. Prefer -L or
@@ -290,24 +290,24 @@ wipe_proot_container() {
     _wipe_name="$1"
     _wipe_dir="$PREFIX/var/lib/proot-distro/containers/$_wipe_name"
     [ -e "$_wipe_dir" ] || return 0
-    echo "FluxLinux: removing container $_wipe_dir"
+    echo "Kuro: removing container $_wipe_dir"
     rm -rf "$_wipe_dir" 2>/dev/null || true
     if [ ! -e "$_wipe_dir" ]; then
         return 0
     fi
-    echo "FluxLinux: leftover after unprivileged rm (root-owned files) — trying su"
+    echo "Kuro: leftover after unprivileged rm (root-owned files) — trying su"
     _wipe_q=$(printf "%s" "$_wipe_dir" | sed "s/'/'\\\\''/g")
     for _su in /system/bin/su /system/xbin/su su; do
         if [ -x "$_su" ] || command -v "$_su" >/dev/null 2>&1; then
             "$_su" -c "rm -rf '$_wipe_q'" </dev/null 2>/dev/null || true
             if [ ! -e "$_wipe_dir" ]; then
-                echo "FluxLinux: privileged wipe ok"
+                echo "Kuro: privileged wipe ok"
                 return 0
             fi
         fi
     done
-    echo "FluxLinux: ERROR: cannot remove $_wipe_dir (root-owned leftovers)."
-    echo "FluxLinux: From a root shell run: rm -rf $_wipe_dir"
+    echo "Kuro: ERROR: cannot remove $_wipe_dir (root-owned leftovers)."
+    echo "Kuro: From a root shell run: rm -rf $_wipe_dir"
     return 1
 }
 
@@ -321,7 +321,7 @@ guest_version_id() {
 }
 
 if [ "$DISTRO" = "termux" ]; then
-    echo "FluxLinux: Native Termux Mode"
+    echo "Kuro: Native Termux Mode"
     EXIT_CODE=0
 else
     DISTRO_ROOTFS="$PREFIX/var/lib/proot-distro/containers/$DISTRO/rootfs"
@@ -332,7 +332,7 @@ else
         if [ "$DISTRO" = "fedora" ]; then
             _have_ver=$(guest_version_id "$DISTRO_ROOTFS")
             if [ "$_have_ver" != "44" ]; then
-                echo "FluxLinux: fedora guest is VERSION_ID=${_have_ver:-unknown} — replacing with 44"
+                echo "Kuro: fedora guest is VERSION_ID=${_have_ver:-unknown} — replacing with 44"
             else
                 SKIP_EXTRACT=1
             fi
@@ -342,17 +342,17 @@ else
     fi
 
     if [ "$SKIP_EXTRACT" -eq 1 ]; then
-        echo "FluxLinux: $DISTRO already installed with valid rootfs. Skipping base installation."
+        echo "Kuro: $DISTRO already installed with valid rootfs. Skipping base installation."
         EXIT_CODE=0
     else
         if [ "${FLUX_PD_INSTALL_MODE:-file}" = "registry" ]; then
-            echo "FluxLinux: FLUX_PD_INSTALL_MODE=registry — installing $DISTRO from registry"
+            echo "Kuro: FLUX_PD_INSTALL_MODE=registry — installing $DISTRO from registry"
             wipe_proot_container "$DISTRO" || exit 1
             "$PYTHON" "$PROOT_DISTRO" install "$DISTRO"
             EXIT_CODE=$?
         else
             if ! resolve_rootfs_archive; then
-                echo "FluxLinux: Install Failed — no local rootfs archive"
+                echo "Kuro: Install Failed — no local rootfs archive"
                 exit 1
             fi
             # Ensure absolute path so proot-distro never treats name as registry image
@@ -364,13 +364,13 @@ else
             if ! verify_rootfs_sha "$ROOTFS_ARCHIVE"; then
                 exit 1
             fi
-            echo "FluxLinux: Installing $DISTRO from local archive..."
-            echo "FluxLinux: install $ROOTFS_ARCHIVE --name $DISTRO"
+            echo "Kuro: Installing $DISTRO from local archive..."
+            echo "Kuro: install $ROOTFS_ARCHIVE --name $DISTRO"
             wipe_proot_container "$DISTRO" || exit 1
             "$PYTHON" "$PROOT_DISTRO" install "$ROOTFS_ARCHIVE" --name "$DISTRO"
             EXIT_CODE=$?
             if [ "$EXIT_CODE" -eq 0 ] && ! rootfs_has_shell "$DISTRO_ROOTFS"; then
-                echo "FluxLinux: install reported OK but no shell/busybox under $DISTRO_ROOTFS"
+                echo "Kuro: install reported OK but no shell/busybox under $DISTRO_ROOTFS"
                 EXIT_CODE=1
             fi
         fi
@@ -378,11 +378,11 @@ else
 fi
 
 if [ "$EXIT_CODE" -ne 0 ]; then
-    echo "FluxLinux: Install Failed with code $EXIT_CODE!"
+    echo "Kuro: Install Failed with code $EXIT_CODE!"
     exit 1
 fi
 
-echo "FluxLinux: Install Successful!"
+echo "Kuro: Install Successful!"
 
 # openSUSE: keep a copy of libcurl-mini. Family setup must never replace it
 # with full libcurl4+libldap (EVP_md2 vs OpenSSL 3.5.3 breaks zypper).
@@ -399,7 +399,7 @@ if [ "$DISTRO" = "opensuse" ] && [ -n "${DISTRO_ROOTFS:-}" ]; then
     done
     if [ -n "$_curl" ] && [ ! -f "${_curl}.flux-mini" ]; then
         cp -f "$_curl" "${_curl}.flux-mini" 2>/dev/null || true
-        echo "FluxLinux: stashed libcurl-mini → ${_curl}.flux-mini"
+        echo "Kuro: stashed libcurl-mini → ${_curl}.flux-mini"
     fi
     # Stage EVP_md2 stub into guest /tmp (shared-tmp) and /usr/lib64.
     for _stub in \
@@ -411,7 +411,7 @@ if [ "$DISTRO" = "opensuse" ] && [ -n "${DISTRO_ROOTFS:-}" ]; then
             cp -f "$_stub" "$TMPDIR/libevp_md2.so" 2>/dev/null || true
             mkdir -p "$DISTRO_ROOTFS/usr/lib64"
             cp -f "$_stub" "$DISTRO_ROOTFS/usr/lib64/libevp_md2.so" 2>/dev/null || true
-            echo "FluxLinux: staged EVP_md2 stub"
+            echo "Kuro: staged EVP_md2 stub"
             break
         fi
     done
@@ -440,14 +440,14 @@ rm -f "$SETUP_HOST_PATH" "$TMPDIR/flux_setup_temp.sh" "$TMPDIR/$SETUP_GUEST_NAME
 SETUP_MODE=""
 
 if [ -n "$SETUP_B64" ] && [ "$SETUP_B64" != "null" ]; then
-    echo "FluxLinux: Configuring from base64 payload..."
+    echo "Kuro: Configuring from base64 payload..."
     if ! _decode_b64 "$SETUP_B64" "$SETUP_HOST_PATH"; then
-        echo "FluxLinux: base64 decode failed"
+        echo "Kuro: base64 decode failed"
         exit 1
     fi
     SETUP_MODE="b64"
 elif [ -n "$DEFAULT_SETUP" ]; then
-    echo "FluxLinux: Configuring from local setup: $DEFAULT_SETUP"
+    echo "Kuro: Configuring from local setup: $DEFAULT_SETUP"
     : > "$SETUP_HOST_PATH"
     for _common in \
         "${HOME:-}/flux_guest_common.sh" \
@@ -460,12 +460,12 @@ elif [ -n "$DEFAULT_SETUP" ]; then
         fi
     done
     cat "$DEFAULT_SETUP" >> "$SETUP_HOST_PATH" || {
-        echo "FluxLinux: failed to copy $DEFAULT_SETUP"
+        echo "Kuro: failed to copy $DEFAULT_SETUP"
         exit 1
     }
     SETUP_MODE="local"
 else
-    echo "FluxLinux: No setup payload and no ${FAMILY_SCRIPT_NAME} found — install only."
+    echo "Kuro: No setup payload and no ${FAMILY_SCRIPT_NAME} found — install only."
     SETUP_MODE=""
 fi
 
@@ -482,13 +482,13 @@ if [ -n "$SETUP_MODE" ]; then
         chmod 700 "$PROOT_TMP_DIR" 2>/dev/null || true
         # --shared-tmp: host $PREFIX/tmp → guest /tmp
         if ! cp -f "$SETUP_HOST_PATH" "$TMPDIR/$SETUP_GUEST_NAME"; then
-            echo "FluxLinux: failed to stage setup script into $TMPDIR"
+            echo "Kuro: failed to stage setup script into $TMPDIR"
             exit 1
         fi
         chmod 755 "$TMPDIR/$SETUP_GUEST_NAME" 2>/dev/null || true
         # Alpine minirootfs has only ash until family installs bash — prefer sh then bash.
-        echo "FluxLinux: Running setup inside proot (shared-tmp)…"
-        echo "FluxLinux: PD_PROOT_BIN=$PD_PROOT_BIN PROOT_LOADER=$PROOT_LOADER"
+        echo "Kuro: Running setup inside proot (shared-tmp)…"
+        echo "Kuro: PD_PROOT_BIN=$PD_PROOT_BIN PROOT_LOADER=$PROOT_LOADER"
         GUEST_RUN='export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; unset LD_LIBRARY_PATH LD_PRELOAD PROOT_TMP_DIR; export TMPDIR=/tmp; if [ -x /bin/bash ]; then exec /bin/bash /tmp/'"$SETUP_GUEST_NAME"' '"$DISTRO"'; else exec /bin/sh /tmp/'"$SETUP_GUEST_NAME"' '"$DISTRO"'; fi'
         "$PYTHON" "$PROOT_DISTRO" login "$DISTRO" --shared-tmp -- \
             /bin/sh -c "$GUEST_RUN"
@@ -498,13 +498,13 @@ if [ -n "$SETUP_MODE" ]; then
     rm -f "$SETUP_HOST_PATH" "$TMPDIR/$SETUP_GUEST_NAME" "$TMPDIR/flux_setup_temp.sh"
 
     if [ "$SETUP_EXIT" -ne 0 ]; then
-        echo "FluxLinux: Configuration/Setup Script Failed! (exit $SETUP_EXIT)"
-        echo "FluxLinux: Hint: if you saw 'execve(...): Permission denied' or 'loader was not found',"
+        echo "Kuro: Configuration/Setup Script Failed! (exit $SETUP_EXIT)"
+        echo "Kuro: Hint: if you saw 'execve(...): Permission denied' or 'loader was not found',"
         echo "  ensure PROOT_LOADER points at libloader.so (jniLibs) and proot-distro was patched"
         echo "  to pass PROOT_LOADER through (TermuxHostPaths.patchProotDistroLoaderPassThrough)."
         exit 1
     fi
-    echo "FluxLinux: Configuration Complete!"
+    echo "Kuro: Configuration Complete!"
 fi
 
 touch "$HOME/.fluxlinux_distro_${DISTRO}_installed"

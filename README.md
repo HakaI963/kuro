@@ -3,19 +3,19 @@
   <h1>Kuro</h1>
   <p><strong>Linux containers (PRoot/Chroot, XFCE4, X11) and isolated app clones — dark-first, honest, no fake progress</strong></p>
 
-> Step 6 architecture: **FluxLinux engine for Linux containers** (proot/chroot execution, rootfs pipeline, terminal + X11)
+> Step 6 architecture: **Kuro engine for Linux containers** (proot/chroot execution, rootfs pipeline, terminal + X11)
 > plus **BlackBox-family virtual engine for app cloning**, behind Kuro's 4-tab UI (System | Terminal | Clones | Settings)
 > with **Kuro Engine** notifications. Upstream projects are credited in-app and in `docs/`.
 
   <a href="https://github.com/abhay-byte/fluxlinux">
-    <img src="docs/readme/showcase.gif" alt="FluxLinux Showcase" width="100%" />
+    <img src="docs/readme/showcase.gif" alt="Kuro Showcase" width="100%" />
   </a>
   <br/><br/>
 
-  <a href="https://f-droid.org/packages/com.ivarna.fluxlinux">
+  <a href="https://f-droid.org/packages/com.kuro.app">
     <img src="assets/logo/fdroid-badge.png" alt="Get it on F-Droid" height="54" align="middle"/>
   </a>
-  <a href="https://play.google.com/store/apps/details?id=com.zenithblue.fluxlinux">
+  <a href="https://play.google.com/store/apps/details?id=com.kuro.app">
     <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Get it on Google Play" height="60" align="middle"/>
   </a>
 
@@ -60,8 +60,8 @@
 
 ```bash
 # Host bootstrap is assembled from tracked .debs (needs ar, tar, python3):
-python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
-bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+python3 scripts/assemble_bootstrap.py --package-name com.kuro.app --mode full
+bash scripts/verify_bootstrap.sh com.kuro.app
 # Then a normal Gradle build (JDK 17, Android SDK 36, NDK 29 + 27, CMake 3.22):
 ./gradlew :app:testIvarnaDebugUnitTest :app:assembleIvarnaDebug
 ```
@@ -71,7 +71,7 @@ push: submodules → SDK/NDK/CMake → bootstrap assembly → unit tests → deb
 
 ## 🧩 Architecture (Step 6)
 
-- **Linux containers**: FluxLinux engine — `libproot.so`/`libbash.so` ship as APK
+- **Linux containers**: Kuro engine — `libproot.so`/`libbash.so` ship as APK
   jniLibs (executed from `nativeLibraryDir`), rootfs archives download on demand
   from the GitHub `rootfs` release tag (Range resume, SHA256-pinned), terminal
   via embedded pty, XFCE4 via embedded Termux:X11.
@@ -132,7 +132,7 @@ Per-distro notes: [docs/distro/](docs/distro/).
 
 ## 🚀 Vision
 
-Modern Android hardware is powerful enough to run desktop workloads, but the software ecosystem limits it. **FluxLinux** bridges this gap, enabling:
+Modern Android hardware is powerful enough to run desktop workloads, but the software ecosystem limits it. **Kuro** bridges this gap, enabling:
 
 - 🌐 **Full-Stack Web Development** — Node.js, Python, React, VS Code
 - 🎮 **Desktop Gaming** — Box64/Wine *(coming soon)*
@@ -211,7 +211,7 @@ Modern Android hardware is powerful enough to run desktop workloads, but the sof
 ```mermaid
 flowchart TB
     subgraph Android["📱 Android Device"]
-        FluxLinux["🚀 FluxLinux App<br/>(Kotlin + Jetpack Compose)"]
+        Kuro["🚀 Kuro App<br/>(Kotlin + Jetpack Compose)"]
 
         subgraph Host["🔧 Embedded host"]
             TermuxHost["bash · proot · PulseAudio"]
@@ -234,8 +234,8 @@ flowchart TB
         end
     end
 
-    FluxLinux --> TermuxHost
-    FluxLinux --> X11
+    Kuro --> TermuxHost
+    Kuro --> X11
     TermuxHost --> PRoot
     TermuxHost --> Chroot
     PRoot --> Distro
@@ -272,12 +272,12 @@ flowchart TB
 ### Requirements
 
 - Android 8.0+ (API 26+)
-- No external Termux or Termux:X11 APK — host shell, PRoot, X11, and PulseAudio ship inside FluxLinux
+- No external Termux or Termux:X11 APK — host shell, PRoot, X11, and PulseAudio ship inside Kuro
 - Chroot needs a rooted device with Magisk, KernelSU, or APatch BusyBox
 
 ### Install
 
-1. Get FluxLinux from [F-Droid](https://f-droid.org/packages/com.ivarna.fluxlinux), [Google Play](https://play.google.com/store/apps/details?id=com.zenithblue.fluxlinux), or [GitHub Releases](https://github.com/abhay-byte/fluxlinux/releases)
+1. Get Kuro from [F-Droid](https://f-droid.org/packages/com.kuro.app), [Google Play](https://play.google.com/store/apps/details?id=com.kuro.app), or [GitHub Releases](https://github.com/abhay-byte/fluxlinux/releases)
 2. Open the app and finish the first-run host setup
 3. Pick a distro and install as PRoot or Chroot — the rootfs downloads after you opt in
 
@@ -290,7 +290,7 @@ flowchart TB
 
 ## 🎮 GPU Acceleration
 
-FluxLinux supports hardware-accelerated graphics:
+Kuro supports hardware-accelerated graphics:
 
 <table>
 <tr>
@@ -335,7 +335,7 @@ This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 
 See [LICENSE](LICENSE) for details.
 
-**Embedded components:** The in-app terminal stack bundles [termux-app](https://github.com/termux/termux-app) v0.118.0 (GPLv3) for `TerminalSession`/`TerminalView`; host userland packages are rebuilt from the Termux package repo (`native/`). FluxLinux remains open source under GPLv3, consistent with these dependencies.
+**Embedded components:** The in-app terminal stack bundles [termux-app](https://github.com/termux/termux-app) v0.118.0 (GPLv3) for `TerminalSession`/`TerminalView`; host userland packages are rebuilt from the Termux package repo (`native/`). Kuro remains open source under GPLv3, consistent with these dependencies.
 
 ---
 

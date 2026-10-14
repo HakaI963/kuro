@@ -4,7 +4,7 @@
 Plan SSOT: [`docs/plan/ubuntu-kali-parrot-arch.md`](../plan/ubuntu-kali-parrot-arch.md)
 
 ```
-You are the FluxLinux UKPA worker (Ubuntu 26.04 / Kali 2026.2 / Parrot 7.2 / Arch Linux ARM).
+You are the Kuro UKPA worker (Ubuntu 26.04 / Kali 2026.2 / Parrot 7.2 / Arch Linux ARM).
 
 This is ITERATION 1 of that plan: implement the full contract, then device-test
 ALL 8 new paths (4 distros × proot + chroot). Start E2E with Ubuntu. Do not
@@ -12,7 +12,7 @@ stop on the first green path.
 
 Repo:     /home/abhaybyte/repos/fluxlinux
 Plan:     docs/plan/ubuntu-kali-parrot-arch.md   ← SSOT, read it whole first
-Package:  com.ivarna.fluxlinux
+Package:  com.kuro.app
 Flavor:   :app:assembleIvarnaRelease --no-daemon
 APK:      app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
 Install:  adb install -r <apk>
@@ -96,13 +96,13 @@ Cards (SPLIT dual-mode stubs — never leave prootSupported && chrootSupported
 on one id):
 
   ubuntu           Ubuntu            proot  0xFFE95420  R.drawable.distro_ubuntu
-  ubuntu_chroot    Ubuntu (Rooted)   chroot /data/local/tmp/chrootUbuntu   same
+  ubuntu_chroot    Ubuntu (Rooted)   chroot /data/local/kuro/chroot/ubuntu_chroot/rootfs   same
   kali             Kali              proot  0xFF367BF5  R.drawable.distro_kali
-  kali_chroot      Kali (Rooted)     chroot /data/local/tmp/chrootKali     same
+  kali_chroot      Kali (Rooted)     chroot /data/local/kuro/chroot/kali_chroot/rootfs     same
   parrot           Parrot            proot  0xFF00D9FF  R.drawable.distro_parrot
-  parrot_chroot    Parrot (Rooted)   chroot /data/local/tmp/chrootParrot   same
+  parrot_chroot    Parrot (Rooted)   chroot /data/local/kuro/chroot/parrot_chroot/rootfs   same
   archlinux        Arch              proot  0xFF1793D1  R.drawable.distro_arch
-  archlinux_chroot Arch (Rooted)     chroot /data/local/tmp/chrootArch     same
+  archlinux_chroot Arch (Rooted)     chroot /data/local/kuro/chroot/archlinux_chroot/rootfs     same
 
 Descriptions: Ubuntu 26.04 / Kali Rolling / Parrot 7.2 / Arch Linux ARM +
 “with XFCE4 (proot)” / “chroot environment (Requires Root).”
@@ -227,10 +227,10 @@ DistroRepository.
   isInstallable true for all eight ids.
 
 2.3 ChrootPaths.kt
-  UBUNTU_CHROOT_PATH = /data/local/tmp/chrootUbuntu
-  KALI_CHROOT_PATH   = /data/local/tmp/chrootKali
-  PARROT_CHROOT_PATH = /data/local/tmp/chrootParrot
-  ARCH_CHROOT_PATH   = /data/local/tmp/chrootArch
+  UBUNTU_CHROOT_PATH = /data/local/kuro/chroot/ubuntu_chroot/rootfs
+  KALI_CHROOT_PATH   = /data/local/kuro/chroot/kali_chroot/rootfs
+  PARROT_CHROOT_PATH = /data/local/kuro/chroot/parrot_chroot/rootfs
+  ARCH_CHROOT_PATH   = /data/local/kuro/chroot/archlinux_chroot/rootfs
   pathForDistro: four new arms. Distinct from Debian/Alpine/FVO/DCM.
 
 2.4 DistroRepository.kt
@@ -369,10 +369,10 @@ caches, _flux_require_startxfce4.
 
 3.6 start_gui_chroot.sh
   Four new case arms → CHROOT_PATH + start_guest_gui.sh
-    ubuntu|ubuntu_chroot   → /data/local/tmp/chrootUbuntu
-    kali|kali_chroot       → /data/local/tmp/chrootKali
-    parrot|parrot_chroot   → /data/local/tmp/chrootParrot
-    archlinux|archlinux_chroot → /data/local/tmp/chrootArch
+    ubuntu|ubuntu_chroot   → /data/local/kuro/chroot/ubuntu_chroot/rootfs
+    kali|kali_chroot       → /data/local/kuro/chroot/kali_chroot/rootfs
+    parrot|parrot_chroot   → /data/local/kuro/chroot/parrot_chroot/rootfs
+    archlinux|archlinux_chroot → /data/local/kuro/chroot/archlinux_chroot/rootfs
   Default * must stay Debian 13 — do not steal unknown hints.
 
 Customization + HW: REUSE setup_customization_xfce.sh and
@@ -451,7 +451,7 @@ PHASE 5 — Release APK
   adb -s Y5WWBMJVOZSK4HU8 install -r \
     app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
   adb -s Y5WWBMJVOZSK4HU8 shell am start -n \
-    com.ivarna.fluxlinux/.MainActivity
+    com.kuro.app/.MainActivity
 
 Never adb uninstall unless signature mismatch.
 Do not start device installs until Kali/Parrot are flattened and Ubuntu is xz
@@ -463,7 +463,7 @@ PHASE 6 — Device E2E (iteration order — do not skip)
 
 Test sequentially (storage: 8 new XFCE trees + existing 8). Uninstall a
 finished CHROOT via in-app uninstall only if /data is exhausted. Never
-uninstall the FluxLinux APK. Prefer keeping proot guests.
+uninstall the Kuro APK. Prefer keeping proot guests.
 
 Order (fastest fail loops first):
 

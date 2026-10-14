@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="../../assets/logo/logo.webp" width="160" alt="FluxLinux Logo" />
-  <h1>🚀 Setting up FluxLinux</h1>
-  <p>Welcome to the FluxLinux installation guide! This step-by-step tutorial will walk you through the process of getting FluxLinux up and running on your Android device.</p>
+  <img src="../../assets/logo/logo.webp" width="160" alt="Kuro Logo" />
+  <h1>🚀 Setting up Kuro</h1>
+  <p>Welcome to the Kuro installation guide! This step-by-step tutorial will walk you through the process of getting Kuro up and running on your Android device.</p>
 </div>
 
 ---
@@ -16,13 +16,13 @@
 6. [🧰 Step 6: Install BusyBox (Optional / Rooted Users Only)](#-step-6-install-busybox-optional--rooted-users-only)
 7. [📦 Step 7: Environment Setup](#-step-7-environment-setup)
 8. [💻 Step 8: System Requirements Check](#-step-8-system-requirements-check)
-9. [🎉 Step 9: Launch FluxLinux!](#-step-9-youre-ready)
+9. [🎉 Step 9: Launch Kuro!](#-step-9-youre-ready)
 
 ---
 
 ## 📥 Step 1: Choose Your Download Method
 
-FluxLinux is available through three official channels. Choose the one that best suits your needs:
+Kuro is available through three official channels. Choose the one that best suits your needs:
 
 | Method | Price | Updates | Best For |
 | :--- | :--- | :--- | :--- |
@@ -49,25 +49,25 @@ Download the latest pre-compiled stable/beta release directly from our official 
 
 ### Option 2: F-Droid (Free & Open Source)
 
-Get FluxLinux from the decentralized Android software repository. You can download the standalone APK or install it via the F-Droid client.
+Get Kuro from the decentralized Android software repository. You can download the standalone APK or install it via the F-Droid client.
 
-[![F-Droid](https://img.shields.io/badge/F--Droid-Download-green?logo=fdroid&style=for-the-badge)](https://f-droid.org/packages/com.ivarna.fluxlinux)
+[![F-Droid](https://img.shields.io/badge/F--Droid-Download-green?logo=fdroid&style=for-the-badge)](https://f-droid.org/packages/com.kuro.app)
 
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
-| **F-Droid Download Page** | <img src="img/fdroid-download.png" width="500" /> | On the F-Droid app or website, find the FluxLinux repository listing and click the version download or install button. |
+| **F-Droid Download Page** | <img src="img/fdroid-download.png" width="500" /> | On the F-Droid app or website, find the Kuro repository listing and click the version download or install button. |
 
 ---
 
 ### Option 3: Google Play Store (Support the Project)
 
-If you would like to support the ongoing development of FluxLinux, you can purchase it directly from the Google Play Store. This provides automatic background updates.
+If you would like to support the ongoing development of Kuro, you can purchase it directly from the Google Play Store. This provides automatic background updates.
 
-[![Google Play](https://img.shields.io/badge/Google_Play-Install-blue?logo=google-play&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.zenithblue.fluxlinux)
+[![Google Play](https://img.shields.io/badge/Google_Play-Install-blue?logo=google-play&style=for-the-badge)](https://play.google.com/store/apps/details?id=com.kuro.app)
 
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
-| **Google Play Install** | <img src="img/playstore-download.png" width="500" /> | Open the listing on Google Play and click **Install** to download and configure FluxLinux with automatic updates. |
+| **Google Play Install** | <img src="img/playstore-download.png" width="500" /> | Open the listing on Google Play and click **Install** to download and configure Kuro with automatic updates. |
 
 ---
 
@@ -76,15 +76,15 @@ If you would like to support the ongoing development of FluxLinux, you can purch
 
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
-| **Install FluxLinux Popup** | <img src="img/install-fluxlinux-popup.png" width="500" /> | Tap **Install** on the browser prompt. If prompted, grant the system permission to install apps from unknown sources. |
+| **Install Kuro Popup** | <img src="img/install-fluxlinux-popup.png" width="500" /> | Tap **Install** on the browser prompt. If prompted, grant the system permission to install apps from unknown sources. |
 
 ---
 
 ## ⚙️ Step 2: Initialize the Embedded Environment
 
-FluxLinux now ships its **own embedded Linux host** (bootstrap + proot-distro) inside the APK — a separate Termux app is **no longer required** to install Debian. Distro rootfs archives are downloaded on demand from the GitHub release tag `rootfs` at install time.
+Kuro now ships its **own embedded Linux host** (bootstrap + proot-distro) inside the APK — a separate Termux app is **no longer required** to install Debian. Distro rootfs archives are downloaded on demand from the GitHub release tag `rootfs` at install time.
 
-1. On the setup screen, tap **Initialize Environment**. FluxLinux extracts the embedded host prefix (first run takes a minute or two; a progress bar is shown).
+1. On the setup screen, tap **Initialize Environment**. Kuro extracts the embedded host prefix (first run takes a minute or two; a progress bar is shown).
 2. The host setup validates the bundled dependencies (`proot-distro`, `python`, `pulseaudio`, Termux:X11 loader).
 3. Once verified, tap **Continue**.
 
@@ -96,9 +96,9 @@ FluxLinux now ships its **own embedded Linux host** (bootstrap + proot-distro) i
 
 ## 🔐 Step 3: Grant Required Permissions
 
-FluxLinux requires a few basic Android permissions to function properly.
+Kuro requires a few basic Android permissions to function properly.
 
-* **Communication Permission:** Allows FluxLinux to send commands to Termux securely.
+* **Communication Permission:** Allows Kuro to send commands to Termux securely.
 * **Storage Permission:** Allows the Linux environment to access your internal storage for managing files.
 * **Notification Permission:** Keeps the environment running in the background.
 
@@ -107,18 +107,18 @@ Click **Grant Permission** and accept the prompts that appear on your screen.
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
 | **Grant Permission Screen** | <img src="img/step-three-grant-permission.png" width="500" /> | The app will display a padlock icon requesting permission to communicate securely with Termux. Click **Grant Permission**. |
-| **Android Authorization Dialog** | <img src="img/step-three-allow-excecute command.png" width="500" /> | Allow the command execution permission in the Android system pop-up to permit FluxLinux to interact with the Termux shell. |
+| **Android Authorization Dialog** | <img src="img/step-three-allow-excecute command.png" width="500" /> | Allow the command execution permission in the Android system pop-up to permit Kuro to interact with the Termux shell. |
 
 ---
 
 ## 🪟 Step 4: Overlay Permission (Draw Over Other Apps)
 
-For the best experience, FluxLinux uses a floating widget/menu over the Linux desktop environment (Termux:X11). This allows you to quickly access controls, keyboards, and settings.
+For the best experience, Kuro uses a floating widget/menu over the Linux desktop environment (Termux:X11). This allows you to quickly access controls, keyboards, and settings.
 
 1. Click the **Open Settings** button.
-2. Find **FluxLinux** in the list of apps.
+2. Find **Kuro** in the list of apps.
 3. Toggle the switch to **Allow display over other apps**.
-4. Press back to return to FluxLinux.
+4. Press back to return to Kuro.
 
 > [!NOTE]
 > **Android Restricted Settings Bypass:** 
@@ -136,7 +136,7 @@ For the best experience, FluxLinux uses a floating widget/menu over the Linux de
 | **Restricted Settings Bypass (Step 2)** | <img src="img/step-four-allow-restricted-settings-click-on-three-dots-and-allow-it.png" width="500" /> | Tap the three dots menu at the top right of the App Info screen and select **Allow restricted settings**. |
 | **Blocked Overlay Toggle** | <img src="img/step-four-display-overlay-for-termux-disabled.png" width="500" /> | If the toggle is greyed out, this is the visual indicator that restricted settings are active. Enable permission via the 3-dots menu as shown above. |
 | **Enabling Termux Overlay** | <img src="img/step-four-then-allow-display-over-apps-for-termux-will-be-allowed-now.png" width="500" /> | Go back to the **Display over other apps** list, choose **Termux**, and toggle the switch on. |
-| **Permission Granted** | <img src="img/step-four-granted-permission.png" width="500" /> | Return to FluxLinux, where you will see the **Permission Granted ✔** status. Click **Next** to proceed. |
+| **Permission Granted** | <img src="img/step-four-granted-permission.png" width="500" /> | Return to Kuro, where you will see the **Permission Granted ✔** status. Click **Next** to proceed. |
 
 ---
 
@@ -157,11 +157,11 @@ If your device is not rooted, you will need a computer (Windows, Mac, or Linux) 
    adb shell "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"
    adb shell "settings put global settings_enable_monitor_phantom_procs false"
    ```
-5. The FluxLinux app will verify if the command was successful.
+5. The Kuro app will verify if the command was successful.
 
 ### With Root (Automatic)
 
-If your device is rooted (Magisk/KernelSU/APatch), simply click **Apply Fix via Root** and grant Superuser permission when prompted. FluxLinux will handle it automatically.
+If your device is rooted (Magisk/KernelSU/APatch), simply click **Apply Fix via Root** and grant Superuser permission when prompted. Kuro will handle it automatically.
 
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
@@ -175,7 +175,7 @@ If your device is rooted (Magisk/KernelSU/APatch), simply click **Apply Fix via 
 
 ## 🧰 Step 6: Install BusyBox (Optional / Rooted Users Only)
 
-BusyBox is **optional**. Magisk, KernelSU, and APatch already include a BusyBox that FluxLinux can use for chroot. You only need the separate NDK module if setup cannot find a manager BusyBox.
+BusyBox is **optional**. Magisk, KernelSU, and APatch already include a BusyBox that Kuro can use for chroot. You only need the separate NDK module if setup cannot find a manager BusyBox.
 
 Non-root users can skip this step.
 
@@ -195,7 +195,7 @@ If a later chroot install cannot find BusyBox:
 
 ## 📦 Step 7: Environment Setup
 
-FluxLinux will now extract and configure the core Linux host environment (bootstrap) on your device. Distro rootfs archives are fetched later, at install time.
+Kuro will now extract and configure the core Linux host environment (bootstrap) on your device. Distro rootfs archives are fetched later, at install time.
 
 * This process may take a few minutes depending on your device's storage speed.
 * Please **do not close the app** or turn off the screen during this process.
@@ -204,13 +204,13 @@ FluxLinux will now extract and configure the core Linux host environment (bootst
 | :--- | :---: | :--- |
 | **Environment Setup Screen** | <img src="img/step-seven-step-up-environment-click-on-initialize-environemnt-open-in.png" width="500" /> | Tap **1. Initialize Environment (Required)** to trigger the extraction of the Linux host environment. |
 | **Termux Script Execution** | <img src="img/step-seven-termux-will-open-and-start-the-setup.png" width="500" /> | The app will launch Termux to run the automated setup script. Wait for all packages to install. |
-| **Environment Initialized** | <img src="img/step-seven-termux-initialized.png" width="500" /> | When Termux setup completes, return to FluxLinux. You will see **Environment Initialized ✔**. Click **Next**. |
+| **Environment Initialized** | <img src="img/step-seven-termux-initialized.png" width="500" /> | When Termux setup completes, return to Kuro. You will see **Environment Initialized ✔**. Click **Next**. |
 
 ---
 
 ## 💻 Step 8: System Requirements Check
 
-Before launching the environment, FluxLinux will run a quick hardware check to ensure your device meets the minimum requirements for a smooth experience.
+Before launching the environment, Kuro will run a quick hardware check to ensure your device meets the minimum requirements for a smooth experience.
 
 * It will verify your **RAM (Memory)** and **Storage Space**.
 * We highly recommend creating a **SWAP file** (Virtual RAM) using a third-party app if your device has less than 8GB of RAM. This prevents out-of-memory crashes when running heavy Linux desktop applications.
@@ -225,14 +225,14 @@ Click **Continue to Final Step** once you have reviewed your system status.
 
 ## 🎉 Step 9: You're Ready!
 
-Congratulations! You have successfully configured FluxLinux.
+Congratulations! You have successfully configured Kuro.
 
-Click **Launch FluxLinux** to start your environment. The app will initialize the Termux backend and automatically open the Termux:X11 display, presenting you with a full Linux desktop on your Android device.
+Click **Launch Kuro** to start your environment. The app will initialize the Termux backend and automatically open the Termux:X11 display, presenting you with a full Linux desktop on your Android device.
 
 Enjoy your new portable workstation!
 
 > [!IMPORTANT]
-> Always make sure that Termux remains running in the background or in a split-screen layout when using FluxLinux to prevent Android from killing the environment processes.
+> Always make sure that Termux remains running in the background or in a split-screen layout when using Kuro to prevent Android from killing the environment processes.
 
 | Action / State | Screenshot | Description |
 | :--- | :---: | :--- |
@@ -242,7 +242,7 @@ Enjoy your new portable workstation!
 
 ## ⏭️ Next Steps
 
-Now that you have configured the core FluxLinux application environment, proceed to our step-by-step guide to install your first Linux distribution:
+Now that you have configured the core Kuro application environment, proceed to our step-by-step guide to install your first Linux distribution:
 
 👉 [**Debian PRoot Setup & Configuration Guide**](setup_debian_proot.md)
 

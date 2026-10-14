@@ -8,11 +8,11 @@ Code review: 0 bugs, 3 suggestions, 1 nit (comment noise). Device smoke: openSUS
 **Copy everything below the fence only if re-implementing from a tree that does not yet have `GuestLoginShell`.** Locked contracts in the plan win if this prompt and the tree ever disagree.
 
 ```
-You are the FluxLinux worker for the universal guest login-shell toggle.
+You are the Kuro worker for the universal guest login-shell toggle.
 
 Repo:     /home/abhaybyte/repos/fluxlinux
 Plan:     docs/plans/universal-guest-shell-toggle.md   ← SSOT, read it whole first
-Package:  com.ivarna.fluxlinux
+Package:  com.kuro.app
 Flavor:   :app:assembleIvarnaRelease --no-daemon  (only if you device-smoke)
 Signing:  keystore.properties → ~/repos/keys/fluxlinux.jks
 Do not git push. Stop Gradle daemons when done. Do not implement extra features.
@@ -182,7 +182,7 @@ ChrootCommandBuilder.kt
   - Keep isAlpine ONLY for the loginShell == null root mapping.
   - Rewrite the stale "Always request zsh for flux" / File.exists() comments to:
     "shell comes from loginShell; helper resolves the real binary as root
-     (app uid cannot stat /data/local/tmp)."
+     (app uid cannot stat /data/local/kuro)."
   - Do NOT change buildRootInner String defaults.
   - buildRootInner: isInteractiveLogin + GuestLoginShell.parseInteractiveWorkdir.
     Delete the private parseInteractiveWorkdir.
@@ -334,7 +334,7 @@ PR1–PR3 already landed. Local review found **0 bugs**. If picking this up agai
 
 **R1 — comment cleanup (suggestions / nit)**
 
-- `ChrootCommandBuilder.build`: drop the “Product mapping (locked) / PR2-safe” table. Keep only: *shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/tmp`)*.
+- `ChrootCommandBuilder.build`: drop the “Product mapping (locked) / PR2-safe” table. Keep only: *shell comes from `loginShell`; helper resolves the real binary as root (app uid cannot stat `/data/local/kuro`)*.
 - `GuestLoginShell.isLoginSentinel`: replace “today’s `==` did not” with *trim so padded sentinels still count*.
 - `ProotCommandBuilder.GUEST_LOGIN_SHELL`: unused alias. Delete it, or keep a one-line “zsh-first cascade (default pref)” KDoc with no back-compat coaching.
 - `ProotCommandBuilderTest.execBashSentinel_isInteractiveWithDefaultZshCascade`: delete the “NOW a sentinel” comment.

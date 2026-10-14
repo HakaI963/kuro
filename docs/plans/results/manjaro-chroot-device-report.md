@@ -1,9 +1,9 @@
 # Manjaro CHROOT — device report
 
 **Date:** 2026-08-13  
-**Package:** `com.ivarna.fluxlinux` (Ivarna release, `adb install -r`)  
+**Package:** `com.kuro.app` (Ivarna release, `adb install -r`)  
 **Device:** Xiaomi 2311DRK48I, KernelSU  
-**Card:** `manjaro_chroot` — `/data/local/tmp/chrootManjaro`  
+**Card:** `manjaro_chroot` — `/data/local/kuro/chroot/manjaro_chroot/rootfs`  
 **Method:** UI (Distro Settings → XFCE4 Desktop / Customization; Terminal User; Home Start / Stop)
 
 ## Matrix

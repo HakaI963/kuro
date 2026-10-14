@@ -1,7 +1,7 @@
 # Void proot — device report
 
 **Date:** 2026-08-13  
-**Package:** `com.ivarna.fluxlinux`
+**Package:** `com.kuro.app`
 
 | Step | Result |
 |------|--------|

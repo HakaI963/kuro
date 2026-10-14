@@ -4,7 +4,7 @@
 | --- | --- |
 | **Date** | 2026-08-16 |
 | **Device** | `Y5WWBMJVOZSK4HU8` · Xiaomi 2311DRK48I (duchamp) · Android 16 · uid `10303` / `u0_a303` |
-| **Package** | `com.ivarna.fluxlinux` versionCode 12 / versionName 2.0.0 |
+| **Package** | `com.kuro.app` versionCode 12 / versionName 2.0.0 |
 | **Install** | `:app:assembleIvarnaRelease` + `adb install -r` (no uninstall, no PREFIX/chroot wipe) |
 | **Host Pulse** | pid 12053 · uid 10303 · `u:r:untrusted_app:s0:c47,c257,c512,c768` · `pulseaudio --start --exit-idle-time=-1` |
 | **Plan** | [docs/plans/pulseaudio-host-guest-all-distros.md](../pulseaudio-host-guest-all-distros.md) |
@@ -21,10 +21,10 @@
 | A6 | PRoot `debian` + `opensuse` `pactl info` | **PASS** host 17.0 + `AAudio_sink` via `tcp:127.0.0.1` |
 | A7 | All 12 installed chroots | **PASS** (table below) |
 | A8 | `stop_gui.sh` | prints “VirGL (Pulse stays running)”; no `pulseaudio --kill` |
-| A9 | `start_gui.sh` / supervisor | `FluxLinux: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713` |
+| A9 | `start_gui.sh` / supervisor | `Kuro: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713` |
 | A10 | App after probes | pid 14192 still alive; no `am force-stop`; no PREFIX wipe |
 
-On-device logs: `/data/local/tmp/flux-pulse-matrix.txt` (repair), `/data/local/tmp/flux-pulse-probe2.txt` (connect).
+On-device logs: `/data/local/kuro/flux-pulse-matrix.txt` (repair), `/data/local/kuro/flux-pulse-probe2.txt` (connect).
 
 ### Guest connect (`pactl info` → host `AAudio_sink` / `tcp:127.0.0.1` / 17.0-dirty)
 
@@ -56,7 +56,7 @@ Existing guests repaired with `setup_pulse_guest.sh` (named client packages + `a
 
 ## XFCE on the in-app X11 display (2026-08-16 follow-up)
 
-Started Debian PRoot via `start_gui.sh debian` as uid 10303 / `untrusted_app` (same argv as `DesktopLauncher`). Host Pulse stayed pid 12053 (`--exit-idle-time=-1`). Log: `FluxLinux: [AUDIO] already running sink=AAudio_sink tcp=127.0.0.1:4713` then `X server PID=` / `startxfce4=READY`.
+Started Debian PRoot via `start_gui.sh debian` as uid 10303 / `untrusted_app` (same argv as `DesktopLauncher`). Host Pulse stayed pid 12053 (`--exit-idle-time=-1`). Log: `Kuro: [AUDIO] already running sink=AAudio_sink tcp=127.0.0.1:4713` then `X server PID=` / `startxfce4=READY`.
 
 | Check | Result |
 | --- | --- |
@@ -77,12 +77,12 @@ In-app page: Settings hub **Audio** → `AudioSettingsScreen`.
 | Hub card | Present after X11 Display ([pulseaudio-settings-hub.png](pulseaudio-settings-hub.png)) |
 | Status while daemon up | **Running** `sink=AAudio_sink tcp=127.0.0.1:4713` ([pulseaudio-settings-running.png](pulseaudio-settings-running.png)) |
 | After `pulseaudio --kill` + Refresh | **Stopped** / **Start** |
-| Tap **Start** | Supervisor `FluxLinux: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713`; UI **Running** + **Restart**; User Name `u0_a303` ([pulseaudio-settings-started.png](pulseaudio-settings-started.png)) |
+| Tap **Start** | Supervisor `Kuro: [AUDIO] sink=AAudio_sink tcp=127.0.0.1:4713`; UI **Running** + **Restart**; User Name `u0_a303` ([pulseaudio-settings-started.png](pulseaudio-settings-started.png)) |
 | View logs | Shows `=== STATUS ===` / `=== SUPERVISOR ===` from `cacheDir/pulse_host.log` |
 
 Start from the app must run `pulseaudio` via `/system/bin/env -i` (no `LD_PRELOAD`). `libbash` + termux-exec makes `--start` fail with `/proc/self/exe` mismatch.
 
-No PRoot containers or `/data/local/tmp/chroot*` trees were wiped. `EXTRACT_VERSION` was not bumped; missing `.so` files overlay from flavor `assets/pulse-runtime/`.
+No PRoot containers or `/data/local/kuro/chroot*` trees were wiped. `EXTRACT_VERSION` was not bumped; missing `.so` files overlay from flavor `assets/pulse-runtime/`.
 
 ## Review follow-up (2026-08-17)
 

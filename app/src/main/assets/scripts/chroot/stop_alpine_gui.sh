@@ -2,21 +2,19 @@
 # stop_alpine_gui.sh — root: stop XFCE in Alpine chroot + host X11 sockets
 # Does NOT pkill proot (proot stop is stop_gui.sh only).
 
-CHROOT_ROOT="${CHROOT_ROOT:-/data/local/tmp/chrootAlpine}"
+CHROOT_ROOT="${CHROOT_ROOT:-/data/local/kuro/chroot/alpine_chroot/rootfs}"
 if [ -z "${TARGET_PREFIX:-}" ]; then
   if [ -n "${FLUX_PREFIX:-}" ]; then
     TARGET_PREFIX="$FLUX_PREFIX"
   elif [ -n "${FLUX_PACKAGE:-}" ]; then
     TARGET_PREFIX="/data/data/${FLUX_PACKAGE}/files/usr"
-  elif [ -d /data/data/com.zenithblue.fluxlinux/files/usr ]; then
-    TARGET_PREFIX="/data/data/com.zenithblue.fluxlinux/files/usr"
   else
-    TARGET_PREFIX="/data/data/com.ivarna.fluxlinux/files/usr"
+    TARGET_PREFIX="/data/data/com.kuro.app/files/usr"
   fi
 fi
 
 echo "========================================"
-echo "FluxLinux: Stopping Chroot XFCE"
+echo "Kuro: Stopping Chroot XFCE"
 echo "========================================"
 
 # resolve root BusyBox (manager built-in; NDK module not required)
@@ -24,7 +22,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -37,9 +35,9 @@ if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ] &&
      "$FLUX_BB" --list >/dev/null 2>&1; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -58,7 +56,7 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 

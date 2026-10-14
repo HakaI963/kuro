@@ -1,6 +1,6 @@
-# F-Droid MR (update): FluxLinux 1.8.0 → 2.0.0
+# F-Droid MR (update): Kuro 1.8.0 → 2.0.0
 
-Copy this into the fdroiddata MR for `metadata/com.ivarna.fluxlinux.yml`. This is an
+Copy this into the fdroiddata MR for `metadata/com.kuro.app.yml`. This is an
 **update** MR, not a new app — do not use `docs/releases/fdroid_mr_description.md`
 (the stale "New App" template).
 
@@ -13,7 +13,7 @@ Copy this into the fdroiddata MR for `metadata/com.ivarna.fluxlinux.yml`. This i
 
 ## Update
 
-Bump **FluxLinux** `com.ivarna.fluxlinux` **1.8.0 (10) → 2.0.0 (12)**.
+Bump **Kuro** `com.kuro.app` **1.8.0 (10) → 2.0.0 (12)**.
 
 2.0.0 embeds the Termux-prefix host (bootstrap + proot) and Termux:X11; external
 Termux is no longer required. Distro rootfs archives are downloaded on demand from
@@ -46,7 +46,7 @@ id; `zenithblue` is Play-only and must not be built.
 
 | Blob (scanignore) | Source |
 |---|---|
-| `native/output/**/*.deb` (392) | **Not scanignored** (scanner does not flag `.deb`). Cite only: Termux-prefix packages, rebuilt with applicationId `com.ivarna.fluxlinux` via `scripts/build_packages_for_appid.sh` from [termux/termux-packages](https://github.com/termux/termux-packages) |
+| `native/output/**/*.deb` (392) | **Not scanignored** (scanner does not flag `.deb`). Cite only: Termux-prefix packages, rebuilt with applicationId `com.kuro.app` via `scripts/build_packages_for_appid.sh` from [termux/termux-packages](https://github.com/termux/termux-packages) |
 | `native/bootstrap/**/jniLibs/*/lib{bash,proot,loader,loader32,pulseaudio,pactl}.so` | Copied from those debs by `scripts/assemble_bootstrap.py` |
 | `app/src/*/assets/pulse-runtime/*.so` | `usr/lib/lib{soxr,soxr-lsr,FLAC,mp3lame,android-execinfo}.so` from the same debs, staged by `scripts/package_host_assets.sh` |
 | `termux-x11/src/main/cpp/**` + submodules → `lib/arm64-v8a/libXlorie.so` | **Compiled here** from [termux/termux-x11](https://github.com/termux/termux-x11) `lorie` native tree (X server), NDK `29.0.14206865` + CMake, arm64 only |

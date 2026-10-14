@@ -22,10 +22,10 @@ fi
 # setup_arch_family.sh. Empty pacman keyring → pacman-key --init is mandatory.
 
 DISTRO_NAME="${1:-manjaro}"
-echo "FluxLinux: Configuring ${DISTRO_NAME} (Manjaro Family)..."
+echo "Kuro: Configuring ${DISTRO_NAME} (Manjaro Family)..."
 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "FluxLinux: ERROR: must run as root inside the guest (got uid=$(id -u))."
+    echo "Kuro: ERROR: must run as root inside the guest (got uid=$(id -u))."
     exit 1
 fi
 
@@ -38,7 +38,7 @@ _flux_ensure_tmp
 _flux_ensure_dns
 
 if ! command -v pacman >/dev/null 2>&1; then
-    echo "FluxLinux: ERROR: pacman not found"
+    echo "Kuro: ERROR: pacman not found"
     exit 1
 fi
 
@@ -178,7 +178,7 @@ if ! pacman -Sy --noconfirm; then
         _flux_comment_community_repo
     fi
     pacman -Sy --noconfirm || {
-        echo "FluxLinux: pacman -Sy failed (repos/network)"
+        echo "Kuro: pacman -Sy failed (repos/network)"
         exit 1
     }
 fi
@@ -193,7 +193,7 @@ if ! pacman -S --noconfirm --needed \
     mesa mesa-utils \
     fastfetch \
     dbus; then
-    echo "FluxLinux: XFCE install failed"
+    echo "Kuro: XFCE install failed"
     exit 1
 fi
 
@@ -234,5 +234,5 @@ _flux_ensure_hostname
 _flux_write_gpu_mode virgl
 _flux_fix_pm_writable
 
-echo "FluxLinux: ${DISTRO_NAME} Manjaro setup complete!"
+echo "Kuro: ${DISTRO_NAME} Manjaro setup complete!"
 exit 0

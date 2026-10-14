@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13  
 **Status:** DEVICE PASS (2026-08-13) — I1–D3/D5/T2/T3 still stand. **Follow-up (not implemented):** Fedora locale + fastfetch disk flood + XFCE ⊘ category icons (openSUSE + shared Papirus stub). SSOT: [`xfce-icons-locale-fastfetch.md`](./xfce-icons-locale-fastfetch.md).  
-**Scope:** First-class FluxLinux guests for **Fedora 43**, **Void Linux (glibc aarch64, 2025-02-02)**, and **openSUSE Tumbleweed (20251127)** — same product shape as Alpine/Debian: install → internal terminal → XFCE on the embedded X11 display.
+**Scope:** First-class Kuro guests for **Fedora 43**, **Void Linux (glibc aarch64, 2025-02-02)**, and **openSUSE Tumbleweed (20251127)** — same product shape as Alpine/Debian: install → internal terminal → XFCE on the embedded X11 display.
 
 **Not in this plan:** Arch Linux (no rootfs provided). KDE, Debian-style feature modules (appdev/webdev/…), and debug APKs.
 
@@ -54,11 +54,11 @@ Deployed home name = packaged name. Min-size gates: Fedora/Void ≥ 20 MiB, open
 | Card id | UI name | Method | proot-distro name | Chroot path |
 |---------|---------|--------|-------------------|-------------|
 | `fedora` | Fedora | proot | `fedora` | — |
-| `fedora_chroot` | Fedora (Rooted) | chroot | — | `/data/local/tmp/chrootFedora` |
+| `fedora_chroot` | Fedora (Rooted) | chroot | — | `/data/local/kuro/chroot/fedora_chroot/rootfs` |
 | `void` | Void | proot | `void` | — |
-| `void_chroot` | Void (Rooted) | chroot | — | `/data/local/tmp/chrootVoid` |
+| `void_chroot` | Void (Rooted) | chroot | — | `/data/local/kuro/chroot/void_chroot/rootfs` |
 | `opensuse` | openSUSE | proot | `opensuse` | — |
-| `opensuse_chroot` | openSUSE (Rooted) | chroot | — | `/data/local/tmp/chrootOpenSUSE` |
+| `opensuse_chroot` | openSUSE (Rooted) | chroot | — | `/data/local/kuro/chroot/opensuse_chroot/rootfs` |
 
 Replace the existing **Coming Soon** stubs for `fedora` / `void` / `opensuse` with live cards (do not leave duplicate ids).
 
@@ -308,7 +308,7 @@ No Android instrumentation in this pass.
 
 ## 10. Device test matrix (must all pass)
 
-Package: `com.ivarna.fluxlinux`. Build: `:app:assembleIvarnaRelease`. Install: `adb install -r`.
+Package: `com.kuro.app`. Build: `:app:assembleIvarnaRelease`. Install: `adb install -r`.
 
 For **each** of `{fedora, void, opensuse}` × `{proot, chroot}`:
 
@@ -326,7 +326,7 @@ For **each** of `{fedora, void, opensuse}` × `{proot, chroot}`:
 
 If any cell fails: fix the owning script/profile, rebuild **release**, `adb install -r`, retest that path (and regress the last passing sibling if the change was shared).
 
-Storage: device has ~104 GB free — enough for six XFCE trees sequentially. Uninstall a chroot via the in-app uninstall script only if `/data` is exhausted; do not uninstall the FluxLinux APK.
+Storage: device has ~104 GB free — enough for six XFCE trees sequentially. Uninstall a chroot via the in-app uninstall script only if `/data` is exhausted; do not uninstall the Kuro APK.
 
 ---
 

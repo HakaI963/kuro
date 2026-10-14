@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# FluxLinux — Native Termux KDE Plasma Desktop Setup
+# Kuro — Native Termux KDE Plasma Desktop Setup
 # Location: termux/setup/setup_kde_termux.sh
 # Runs on: HOST Termux (native, no container)
 # Root required: no
@@ -12,7 +12,7 @@ CALLBACK_NAME="kde_plasma"
 
 handle_error() {
     echo ""
-    echo "❌ FluxLinux Error: Script failed at step: $1"
+    echo "❌ Kuro Error: Script failed at step: $1"
     echo "---------------------------------------------------"
     echo "Please check the error message above for details."
     echo "---------------------------------------------------"
@@ -24,31 +24,31 @@ handle_error() {
 # Reverse of install path above. Shared deps (x11-repo, termux-x11,
 # pulseaudio, dbus, etc.) intentionally kept.
 if [ "$1" = "uninstall" ]; then
-    echo "FluxLinux: Uninstalling KDE Plasma Desktop..."
+    echo "Kuro: Uninstalling KDE Plasma Desktop..."
 
     pkg uninstall -y plasma konsole dolphin || true
 
     rm -f "$HOME/.config/kwinrc"
     rm -f "$HOME/.config/kdeglobals"
 
-    echo "FluxLinux: KDE Plasma Desktop Uninstalled."
+    echo "Kuro: KDE Plasma Desktop Uninstalled."
     exit 0
 fi
 
 echo ""
 echo "══════════════════════════════════════════════"
-echo "  FluxLinux — Native KDE Plasma Desktop Setup"
+echo "  Kuro — Native KDE Plasma Desktop Setup"
 echo "  ⚠️  EXPERIMENTAL — See docs/termux/ for notes"
 echo "══════════════════════════════════════════════"
 echo ""
 
 # ── Step 1: Repositories ──────────────────────────────────
-echo "FluxLinux: Enabling required repositories..."
+echo "Kuro: Enabling required repositories..."
 pkg install x11-repo -y || handle_error "x11-repo install"
 pkg install tur-repo -y || handle_error "tur-repo install"
 
 # ── Step 2: Update ───────────────────────────────────────
-echo "FluxLinux: Updating package lists..."
+echo "Kuro: Updating package lists..."
 pkg update -y || handle_error "pkg update"
 
 # ── Step 3: KDE Plasma packages ──────────────────────────
@@ -122,7 +122,7 @@ echo " [✅] KDE defaults configured for Android screens"
 # ── Verification ─────────────────────────────────────────
 verify_installation() {
     echo ""
-    echo "🔎 FluxLinux: Verifying KDE Plasma Installation..."
+    echo "🔎 Kuro: Verifying KDE Plasma Installation..."
     echo "------------------------------------------------"
     MISSING=0
 
@@ -178,7 +178,7 @@ verify_installation
 
 # ── Callback to app ──────────────────────────────────────
 am start -a android.intent.action.VIEW \
-  -d "fluxlinux://callback?result=success&name=${CALLBACK_NAME}" \
+  -d "kuro://callback?result=success&name=${CALLBACK_NAME}" \
   --flags 0x10000000 2>/dev/null || true
 
 echo ""

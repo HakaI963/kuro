@@ -7,17 +7,17 @@ Iter 1 already landed. Do **not** re-implement B1–B14. Do **not** bump the hel
 SSOT: [`docs/plans/busybox-module-bypass-impl.md`](./busybox-module-bypass-impl.md) **B15** + review `/tmp/grok-1000/grok-review-797a728f.md`.
 
 ```
-You are the FluxLinux worker for BusyBox-bypass ITER 2.
+You are the Kuro worker for BusyBox-bypass ITER 2.
 
 Repo:     /home/abhaybyte/repos/fluxlinux
 Plan:     docs/plans/busybox-module-bypass-impl.md   (B15 + Iter 2 section)
 Review:   /tmp/grok-1000/grok-review-797a728f.md     (1 bug, 2 suggestions, 1 nit)
-Package:  com.ivarna.fluxlinux
+Package:  com.kuro.app
 Tests:    ./gradlew :app:testIvarnaDebugUnitTest --no-daemon
 Signing:  keystore.properties → ~/repos/keys/fluxlinux.jks
 Device:   USB adb — Xiaomi 2311DRK48I (duchamp), KernelSU
            /data/adb/ksu/bin/busybox = BusyBox v1.36.1.1 topjohnwu
-           /data/local/tmp is NOEXEC (pin ELF exec = 127)
+           /data/local/kuro is NOEXEC (pin ELF exec = 127)
 Do not git push. Stop Gradle daemons when done.
 
 ==============================================================================
@@ -43,22 +43,22 @@ LOCKED — do not reopen
 B15 (new contract)
 ==============================================================================
 
-Never assign BB=/data/local/tmp/flux_busybox (or any candidate) on [ -x ] alone.
+Never assign BB=/data/local/kuro/flux_busybox (or any candidate) on [ -x ] alone.
 
 [ -x ] is true after chmod 755 even when the mount is noexec (this device:
 exec 127). bb_ok is safe because it runs "$1 --list". Last-resort walks are not.
 
 Every last-resort block that today does:
 
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ]; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ]; then
+    BB=/data/local/kuro/flux_busybox
   fi
 
 MUST change. Pick ONE pattern and use it everywhere:
 
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
 
 Then still walk ksu → ap → magisk → ndk → ramdisk → sbin → /system if BB empty.
@@ -73,7 +73,7 @@ CODE FIXES (do all four)
 1) BUG — last-resort [ -x PINNED ]  (review Issue 1)
 
 Grep for:
-  [ -x /data/local/tmp/flux_busybox ]
+  [ -x /data/local/kuro/flux_busybox ]
 That string must not assign BB without an exec probe.
 
 Known copies (fix every one; grep to catch stragglers):
@@ -96,7 +96,7 @@ Do NOT change the helper embed pin-after-copy (already uses bb_ok).
 2) SUGGESTION — TermuxIntentFactory.kt (~L568 and ~L612)
 
 Today:
-  BB="${FLUX_BB:-/data/local/tmp/flux_busybox}";
+  BB="${FLUX_BB:-/data/local/kuro/flux_busybox}";
   [ -x "$BB" ] || BB="$(command -v busybox)";
 
 On this device [ -x pin ] is true and chroot is 127.
@@ -111,7 +111,7 @@ Do not rewrite the rest of the factory.
 3) SUGGESTION — UninstallSessionFactory.kt (~L46-52)
 
 Resolver cp is hard-&& in the su string. If that cp fails, uninstall never runs.
-After the uninstall script is in /data/local/tmp, copy the resolver with || true
+After the uninstall script is in /data/local/kuro, copy the resolver with || true
 (or ; ) then still sh '$tmpPath' with FLUX_BB / FLUX_RESOLVE_BB when present.
 
 4) NIT — fluxlinux_chroot.sh guest_as_user header (~L355)
@@ -126,7 +126,7 @@ TESTS
 
 Add/extend BusyBoxPathsTest:
   No Phase 2 setup/start/stop/uninstall file may contain a BB= assignment
-  to /data/local/tmp/flux_busybox that is guarded only by [ -x ] (no --list
+  to /data/local/kuro/flux_busybox that is guarded only by [ -x ] (no --list
   and no bb_ok on the same if).
   TermuxIntentFactory.kt must not default BB to the pin without an exec probe.
 
@@ -136,21 +136,21 @@ Existing tests stay green. Do not change buildRootInner.
 MANUAL DEVICE SMOKE (required — same style as iter 1)
 ==============================================================================
 
-Device is already rooted (KSU). FluxLinux Ivarna is installed. Debian chroot
+Device is already rooted (KSU). Kuro Ivarna is installed. Debian chroot
 was reinstalled in iter 1 and should still be present.
 
 Do this IN THE APP (not only adb), then confirm with adb.
 
 A. Pin / noexec regression
-   1. adb shell su -c 'ls -l /data/local/tmp/flux_busybox; /data/local/tmp/flux_busybox --list | head'
+   1. adb shell su -c 'ls -l /data/local/kuro/flux_busybox; /data/local/kuro/flux_busybox --list | head'
       Expect: file may exist; --list fails (127 / Permission denied).
    2. Temporarily hide the sidecar to force last-resort:
-        adb shell su -c 'mv /data/local/tmp/fluxlinux_resolve_bb.sh /data/local/tmp/fluxlinux_resolve_bb.sh.bak'
+        adb shell su -c 'mv /data/local/kuro/fluxlinux_resolve_bb.sh /data/local/kuro/fluxlinux_resolve_bb.sh.bak'
       Unset is automatic if you run a start script without FLUX_BB.
    3. Open Debian chroot **flux** terminal from the Terminal page (or Start Desktop).
       Must still work — BB must be /data/adb/ksu/bin/busybox, NOT the pin.
    4. Restore sidecar:
-        adb shell su -c 'mv /data/local/tmp/fluxlinux_resolve_bb.sh.bak /data/local/tmp/fluxlinux_resolve_bb.sh'
+        adb shell su -c 'mv /data/local/kuro/fluxlinux_resolve_bb.sh.bak /data/local/kuro/fluxlinux_resolve_bb.sh'
    If you cannot hide the sidecar safely, at least log `echo Using Root Busybox:`
    from a start and prove it is the KSU path.
 
@@ -166,7 +166,7 @@ C. XFCE4 desktop (required)
 
 D. Uninstall + reinstall (required — same clicks as iter 1)
    1. Home → Chroot → Debian settings → Uninstall Distribution → confirm.
-   2. Terminal shows uninstall complete. adb: /data/local/tmp/chrootDebian13 gone.
+   2. Terminal shows uninstall complete. adb: /data/local/kuro/chroot/debian13_chroot/rootfs gone.
    3. Distros → Chroot → Debian (Rooted) → Install → Install base desktop (Root).
    4. Log: Root OK (no BusyBox-module failure) → extract → XFCE → customization.
    5. UI 100% / Environment ready.

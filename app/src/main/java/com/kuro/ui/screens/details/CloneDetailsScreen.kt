@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ivarna.fluxlinux.R
+import com.kuro.app.R
 import com.kuro.app.core.utils.formatDate
 import com.kuro.app.core.utils.formatRelative
 import com.kuro.app.ui.components.EmptyStateView

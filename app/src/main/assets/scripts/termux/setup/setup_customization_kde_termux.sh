@@ -1,11 +1,11 @@
 #!/bin/bash
 # ============================================================
-# FluxLinux — Native Termux KDE Plasma Customization
+# Kuro — Native Termux KDE Plasma Customization
 # Location: termux/setup/setup_customization_kde_termux.sh
 # Runs on: HOST Termux (native, no container)
 # Root required: no
 #
-# Applies FluxLinux dark theme to native Termux KDE Plasma:
+# Applies Kuro dark theme to native Termux KDE Plasma:
 # - Breeze Dark color scheme
 # - Papirus-Dark icon theme
 # - KWin compositing disabled (stability + performance)
@@ -17,7 +17,7 @@ CALLBACK_NAME="kde_customization"
 
 handle_error() {
     echo ""
-    echo "❌ FluxLinux Error: Script failed at step: $1"
+    echo "❌ Kuro Error: Script failed at step: $1"
     echo "---------------------------------------------------"
     echo "Please check the error message above for details."
     echo "---------------------------------------------------"
@@ -27,7 +27,7 @@ handle_error() {
 
 echo ""
 echo "══════════════════════════════════════════════"
-echo "  FluxLinux — KDE Customization (Native)"
+echo "  Kuro — KDE Customization (Native)"
 echo "══════════════════════════════════════════════"
 echo ""
 
@@ -67,7 +67,7 @@ echo " [✅] Wallpaper ready"
 
 # ── Step 3: Theme selection ───────────────────────────────
 if [ -n "$FLUX_THEME" ]; then
-    echo "FluxLinux: Auto-applying Theme: $FLUX_THEME"
+    echo "Kuro: Auto-applying Theme: $FLUX_THEME"
     if [ "$FLUX_THEME" = "light" ]; then
         THEME_CHOICE="2"
     else
@@ -100,11 +100,11 @@ fi
 echo ""
 echo "===== Applying KDE Plasma Settings ====="
 KDE_CONFIG="$HOME/.config"
-WALLPAPER_DESKTOP_PATH="$HOME/.local/share/wallpapers/FluxLinux/contents.jpg"
-mkdir -p "$KDE_CONFIG" "$HOME/.local/share/wallpapers/FluxLinux"
+WALLPAPER_DESKTOP_PATH="$HOME/.local/share/wallpapers/Kuro/contents.jpg"
+mkdir -p "$KDE_CONFIG" "$HOME/.local/share/wallpapers/Kuro"
 cp "$WALLPAPER_PATH" "$WALLPAPER_DESKTOP_PATH" 2>/dev/null || WALLPAPER_DESKTOP_PATH="$WALLPAPER_PATH"
 
-echo "FluxLinux: Writing kdeglobals..."
+echo "Kuro: Writing kdeglobals..."
 cat > "$KDE_CONFIG/kdeglobals" << EOF
 [General]
 ColorScheme=$KDE_COLOR_SCHEME
@@ -133,14 +133,14 @@ ScaleFactor=2
 activeFont=Noto Sans,10,-1,5,700,0,0,0,0,0
 EOF
 
-echo "FluxLinux: Writing kcminputrc..."
+echo "Kuro: Writing kcminputrc..."
 cat > "$KDE_CONFIG/kcminputrc" << EOF
 [Mouse]
 cursorSize=24
 cursorTheme=breeze_cursors
 EOF
 
-echo "FluxLinux: Writing kwinrc..."
+echo "Kuro: Writing kwinrc..."
 cat > "$KDE_CONFIG/kwinrc" << 'EOF'
 [Compositing]
 Backend=QPainter
@@ -171,13 +171,13 @@ library=org.kde.breeze
 theme=Breeze
 EOF
 
-echo "FluxLinux: Writing plasmarc..."
+echo "Kuro: Writing plasmarc..."
 cat > "$KDE_CONFIG/plasmarc" << EOF
 [Theme]
 name=$KDE_PLASMA_THEME
 EOF
 
-echo "FluxLinux: Writing Plasma desktop config..."
+echo "Kuro: Writing Plasma desktop config..."
 cat > "$KDE_CONFIG/plasma-org.kde.plasma.desktop-appletsrc" << EOF
 [Containments][1]
 ItemGeometriesHorizontal=
@@ -229,7 +229,7 @@ plugin=org.kde.plasma.showdesktop
 AppletOrder=3;4;5;6;7
 EOF
 
-echo "FluxLinux: Writing keyboard shortcuts..."
+echo "Kuro: Writing keyboard shortcuts..."
 cat > "$KDE_CONFIG/kglobalshortcutsrc" << 'EOF'
 [kwin]
 Show Desktop=Meta+D,Meta+D,Show Desktop
@@ -250,14 +250,14 @@ NewWindow=Ctrl+N,Ctrl+N,New Window
 _launch=none,none,KDE Plasma Desktop
 EOF
 
-echo "FluxLinux: Writing font DPI config..."
+echo "Kuro: Writing font DPI config..."
 cat > "$KDE_CONFIG/kcmfonts" << 'EOF'
 [General]
 forceFontDPI=192
 EOF
 
-echo "FluxLinux: Configuring Konsole..."
-cat > "$HOME/.local/share/konsole/FluxLinux.profile" << 'EOF'
+echo "Kuro: Configuring Konsole..."
+cat > "$HOME/.local/share/konsole/Kuro.profile" << 'EOF'
 [Appearance]
 ColorScheme=Breeze
 Font=Noto Sans Mono,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
@@ -265,7 +265,7 @@ antialias=true
 
 [General]
 Command=/data/data/com.termux/files/usr/bin/bash
-Name=FluxLinux
+Name=Kuro
 Parent=FALLBACK/
 
 [Interaction Options]
@@ -284,7 +284,7 @@ EOF
 
 cat > "$KDE_CONFIG/konsolerc" << 'EOF'
 [Desktop Entry]
-DefaultProfile=FluxLinux.profile
+DefaultProfile=Kuro.profile
 
 [KonsoleWindow]
 RememberWindowSize=true
@@ -316,7 +316,7 @@ echo " [✅] GTK theme configured"
 
 # ── Callback to app ──────────────────────────────────────
 am start -a android.intent.action.VIEW \
-  -d "fluxlinux://callback?result=success&name=${CALLBACK_NAME}" \
+  -d "kuro://callback?result=success&name=${CALLBACK_NAME}" \
   --flags 0x10000000 2>/dev/null || true
 
 echo ""

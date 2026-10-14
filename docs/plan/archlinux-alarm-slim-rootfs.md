@@ -22,7 +22,7 @@ ALARM’s `ArchLinuxARM-aarch64-latest.tar.gz` is a **generic ARMv8 board image*
 
 Typical bulk (order of magnitude; measure on extract — §4):
 
-| Tree / package | Why it exists | Needed in FluxLinux? |
+| Tree / package | Why it exists | Needed in Kuro? |
 |----------------|---------------|----------------------|
 | `/usr/lib/firmware` (`linux-firmware`) | every NIC/GPU/Wi-Fi blob | **No** — Android owns firmware |
 | `/lib/modules/*` / `/usr/lib/modules/*` | `linux-aarch64` modules | **No** — guest uses the Android kernel |
@@ -95,7 +95,7 @@ command -v qemu-aarch64-static
 
 Disk: **≥ 8 GiB free** under `/tmp` (830 MiB gzip + ~2.5–3.5 GiB uncompressed + xz scratch).
 
-Prefer `bsdtar` (`libarchive`) for the **extract** of the official image (ALARM docs: `bsdtar -xpf` preserves xattrs/ACLs). GNU `tar -xpf` is acceptable for a container rootfs if bsdtar is missing — FluxLinux does not need xattrs.
+Prefer `bsdtar` (`libarchive`) for the **extract** of the official image (ALARM docs: `bsdtar -xpf` preserves xattrs/ACLs). GNU `tar -xpf` is acceptable for a container rootfs if bsdtar is missing — Kuro does not need xattrs.
 
 ---
 
@@ -335,7 +335,7 @@ Then paste the packaged SHA-256 into §2 of this plan and (when wiring) into `Di
 
 ---
 
-## 6. First boot inside FluxLinux (after the xz exists)
+## 6. First boot inside Kuro (after the xz exists)
 
 The slim rootfs is still a **board image minus kernel**. Same landmines as Manjaro:
 
@@ -409,14 +409,14 @@ Optional smoke (not required for slim-done): extract xz to a throwaway dir and c
 
 ---
 
-## 10. Later: wire as FluxLinux Arch (out of the slim critical path)
+## 10. Later: wire as Kuro Arch (out of the slim critical path)
 
 Only after S1–S10. Separate implementation slice, same product shape as FVO:
 
 | Card | Method | Path / name |
 |------|--------|-------------|
 | `archlinux` | proot | proot-distro name `archlinux` |
-| `archlinux_chroot` | chroot | `/data/local/tmp/chrootArch` |
+| `archlinux_chroot` | chroot | `/data/local/kuro/chroot/archlinux_chroot/rootfs` |
 
 - Split the current coming-soon dual-mode `archlinux` stub (same as Fedora).
 - `SupportedDistro.ARCH` already exists (`pacman`, `ROLLING`).

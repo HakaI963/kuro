@@ -1,8 +1,8 @@
-# Ubuntu 26.04 in FluxLinux
+# Ubuntu 26.04 in Kuro
 
 | | |
 |---|---|
-| Cards | `ubuntu` (proot) · `ubuntu_chroot` (`/data/local/tmp/chrootUbuntu`) |
+| Cards | `ubuntu` (proot) · `ubuntu_chroot` (`/data/local/kuro/chroot/ubuntu_chroot/rootfs`) |
 | Rootfs | `ubuntu_26.04_rootfs.tar.xz` (Ubuntu 26.04 LTS Resolute arm64 base) |
 | Package manager | `apt-get` |
 | Desktop | XFCE4 + Flux theme/icons/font + Mesa/VirGL |

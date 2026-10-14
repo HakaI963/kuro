@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.termux.terminal"
+    namespace = "com.kuro.app.emulator"
     compileSdk = 36
     ndkVersion = "29.0.14206865"
 

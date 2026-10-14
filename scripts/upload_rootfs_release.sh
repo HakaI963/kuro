@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # upload_rootfs_release.sh — verify + upload the 12 distro rootfs tarballs to the
-# GitHub release tag `rootfs` (FluxLinux rootfs SSOT host, plan
+# GitHub release tag `rootfs` (Kuro rootfs SSOT host, plan
 # docs/plans/rootfs-github-release-no-apk-bloat.md P0).
 #
 # Usage:
@@ -66,7 +66,7 @@ remote_digest() {
     | sed 's/^sha256://' | tr '[:upper:]' '[:lower:]' || true
 }
 
-echo "=== FluxLinux rootfs release verification ($RELEASE_TAG) ==="
+echo "=== Kuro rootfs release verification ($RELEASE_TAG) ==="
 
 FAIL=0
 SUMS_FILE="$(mktemp)"
@@ -179,7 +179,7 @@ gh_upload "$sha256sums_path" --clobber
 
 echo ""
 echo "=== release title ==="
-gh release edit "$RELEASE_TAG" --repo "$REPO" --title "FluxLinux rootfs (12 distros)" 2>/dev/null \
+gh release edit "$RELEASE_TAG" --repo "$REPO" --title "Kuro rootfs (12 distros)" 2>/dev/null \
   || echo "WARN: could not edit release title"
 
 echo ""

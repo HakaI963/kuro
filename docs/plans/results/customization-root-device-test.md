@@ -6,7 +6,7 @@
 - Guest script: root check, silent chown, git+zsh apt deps, no empty OMZ tree after fail.
 
 ## Package
-- `com.ivarna.fluxlinux`
+- `com.kuro.app`
 - APK: `app/build/outputs/apk/ivarna/release/app-ivarna-release.apk`
 
 ## Pass criteria

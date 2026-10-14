@@ -1,7 +1,7 @@
 # Hardware acceleration — Pass 2 device report
 
 **Date:** 2026-08-13  
-**Package:** `com.ivarna.fluxlinux` Ivarna release (`assembleIvarnaRelease` + `adb install -r`). Gradle stopped.
+**Package:** `com.kuro.app` Ivarna release (`assembleIvarnaRelease` + `adb install -r`). Gradle stopped.
 
 ## Devices (`adb devices`; skipped `emulator-5554`)
 
@@ -41,28 +41,28 @@ Host: **no** `virgl_test_server_android` → Start logs `VirGL unavailable` / `V
 
 | Guest | Method | hw re-run | gpu_mode | apply_gpu_env | XFCE Start log |
 |-------|--------|-----------|----------|---------------|----------------|
-| debian | proot | virgl (also turnip URL attempt) | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| alpine | proot | virgl (also turnip URL attempt) | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| fedora | proot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| void | proot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| opensuse | proot | virgl (also forced turnip → no-tarball) | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| deepin | proot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| chimera | proot | virgl (also forced turnip → no-tarball) | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| manjaro | proot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| debian13 | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| alpine | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| fedora | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| void | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| opensuse | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| deepin | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| chimera | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
-| manjaro | chroot | virgl | virgl | yes, kgsl_only | `FluxLinux(guest): GPU mode=virgl` |
+| debian | proot | virgl (also turnip URL attempt) | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| alpine | proot | virgl (also turnip URL attempt) | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| fedora | proot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| void | proot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| opensuse | proot | virgl (also forced turnip → no-tarball) | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| deepin | proot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| chimera | proot | virgl (also forced turnip → no-tarball) | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| manjaro | proot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| debian13 | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| alpine | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| fedora | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| void | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| opensuse | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| deepin | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| chimera | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
+| manjaro | chroot | virgl | virgl | yes, kgsl_only | `Kuro(guest): GPU mode=virgl` |
 
-No SKIP on this phone — all eight proot containers (`startxfce4` present) and all eight chroots (`/data/local/tmp/chroot{Debian13,Alpine,Fedora,Void,OpenSUSE,Deepin,Chimera,Manjaro}`) were installed.
+No SKIP on this phone — all eight proot containers (`startxfce4` present) and all eight chroots (`/data/local/kuro/chroot{Debian13,Alpine,Fedora,Void,OpenSUSE,Deepin,Chimera,Manjaro}`) were installed.
 
 **Final disk state:** every guest `gpu_mode=virgl` `gpu_vendor=mali`. None left on turnip.
 
-**Start notes (not GPU bugs):** first Debian Start failed `PD_PROOT_BIN` stale path after `install -r` (host line already `Guest GPU mode=virgl`; guest line missing). Env rewritten; re-Start printed `FluxLinux(guest): GPU mode=virgl`. Several Starts: `X server already running on display :0` from leftover Loader; still printed the GPU line. Host has no VirGL server → llvmpipe.
+**Start notes (not GPU bugs):** first Debian Start failed `PD_PROOT_BIN` stale path after `install -r` (host line already `Guest GPU mode=virgl`; guest line missing). Env rewritten; re-Start printed `Kuro(guest): GPU mode=virgl`. Several Starts: `X server already running on display :0` from leftover Loader; still printed the GPU line. Host has no VirGL server → llvmpipe.
 
 ---
 

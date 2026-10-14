@@ -40,7 +40,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.OpenableColumns
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ivarna.fluxlinux.R
+import com.kuro.app.R
 import com.kuro.app.core.utils.formatBytes
 import com.kuro.engine.EngineStatus
 import com.kuro.app.ui.components.AppSourceCard

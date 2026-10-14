@@ -1,11 +1,11 @@
-# Native Termux package builds (FluxLinux)
+# Native Termux package builds (Kuro)
 
 Custom-prefix Termux packages for the **embedded native terminal**, one tree per application ID.
 
 | Application ID | Intended channel | Output |
 |----------------|------------------|--------|
-| `com.ivarna.fluxlinux` | F-Droid / GitHub | `output/com.ivarna.fluxlinux/` |
-| `com.zenithblue.fluxlinux` | Google Play | `output/com.zenithblue.fluxlinux/` |
+| `com.kuro.app` | F-Droid / GitHub | `output/com.kuro.app/` |
+| `com.kuro.app` | Google Play | `output/com.kuro.app/` |
 
 Plan: [`docs/plans/termux-native-packages-dual-appid.md`](../docs/plans/termux-native-packages-dual-appid.md)
 
@@ -56,16 +56,16 @@ ln -sfn ~/repos/termux-lib/termux-packages native/termux-packages
 ### Set package name only
 
 ```bash
-./scripts/set_termux_package_name.sh com.ivarna.fluxlinux
+./scripts/set_termux_package_name.sh com.kuro.app
 ```
 
 ### Dry-run: single package
 
 ```bash
-./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux bash
+./scripts/build_packages_for_appid.sh com.kuro.app bash
 ./scripts/verify_deb_prefix.sh \
-  native/output/com.ivarna.fluxlinux/bash_*_aarch64.deb \
-  com.ivarna.fluxlinux
+  native/output/com.kuro.app/bash_*_aarch64.deb \
+  com.kuro.app
 ```
 
 ### Full bootstrap package set (termux-lib SSOT)
@@ -73,22 +73,22 @@ ln -sfn ~/repos/termux-lib/termux-packages native/termux-packages
 ```bash
 # Exact list: native/package-lists/termux-lib-ssot.txt
 FORCE=1 CONTINUE_ON_FAIL=1 ./scripts/build_packages_for_appid.sh \
-  com.ivarna.fluxlinux --list termux-lib-ssot
+  com.kuro.app --list termux-lib-ssot
 FORCE=1 CONTINUE_ON_FAIL=1 ./scripts/build_packages_for_appid.sh \
-  com.zenithblue.fluxlinux --list termux-lib-ssot
+  com.kuro.app --list termux-lib-ssot
 # Reuse Docker builder by default; RECREATE_BUILDER=1 wipes .built-packages
 ```
 
 ### Assemble bootstrap + jniLibs
 
 ```bash
-./scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux \
+./scripts/assemble_bootstrap.py --package-name com.kuro.app \
   --list native/package-lists/termux-lib-ssot.txt --mode full
-./scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+./scripts/verify_bootstrap.sh com.kuro.app
 
-./scripts/assemble_bootstrap.py --package-name com.zenithblue.fluxlinux \
+./scripts/assemble_bootstrap.py --package-name com.kuro.app \
   --list native/package-lists/termux-lib-ssot.txt --mode full
-./scripts/verify_bootstrap.sh com.zenithblue.fluxlinux
+./scripts/verify_bootstrap.sh com.kuro.app
 ```
 
 **Status (2026-08-05):** both app IDs have SSOT 62/62 debs, `bootstrap.tar` (~122 MB), jniLibs, `verify_bootstrap.sh` **PASS**.
@@ -102,8 +102,8 @@ is the task's implementation; use it directly only for offline staging / debuggi
 
 ```bash
 # Staging script: verifies + copies per-flavor assets + jniLibs (gitignored, regenerate)
-./scripts/package_host_assets.sh com.ivarna.fluxlinux      # → app/src/ivarna/{assets,jniLibs}
-./scripts/package_host_assets.sh com.zenithblue.fluxlinux  # → app/src/zenithblue/{assets,jniLibs}
+./scripts/package_host_assets.sh com.kuro.app      # → app/src/ivarna/{assets,jniLibs}
+./scripts/package_host_assets.sh com.kuro.app  # → app/src/zenithblue/{assets,jniLibs}
 ./scripts/package_host_assets.sh --all                     # both
 
 # Then build the APK flavor (package task runs as dependency)
@@ -120,13 +120,13 @@ rootfs is NOT packaged and NOT in git — distributed via the GitHub release tag
 ### Force rebuild
 
 ```bash
-FORCE=1 ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux bash
-FORCE_DEPS=1 ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux bash
+FORCE=1 ./scripts/build_packages_for_appid.sh com.kuro.app bash
+FORCE_DEPS=1 ./scripts/build_packages_for_appid.sh com.kuro.app bash
 ```
 
 ## Important rules
 
 1. **Never** ship a bootstrap built for another applicationId.
 2. Changing `TERMUX_APP__PACKAGE_NAME` invalidates reuse of stock `com.termux` repo debs; dependencies are built locally.
-3. Do **not** reuse `com.zenithblue.nativecode` debs from termux-lib for FluxLinux.
+3. Do **not** reuse `com.zenithblue.nativecode` debs from termux-lib for Kuro.
 4. Keep `loader.apk` Java class names as `com.termux.x11.Loader` (do not sed class names).

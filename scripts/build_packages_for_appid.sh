@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build termux-packages .debs for a FluxLinux applicationId.
+# Build termux-packages .debs for a Kuro applicationId.
 #
 # Usage:
-#   ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux bash
-#   ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux --list bootstrap-host
-#   ./scripts/build_packages_for_appid.sh com.zenithblue.fluxlinux --list bootstrap-host
-#   ARCH=arm ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux coreutils
+#   ./scripts/build_packages_for_appid.sh com.kuro.app bash
+#   ./scripts/build_packages_for_appid.sh com.kuro.app --list bootstrap-host
+#   ./scripts/build_packages_for_appid.sh com.kuro.app --list bootstrap-host
+#   ARCH=arm ./scripts/build_packages_for_appid.sh com.kuro.app coreutils
 #
 # Env:
 #   ARCH                 default aarch64
@@ -17,9 +17,9 @@
 #   NO_DOCKER=1          run build-package.sh on the host (F-Droid buildserver).
 #                        Auto-set when docker is not installed. Host needs the
 #                        termux build deps, NDK=<r29 path> and a writable
-#                        /data/data/<applicationId> (see com.ivarna.fluxlinux.yml).
+#                        /data/data/<applicationId> (see com.kuro.app.yml).
 #
-# FluxLinux package patches live in native/patches/<pkg>/ and are copied into
+# Kuro package patches live in native/patches/<pkg>/ and are copied into
 # the termux-packages package dir before building (submodule stays pristine in git).
 set -uo pipefail
 
@@ -86,7 +86,7 @@ echo "[*] termux-packages: $TP"
 
 "$ROOT/scripts/set_termux_package_name.sh" "$CUSTOM_PACKAGE" | tee -a "$LOG"
 
-# Overlay FluxLinux patches (native/patches/<pkg>/*.patch) onto the package dirs.
+# Overlay Kuro patches (native/patches/<pkg>/*.patch) onto the package dirs.
 for pdir in "$ROOT"/native/patches/*/; do
   [[ -d "$pdir" ]] || continue
   pkg_dir="$(ls -d "$TP"/{packages,x11-packages,root-packages}/"$(basename "$pdir")" 2>/dev/null | head -1)"

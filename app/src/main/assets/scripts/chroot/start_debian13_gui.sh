@@ -3,22 +3,20 @@
 # Called by start_gui_chroot.sh after host Pulse/VirGL/X11 are up.
 # Paths: app package via FLUX_PACKAGE / TARGET_PREFIX (ivarna or zenithblue). Sticky guest /tmp preserved.
 
-DEBIANPATH="${DEBIANPATH:-/data/local/tmp/chrootDebian13}"
+DEBIANPATH="${DEBIANPATH:-/data/local/kuro/chroot/debian13_chroot/rootfs}"
 if [ -z "${TARGET_PREFIX:-}" ]; then
   if [ -n "${FLUX_PREFIX:-}" ]; then
     TARGET_PREFIX="$FLUX_PREFIX"
   elif [ -n "${FLUX_PACKAGE:-}" ]; then
     TARGET_PREFIX="/data/data/${FLUX_PACKAGE}/files/usr"
-  elif [ -d /data/data/com.zenithblue.fluxlinux/files/usr ]; then
-    TARGET_PREFIX="/data/data/com.zenithblue.fluxlinux/files/usr"
   else
-    TARGET_PREFIX="/data/data/com.ivarna.fluxlinux/files/usr"
+    TARGET_PREFIX="/data/data/com.kuro.app/files/usr"
   fi
 fi
 USERNAME="${USERNAME:-flux}"
 
 echo "========================================"
-echo "FluxLinux: Chroot XFCE (root stage)"
+echo "Kuro: Chroot XFCE (root stage)"
 echo "  rootfs=$DEBIANPATH"
 echo "========================================"
 
@@ -27,7 +25,7 @@ _rr=""
 for _c in \
   "${FLUX_RESOLVE_BB:-}" \
   "$(dirname "$0")/resolve_bb.sh" \
-  /data/local/tmp/fluxlinux_resolve_bb.sh
+  /data/local/kuro/fluxlinux_resolve_bb.sh
 do
   [ -n "$_c" ] && [ -f "$_c" ] && _rr="$_c" && break
 done
@@ -40,9 +38,9 @@ if [ -z "${BB:-}" ]; then
   # sidecar missing (desktop/uninstall/staged setup) — same B1 walk as resolve_bb
   if [ -n "${FLUX_BB:-}" ] && [ -x "$FLUX_BB" ] &&
      "$FLUX_BB" --list >/dev/null 2>&1; then BB="$FLUX_BB"; fi
-  if [ -z "${BB:-}" ] && [ -x /data/local/tmp/flux_busybox ] &&
-     /data/local/tmp/flux_busybox --list >/dev/null 2>&1; then
-    BB=/data/local/tmp/flux_busybox
+  if [ -z "${BB:-}" ] && [ -x /data/local/kuro/flux_busybox ] &&
+     /data/local/kuro/flux_busybox --list >/dev/null 2>&1; then
+    BB=/data/local/kuro/flux_busybox
   fi
   if [ -z "${BB:-}" ]; then
     for path in \
@@ -61,28 +59,28 @@ if [ -z "${BB:-}" ]; then
   fi
 fi
 if [ -z "${BB:-}" ]; then
-  echo "FluxLinux: ERROR — root-capable busybox not found" >&2
+  echo "Kuro: ERROR — root-capable busybox not found" >&2
   exit 1
 fi
 
-echo "FluxLinux: busybox=$BB"
+echo "Kuro: busybox=$BB"
 
 if [ ! -d "$DEBIANPATH" ]; then
-  echo "FluxLinux: ERROR — chroot missing: $DEBIANPATH"
+  echo "Kuro: ERROR — chroot missing: $DEBIANPATH"
   exit 1
 fi
 if [ ! -x "$DEBIANPATH/usr/bin/startxfce4" ] && [ ! -f "$DEBIANPATH/usr/bin/startxfce4" ]; then
-  echo "FluxLinux: ERROR — startxfce4 missing. Re-run chroot environment setup."
+  echo "Kuro: ERROR — startxfce4 missing. Re-run chroot environment setup."
   exit 1
 fi
 
 # Soft SELinux (HyperOS / enforcing) — flux pattern; fail soft
 if command -v getenforce >/dev/null 2>&1; then
   SELINUX_STATUS=$(getenforce 2>/dev/null || true)
-  echo "FluxLinux: SELinux=$SELINUX_STATUS"
+  echo "Kuro: SELinux=$SELINUX_STATUS"
   if [ "$SELINUX_STATUS" = "Enforcing" ]; then
-    setenforce 0 2>/dev/null && echo "FluxLinux: SELinux → Permissive (until reboot)" \
-      || echo "FluxLinux: [WARN] setenforce 0 failed"
+    setenforce 0 2>/dev/null && echo "Kuro: SELinux → Permissive (until reboot)" \
+      || echo "Kuro: [WARN] setenforce 0 failed"
   fi
 fi
 # PREFIX/tmp must stay app_data_file. Labeling it tmpfs:s0 makes termux-x11
@@ -95,7 +93,7 @@ if command -v chcon >/dev/null 2>&1; then
 fi
 restorecon -RF "$TARGET_PREFIX/tmp" 2>/dev/null || true
 
-HELPER="${HELPER:-/data/local/tmp/fluxlinux_chroot.sh}"
+HELPER="${HELPER:-/data/local/kuro/fluxlinux_chroot.sh}"
 echo "[1/5] Mounts (SSOT if available)..."
 # Wait for host Loader to create X0 before --x11 bind
 mkdir -p "$TARGET_PREFIX/tmp/.X11-unix" 2>/dev/null || true
@@ -103,14 +101,14 @@ chmod 1777 "$TARGET_PREFIX/tmp/.X11-unix" 2>/dev/null || true
 i=0
 while [ $i -lt 15 ]; do
   if [ -S "$TARGET_PREFIX/tmp/.X11-unix/X0" ]; then
-    echo "FluxLinux: host X0 socket ready"
+    echo "Kuro: host X0 socket ready"
     break
   fi
   i=$((i + 1))
   sleep 1
 done
 if [ ! -S "$TARGET_PREFIX/tmp/.X11-unix/X0" ]; then
-  echo "FluxLinux: [WARN] host X0 not seen yet — continuing"
+  echo "Kuro: [WARN] host X0 not seen yet — continuing"
 fi
 
 if [ -f "$HELPER" ]; then
@@ -182,9 +180,9 @@ if [ -e /etc/fluxlinux/kde_gl ]; then case "$GPU_MODE" in turnip|panvk)
     unset MESA_GL_VERSION_OVERRIDE MESA_GLES_VERSION_OVERRIDE
     _o=$(timeout -k 2 30 glxinfo -B 2>/dev/null) || _o=
     case "$_o" in
-      *zink*) echo "FluxLinux(guest): KDE GL = zink on Turnip" ;;
+      *zink*) echo "Kuro(guest): KDE GL = zink on Turnip" ;;
       *)
-        echo "FluxLinux(guest): zink-on-Turnip probe failed - kgsl fallback"
+        echo "Kuro(guest): zink-on-Turnip probe failed - kgsl fallback"
         unset GALLIUM_DRIVER VK_ICD_FILENAMES
         export MESA_LOADER_DRIVER_OVERRIDE=kgsl MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLES_VERSION_OVERRIDE=3.2
         ;;
@@ -243,11 +241,11 @@ su - $USERNAME -c '
     else
       export LIBGL_ALWAYS_SOFTWARE=1
       export GALLIUM_DRIVER=llvmpipe
-      echo \"FluxLinux(guest): software GL fallback\"
+      echo \"Kuro(guest): software GL fallback\"
     fi
     export GPU_MODE
   fi
-  echo \"FluxLinux(guest): GPU mode=\$GPU_MODE\"
+  echo \"Kuro(guest): GPU mode=\$GPU_MODE\"
 
   xfconf-query -c xfwm4 -p /general/use_compositing -s false 2>/dev/null || true
   if [ x$FLUX_GPU_RUNTIME = xsoftware ]; then

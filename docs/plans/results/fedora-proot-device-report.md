@@ -1,7 +1,7 @@
 # Fedora proot — device report
 
 **Date:** 2026-08-13  
-**Package:** `com.ivarna.fluxlinux` (ivarna release)  
+**Package:** `com.kuro.app` (ivarna release)  
 **Device:** Xiaomi 2311DRK48I  
 
 ## Results

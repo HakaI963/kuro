@@ -1,6 +1,6 @@
-# Alpine Linux in FluxLinux
+# Alpine Linux in Kuro
 
-Complete reference for **Alpine Linux** support in FluxLinux: identity, install modes (proot + chroot), rootfs packaging, scripts, desktop, terminal, packages (`apk`), known issues, and developer SSOT.
+Complete reference for **Alpine Linux** support in Kuro: identity, install modes (proot + chroot), rootfs packaging, scripts, desktop, terminal, packages (`apk`), known issues, and developer SSOT.
 
 ---
 
@@ -18,7 +18,7 @@ Complete reference for **Alpine Linux** support in FluxLinux: identity, install 
 | **Default login shell (after customization)** | **zsh** + Oh My Zsh (when staged) |
 | **App cards** | `alpine` (proot) · `alpine_chroot` (rooted) |
 
-Alpine is the lightweight FluxLinux distro: small rootfs downloaded on demand, fast boot, musl/`apk` instead of Debian’s glibc/`apt`. It is a **first-class** install path alongside Debian—not a “coming soon” stub.
+Alpine is the lightweight Kuro distro: small rootfs downloaded on demand, fast boot, musl/`apk` instead of Debian’s glibc/`apt`. It is a **first-class** install path alongside Debian—not a “coming soon” stub.
 
 ### Why Alpine on Android
 
@@ -40,7 +40,7 @@ Alpine is the lightweight FluxLinux distro: small rootfs downloaded on demand, f
 | Card id | UI name | Method | Root required | Container / path |
 |---------|---------|--------|---------------|------------------|
 | `alpine` | **Alpine** | **proot** | No | proot-distro name `alpine` |
-| `alpine_chroot` | **Alpine (Rooted)** | **chroot** | Yes (KernelSU / Magisk + BusyBox) | `/data/local/tmp/chrootAlpine` |
+| `alpine_chroot` | **Alpine (Rooted)** | **chroot** | Yes (KernelSU / Magisk + BusyBox) | `/data/local/kuro/chroot/alpine_chroot/rootfs` |
 
 Both cards share:
 
@@ -81,7 +81,7 @@ the real `.tar.gz`.
 | Mode | Rootfs path |
 |------|-------------|
 | **Proot** | `$filesDir/usr/var/lib/proot-distro/containers/alpine/rootfs` |
-| **Chroot** | `/data/local/tmp/chrootAlpine` |
+| **Chroot** | `/data/local/kuro/chroot/alpine_chroot/rootfs` |
 
 Proot also keeps container metadata under:
 
@@ -162,7 +162,7 @@ Size estimates in UI are approximate (~250 MB XFCE stack after packages; base mi
 
 | Script | Role |
 |--------|------|
-| `scripts/chroot/setup_alpine_chroot.sh` | Extract rootfs under `/data/local/tmp/chrootAlpine`, mounts/bootstrap hooks |
+| `scripts/chroot/setup_alpine_chroot.sh` | Extract rootfs under `/data/local/kuro/chroot/alpine_chroot/rootfs`, mounts/bootstrap hooks |
 | `scripts/chroot/uninstall_alpine_chroot.sh` | Tear down Alpine chroot |
 | `scripts/chroot/start_gui_chroot.sh` | Host Pulse/VirGL/X11; dispatches Alpine vs Debian guest |
 | `scripts/chroot/start_alpine_gui.sh` | Root mounts + `su` flux + `dbus-run-session` / `startxfce4` |
@@ -176,7 +176,7 @@ Size estimates in UI are approximate (~250 MB XFCE stack after packages; base mi
 | `DistroInstallProfile` | `alpine` / `alpine_chroot` profiles, rootfs constants |
 | `DistroRepository` | Cards + components |
 | `SupportedDistro.ALPINE` | Family + APK package manager |
-| `ChrootPaths.ALPINE_CHROOT_PATH` | `/data/local/tmp/chrootAlpine` |
+| `ChrootPaths.ALPINE_CHROOT_PATH` | `/data/local/kuro/chroot/alpine_chroot/rootfs` |
 | `TerminalShellCatalog` | Alpine proot + chroot terminal cards |
 | `ProotZshBootstrap` | Host-stage OMZ into **correct** proot name (`alpine`) |
 | `GuestZshrcRepair` | Multi-distro `.zshrc`; Alpine `apk()` wrapper |
@@ -222,7 +222,7 @@ Ensures `/etc/machine-id` and `/var/lib/dbus/machine-id` for session bus stacks.
 
 ### Glycin / bwrap (proot)
 
-GTK image loaders may invoke **bubblewrap**. Real `bwrap` fails under proot (GTK abort). Family installs a **FluxLinux proot-safe `/usr/bin/bwrap` shim** (and related glycin packages when available). Proot `start_gui.sh` also sets:
+GTK image loaders may invoke **bubblewrap**. Real `bwrap` fails under proot (GTK abort). Family installs a **Kuro proot-safe `/usr/bin/bwrap` shim** (and related glycin packages when available). Proot `start_gui.sh` also sets:
 
 - `GLYCIN_DISABLE_SANDBOX=1`
 - `GDK_DEBUG=no-glycin`
@@ -266,7 +266,7 @@ Pokemon colorscripts are **optional** and **skipped by default** under proot (`F
 ### Chroot
 
 - Host: `start_gui_chroot.sh alpine_chroot` → root runs `start_alpine_gui.sh`
-- Mounts via `fluxlinux_chroot.sh` when present (`FLUX_CHROOT=/data/local/tmp/chrootAlpine`)
+- Mounts via `fluxlinux_chroot.sh` when present (`FLUX_CHROOT=/data/local/kuro/chroot/alpine_chroot/rootfs`)
 - Same XDG/dbus/glycin patterns as proot guest block
 
 ### Failsafe dialog (historical)
@@ -285,7 +285,7 @@ Fixed in start scripts + family home ownership policy. Device proof: `docs/plans
 | Card style | Method | Notes |
 |------------|--------|--------|
 | Alpine flux / root | proot | `proot-distro login alpine --user …` |
-| Alpine Chroot | chroot | Helper login; **zsh** when installed (resolved as root; SELinux hides `/data/local/tmp` from the app) |
+| Alpine Chroot | chroot | Helper login; **zsh** when installed (resolved as root; SELinux hides `/data/local/kuro` from the app) |
 
 Session open hooks:
 
@@ -324,13 +324,13 @@ Pinned to **v3.24** main + community (CDN: `dl-cdn.alpinelinux.org`).
 | bare `apk update` as flux | No privileges | Expected — use `sudo` or `apk()` wrapper |
 | DNS / “no such package” with stale index | Network/DNS under some SELinux/`adb su` contexts | Prefer **in-app** terminal; check `/etc/resolv.conf`; chroot usually has full network |
 | `proot error: can't create temporary directory` / `can't create glue rootfs` | Host `PROOT_TMP_DIR` was the same as `--shared-tmp` (`$PREFIX/tmp`), **and** proot-distro dropped `PROOT_TMP_DIR` from the host proot child | Private `$filesDir/proot-tmp`; patch login `__init__.py` allowlist to pass `PROOT_TMP_DIR`; guest `TMPDIR=/tmp` via `env -i` |
-| Alpine chroot “no zsh configured” (bare ash) | App uid cannot `stat /data/local/tmp` (SELinux), so login probed “no zsh” and forced `sh` | Always request zsh; helper v2.3 resolves the binary as root and seeds `~/.zshrc` + `~/.zprofile` |
+| Alpine chroot “no zsh configured” (bare ash) | App uid cannot `stat /data/local/kuro` (SELinux), so login probed “no zsh” and forced `sh` | Always request zsh; helper v2.3 resolves the binary as root and seeds `~/.zshrc` + `~/.zprofile` |
 
 Device report: `docs/plans/results/alpine-apk-sudo-device-report.md`.
 
 ---
 
-## 12. Comparison: Alpine vs Debian (FluxLinux)
+## 12. Comparison: Alpine vs Debian (Kuro)
 
 | | Alpine | Debian |
 |---|--------|--------|
@@ -339,7 +339,7 @@ Device report: `docs/plans/results/alpine-apk-sudo-device-report.md`.
 | rootfs distribution | download at install (GitHub tag `rootfs`, ~3.8 MiB `.tar.gz`) | download at install (GitHub tag `rootfs`, ~81 MiB `.tar.xz`) |
 | cards | `alpine`, `alpine_chroot` | `debian`, `debian13_chroot` |
 | proot path | `…/containers/alpine/rootfs` | `…/containers/debian/rootfs` |
-| chroot path | `/data/local/tmp/chrootAlpine` | `/data/local/tmp/chrootDebian13` |
+| chroot path | `/data/local/kuro/chroot/alpine_chroot/rootfs` | `/data/local/kuro/chroot/debian13_chroot/rootfs` |
 | family script | `setup_alpine_family.sh` | `setup_debian_family.sh` |
 | modules (appdev, webdev, …) | **No** (MVP) | Yes |
 | GUI start proot | Shared `start_gui.sh` | Same |
@@ -389,7 +389,7 @@ Results samples:
 /data/data/<appId>/files/usr/var/lib/proot-distro/containers/alpine/rootfs
 
 # Chroot rootfs
-/data/local/tmp/chrootAlpine
+/data/local/kuro/chroot/alpine_chroot/rootfs
 
 # Host scripts (after deploy)
 /data/data/<appId>/files/home/start_gui.sh
@@ -399,10 +399,10 @@ Results samples:
 /data/data/<appId>/files/home/setup_customization_alpine.sh
 
 # Helper
-/data/local/tmp/fluxlinux_chroot.sh
+/data/local/kuro/fluxlinux_chroot.sh
 ```
 
-`<appId>` is typically `com.ivarna.fluxlinux` (ivarna flavor) or the zenithblue applicationId for the other store flavor.
+`<appId>` is typically `com.kuro.app` (ivarna flavor) or the zenithblue applicationId for the other store flavor.
 
 ---
 
@@ -431,4 +431,4 @@ Results samples:
 
 ---
 
-*Maintained for FluxLinux Alpine 3.24. Keep this file in sync with `DistroInstallProfile` when the pinned rootfs or card IDs change.*
+*Maintained for Kuro Alpine 3.24. Keep this file in sync with `DistroInstallProfile` when the pinned rootfs or card IDs change.*

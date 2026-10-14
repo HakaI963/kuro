@@ -2,7 +2,7 @@
 
 - Date: 2026-08-14
 - Device: Xiaomi 2311DRK48I (duchamp), serial `Y5WWBMJVOZSK4HU8`
-- Card: `kali_chroot` → `/data/local/tmp/chrootKali`
+- Card: `kali_chroot` → `/data/local/kuro/chroot/kali_chroot/rootfs`
 
 ## Result matrix
 
@@ -20,11 +20,11 @@
 D5 **PASS**.
 
 ```
-FluxLinux: STOP XFCE (chroot mode)
-  distro=kali_chroot path=/data/local/tmp/chrootKali
-FluxLinux: Stopping Chroot XFCE
+Kuro: STOP XFCE (chroot mode)
+  distro=kali_chroot path=/data/local/kuro/chroot/kali_chroot/rootfs
+Kuro: Stopping Chroot XFCE
 ```
 
-- XFCE roots before Stop: `/data/local/tmp/chrootKali` (pids 13413/13439/13459/13473). After Stop: none.
+- XFCE roots before Stop: `/data/local/kuro/chroot/kali_chroot/rootfs` (pids 13413/13439/13459/13473). After Stop: none.
 - Log does not name `chrootDebian13`. Card returned to Start.
 - Debian chroot still present (`startxfce4`). Screenshots: `kali_chroot_xfce_retest.png`, `kali_chroot_stopped_retest.png`.

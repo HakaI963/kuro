@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# FluxLinux — Native Termux Hardware Acceleration Setup
+# Kuro — Native Termux Hardware Acceleration Setup
 # Location: termux/setup/setup_hw_accel_termux.sh
 # Runs on: HOST Termux (native, no container)
 # Root required: no
@@ -20,13 +20,13 @@ CALLBACK_NAME="hw_accel"
 send_callback() {
     RESULT="$1"
     am start -a android.intent.action.VIEW \
-      -d "fluxlinux://callback?result=${RESULT}&name=${CALLBACK_NAME}" \
+      -d "kuro://callback?result=${RESULT}&name=${CALLBACK_NAME}" \
       --flags 0x10000000 2>/dev/null || true
 }
 
 handle_error() {
     echo ""
-    echo "❌ FluxLinux Error: Script failed at step: $1"
+    echo "❌ Kuro Error: Script failed at step: $1"
     echo "---------------------------------------------------"
     echo "Please check the error message above for details."
     echo "---------------------------------------------------"
@@ -37,12 +37,12 @@ handle_error() {
 
 echo ""
 echo "══════════════════════════════════════════════"
-echo "  FluxLinux — Native Termux Hardware Accel"
+echo "  Kuro — Native Termux Hardware Accel"
 echo "══════════════════════════════════════════════"
 echo ""
 
 # ── Step 1: Repositories ──────────────────────────────────
-echo "FluxLinux: Enabling required repositories..."
+echo "Kuro: Enabling required repositories..."
 pkg install x11-repo -y || handle_error "x11-repo install"
 pkg install tur-repo -y || handle_error "tur-repo install"
 pkg update -y || handle_error "pkg update"
@@ -163,7 +163,7 @@ echo ""
 echo "===== Writing GPU Config Helper ====="
 cat > "$HOME/.fluxlinux/start_virgl.sh" << 'GPUEOF'
 #!/bin/bash
-# FluxLinux GPU Acceleration Starter
+# Kuro GPU Acceleration Starter
 # Auto-sourced by start_xfce4_termux.sh and start_kde_termux.sh
 
 GPU_CONFIG="$HOME/.fluxlinux/gpu_config"
@@ -176,7 +176,7 @@ sleep 1
 
 case "$GPU_BACKEND" in
     turnip)
-        echo "FluxLinux: Starting VirGL server (Turnip/Zink mode)..."
+        echo "Kuro: Starting VirGL server (Turnip/Zink mode)..."
         MESA_NO_ERROR=1 \
         MESA_GL_VERSION_OVERRIDE=4.3COMPAT \
         MESA_GLES_VERSION_OVERRIDE=3.2 \
@@ -186,11 +186,11 @@ case "$GPU_BACKEND" in
         virgl_test_server --use-egl-surfaceless --use-gles &
         ;;
     virgl)
-        echo "FluxLinux: Starting VirGL server (VirGL mode)..."
+        echo "Kuro: Starting VirGL server (VirGL mode)..."
         virgl_test_server_android &
         ;;
     software)
-        echo "FluxLinux: Software rendering mode (no virgl server)..."
+        echo "Kuro: Software rendering mode (no virgl server)..."
         export GALLIUM_DRIVER=llvmpipe
         export LIBGL_ALWAYS_SOFTWARE=1
         return 0
@@ -205,7 +205,7 @@ export GALLIUM_DRIVER=virpipe
 export MESA_GL_VERSION_OVERRIDE=4.3COMPAT
 export MESA_GLES_VERSION_OVERRIDE=3.2
 
-echo "FluxLinux: GPU acceleration active [$GPU_BACKEND]"
+echo "Kuro: GPU acceleration active [$GPU_BACKEND]"
 GPUEOF
 chmod +x "$HOME/.fluxlinux/start_virgl.sh"
 echo " [✅] GPU config helper written to ~/.fluxlinux/start_virgl.sh"
@@ -213,7 +213,7 @@ echo " [✅] GPU config helper written to ~/.fluxlinux/start_virgl.sh"
 # ── Verification ─────────────────────────────────────────
 verify_installation() {
     echo ""
-    echo "🔎 FluxLinux: Verifying Hardware Acceleration..."
+    echo "🔎 Kuro: Verifying Hardware Acceleration..."
     echo "------------------------------------------------"
     MISSING=0
 

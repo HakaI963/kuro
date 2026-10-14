@@ -12,12 +12,12 @@ plugins {
 }
 
 android {
-    namespace = "com.ivarna.fluxlinux"
+    namespace = "com.kuro.app"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "com.ivarna.fluxlinux"
+        applicationId = "com.kuro.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 13
@@ -27,25 +27,14 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        // Host binaries (libbash/loader/proot) are arm64-v8a; x86_64 devices
+        // run them via NDK translation (native bridge).
+        ndk { abiFilters += listOf("arm64-v8a") }
     }
 
-    // Dual app-id flavors: ivarna (F-Droid/GitHub) + zenithblue (Play).
-    // Host bootstrap + jniLibs ship per flavor from native/bootstrap/<applicationId>/
-    // staged by :app:packageHostAssets* (runs scripts/package_host_assets.sh).
-    flavorDimensions += "store"
-    productFlavors {
-        create("ivarna") {
-            dimension = "store"
-            applicationId = "com.ivarna.fluxlinux"
-            // Host binaries (libbash/loader/proot) build only for arm64-v8a;
-            // x86_64 devices run them via NDK translation (native bridge).
-            ndk { abiFilters += listOf("arm64-v8a") }
-        }
-        create("zenithblue") {
-            dimension = "store"
-            applicationId = "com.zenithblue.fluxlinux"
-        }
-    }
+    // Kuro ships as a single standalone app (com.kuro.app). The host
+    // bootstrap + jniLibs ship from native/bootstrap/com.kuro.app/,
+    // staged by :app:packageHostAssets (runs scripts/package_host_assets.sh).
 
     androidResources {
         // Disable PNG crunching for reproducible builds
@@ -149,71 +138,61 @@ tasks.withType<AbstractArchiveTask>().configureEach {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Package host assets per flavor (Pass 2 fail-closed gate, plan P0-T6/T7)
-//   :app:packageHostAssetsIvarna     — stages native/bootstrap/com.ivarna.fluxlinux
-//   :app:packageHostAssetsZenithblue — stages native/bootstrap/com.zenithblue.fluxlinux
+// Package host assets (fail-closed gate, plan P0-T6/T7)
+//   :app:packageHostAssets — stages native/bootstrap/com.kuro.app into the
+//   main source set (app/src/main/assets/bootstrap.tar + jniLibs).
 // Fails assemble with a clear error when bootstrap.tar / jniLibs are missing.
 // Rootfs archives are NOT packaged: the selected distro's rootfs is downloaded
 // on demand from the GitHub release tag `rootfs` at install time
 // (docs/plans/rootfs-github-release-no-apk-bloat.md).
 // ─────────────────────────────────────────────────────────────────────────────
-val flavorAppIds = mapOf(
-    "ivarna" to "com.ivarna.fluxlinux",
-    "zenithblue" to "com.zenithblue.fluxlinux"
-)
+const val KURO_APP_ID = "com.kuro.app"
 
 // assets/loader.apk is built from native/loader/Loader.java by
 // scripts/build_loader_apk.sh (F-Droid rebuilds it after the scanner).
 
-for ((flavorName, appId) in flavorAppIds) {
-    val taskName = "packageHostAssets" + flavorName.replaceFirstChar { it.uppercase() }
-    tasks.register<Exec>(taskName) {
-        group = "build"
-        description = "Stage host bootstrap + jniLibs for flavor '$flavorName' from native/bootstrap/$appId"
-        workingDir = rootProject.projectDir
-        commandLine("bash", "scripts/package_host_assets.sh", appId)
+tasks.register<Exec>("packageHostAssets") {
+    group = "build"
+    description = "Stage host bootstrap + jniLibs for com.kuro.app from native/bootstrap/com.kuro.app"
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/package_host_assets.sh", KURO_APP_ID)
 
-        val bootstrapTree = fileTree(rootProject.file("native/bootstrap/$appId"))
-        inputs.files(bootstrapTree)
-        outputs.file(file("src/$flavorName/assets/bootstrap.tar"))
-        outputs.dir(file("src/$flavorName/jniLibs"))
+    val bootstrapTree = fileTree(rootProject.file("native/bootstrap/$KURO_APP_ID"))
+    inputs.files(bootstrapTree)
+    outputs.file(file("src/main/assets/bootstrap.tar"))
+    outputs.dir(file("src/main/jniLibs"))
 
-        doFirst {
-            val required = listOf(
-                rootProject.file("native/bootstrap/$appId/bootstrap.tar"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libbash.so"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libproot.so"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libloader.so"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libloader32.so"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libpulseaudio.so"),
-                rootProject.file("native/bootstrap/$appId/jniLibs/arm64-v8a/libpactl.so")
+    doFirst {
+        val required = listOf(
+            rootProject.file("native/bootstrap/$KURO_APP_ID/bootstrap.tar"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libbash.so"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libproot.so"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libloader.so"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libloader32.so"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libpulseaudio.so"),
+            rootProject.file("native/bootstrap/$KURO_APP_ID/jniLibs/arm64-v8a/libpactl.so")
+        )
+        val missing = required.filter { !it.isFile }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "Host bootstrap assets missing for applicationId '$KURO_APP_ID':\n" +
+                    missing.joinToString("\n") { "  - $it" } +
+                    "\n\nAssemble the bootstrap first:\n" +
+                    "  ./scripts/assemble_bootstrap.py --package-name $KURO_APP_ID --mode full\n" +
+                    "  ./scripts/verify_bootstrap.sh $KURO_APP_ID"
             )
-            val missing = required.filter { !it.isFile }
-            if (missing.isNotEmpty()) {
-                throw GradleException(
-                    "Host bootstrap assets missing for applicationId '$appId':\n" +
-                        missing.joinToString("\n") { "  - $it" } +
-                        "\n\nRun the package build first:\n" +
-                        "  ./scripts/build_packages_for_appid.sh $appId\n" +
-                        "  ./scripts/assemble_bootstrap.py --package-name $appId --mode full\n" +
-                        "  ./scripts/verify_bootstrap.sh $appId"
-                )
-            }
         }
     }
 }
 
-// Every assemble / bundle / pre-build for a flavor depends on its package task so
+// Every assemble / bundle / pre-build depends on the packaging task so
 // mergeAssets / mergeJniLibFolders never see an empty host (P0-T7).
-for (flavorName in flavorAppIds.keys) {
-    val cap = flavorName.replaceFirstChar { it.uppercase() }
-    tasks.matching {
-        it.name.startsWith("assemble$cap") ||
-            it.name.startsWith("bundle$cap") ||
-            it.name.startsWith("pre${cap}")
-    }.configureEach {
-        dependsOn("packageHostAssets$cap")
-    }
+tasks.matching {
+    it.name.startsWith("assemble") ||
+        it.name.startsWith("bundle") ||
+        it.name.startsWith("pre")
+}.configureEach {
+    dependsOn("packageHostAssets")
 }
 
 dependencies {

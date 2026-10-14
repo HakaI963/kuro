@@ -129,7 +129,7 @@
 ## 5. Test Strategy & Validation Plan
 
 1. **Unit Tests:**
-   - Execute `./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.terminal.*"`
+   - Execute `./gradlew :app:testIvarnaDebugUnitTest --tests "com.kuro.app.core.terminal.*"`
    - Verify `ProotCommandBuilderTest`, `GuestZshrcRepairTest`, `TermuxHostPathsTest`, `LinuxCommandBuilderTest`.
    - Add unit test validating that `BootstrapInstaller.isExtracted(ctx)` and `TerminalLauncher.isHostSetupDone(ctx)` fast-path logic behaves correctly.
 

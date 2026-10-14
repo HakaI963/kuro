@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.termux.x11.stub"
+    namespace = "com.kuro.app.stub"
     compileSdk = 36
 
     defaultConfig {

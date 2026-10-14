@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Author** | FluxLinux |
+| **Author** | Kuro |
 | **Date** | 2026-08-16 |
 | **Updated** | 2026-08-16 (PR5 residual gate) |
 | **Status** | **IMPLEMENTED (code APPROVE — device smoke PARTIAL)** |
 | **Repo** | `/home/abhaybyte/repos/fluxlinux` |
 | **Audience** | Implementers of Settings storage pages + chroot/proot size/process managers |
-| **Flavor / package** | Ivarna (`com.ivarna.fluxlinux`) |
+| **Flavor / package** | Ivarna (`com.kuro.app`) |
 | **APK policy** | `:app:assembleIvarnaRelease` + `adb install -r` only. Do **not** uninstall the existing APK. |
 | **Scope lock** | Contract + landed implementation. Do not re-open path SSOT / kill allowlist / uninstall factories. |
 
@@ -27,7 +27,7 @@
 
 ## Implementation status (2026-08-16 pass 2)
 
-Code is **APPROVE**. Ivarna release `app-ivarna-release.apk` **154,189,691** bytes, mtime **14:42:31**. Device `com.ivarna.fluxlinux` `lastUpdateTime=14:42:51`, host PID **18740**, serial **Y5WWBMJVOZSK4HU8**. JVM: **33** classes / **317** tests, 0 fail. Do **not** treat the worker S-table as a completed PR5 device pass.
+Code is **APPROVE**. Ivarna release `app-ivarna-release.apk` **154,189,691** bytes, mtime **14:42:31**. Device `com.kuro.app` `lastUpdateTime=14:42:51`, host PID **18740**, serial **Y5WWBMJVOZSK4HU8**. JVM: **33** classes / **317** tests, 0 fail. Do **not** treat the worker S-table as a completed PR5 device pass.
 
 ### Closed (pass-1 issues)
 
@@ -60,8 +60,8 @@ Code is **APPROVE**. Ivarna release `app-ivarna-release.apk` **154,189,691** byt
 | S2 | SOURCE-CODE SUPPORTED | List landing + amber warning; device has 12 dirs |
 | S3 | **N/A** | Fixture has 12 installed chroots. Empty CTA exists in code |
 | S4 | SOURCE-CODE SUPPORTED | Universal `N INSTALLED`; 12 known paths |
-| S5 | SOURCE-CODE SUPPORTED | Debian (Rooted) `/data/local/tmp/chrootDebian13`; `du` 2.8 GB |
-| S6 | SOURCE-CODE SUPPORTED | Alpine (Rooted) `/data/local/tmp/chrootAlpine`; `du` 1.4 GB |
+| S5 | SOURCE-CODE SUPPORTED | Debian (Rooted) `/data/local/kuro/chroot/debian13_chroot/rootfs`; `du` 2.8 GB |
+| S6 | SOURCE-CODE SUPPORTED | Alpine (Rooted) `/data/local/kuro/chroot/alpine_chroot/rootfs`; `du` 1.4 GB |
 | S7 | **ADB-VERIFIED** (bytes) | 12-path `du` sum **30,168,982,561** ≈ 28.1 GB. OpenSUSE **chroot** 8.73 GB ≠ PRoot `opensuse` |
 | S8 | **PARTIALLY VERIFIED** | Widgets exist. Worker “0 running” is **not** Scan ≥ 1 + live kill |
 | S9 | **PARTIALLY VERIFIED** | 12-path confirm + Cancel loop unit-tested. No device mid-reap cancel |
@@ -79,7 +79,7 @@ PR 1–4 are in the working tree (uncommitted). PR 5 is **not** done until S8/S9
 
 ## Overview
 
-Settings → Chroot is a **Debian-only** management page. It hardcodes catalog id `debian13_chroot` and host path `ChrootPaths.CHROOT_PATH` (`/data/local/tmp/chrootDebian13`) even though the catalog already ships **12 installable chroot cards** (Alpine, Arch, Chimera, Debian, Deepin, Fedora, Kali, Manjaro, openSUSE, Parrot, Ubuntu, Void) with distinct host paths. Users who install Fedora/Alpine/… chroot cannot see size, root status, or kill orphans for those roots. There is also **no Settings card** for PRoot storage, which lives inside app `filesDir` and is the complementary disk-use surface.
+Settings → Chroot is a **Debian-only** management page. It hardcodes catalog id `debian13_chroot` and host path `ChrootPaths.CHROOT_PATH` (`/data/local/kuro/chroot/debian13_chroot/rootfs`) even though the catalog already ships **12 installable chroot cards** (Alpine, Arch, Chimera, Debian, Deepin, Fedora, Kali, Manjaro, openSUSE, Parrot, Ubuntu, Void) with distinct host paths. Users who install Fedora/Alpine/… chroot cannot see size, root status, or kill orphans for those roots. There is also **no Settings card** for PRoot storage, which lives inside app `filesDir` and is the complementary disk-use surface.
 
 This plan parameterizes the existing chroot size/process stack by **distro id + host path**, splits Settings → Chroot into **list → detail**, adds a **universal** aggregate entry (sum of *installed* sizes + kill/scan over **all 12 known** catalog paths), and adds a **PRoot** Settings card that mirrors list → detail + universal **container size** (no host-wide process kill). List membership uses the same probe as Home/Distros (`ChrootDetection.probe` / `isDistroInstalledOnFs`), but Settings **must not** call that probe on the main thread — first paint is TTL + scoped prefs; an IO job then sequentially `probe(forceRoot=true)` every installable chroot path (see Issue 1). Debian install/launch/uninstall, Home/Distros cards, and Terminal sessions stay untouched.
 
@@ -89,7 +89,7 @@ This plan parameterizes the existing chroot size/process stack by **distro id + 
 
 ### Why this change is needed
 
-A rooted device can hold several sibling chroots under `/data/local/tmp/chroot*`. Each survives app uninstall. The only UI that can measure them and SIGKILL orphans currently names Debian in the subtitle, the kill confirm, and `ChrootInfoStore` prefs keys. Every other rooted card is invisible on this page.
+A rooted device can hold several sibling chroots under `/data/local/kuro/chroot*`. Each survives app uninstall. The only UI that can measure them and SIGKILL orphans currently names Debian in the subtitle, the kill confirm, and `ChrootInfoStore` prefs keys. Every other rooted card is invisible on this page.
 
 PRoot containers live under `$PREFIX/var/lib/proot-distro/containers/<prootName>/` and **are** removed with the app. Users still need a place to see per-distro and total size without opening a shell and running `du`. Distro Settings uninstall already deletes a single container; it does not show disk use.
 
@@ -97,7 +97,7 @@ PRoot containers live under `$PREFIX/var/lib/proot-distro/containers/<prootName>
 
 1. Settings → Chroot always talks about Debian, even when the device has Alpine/Fedora/… installed and Debian is absent.
 2. Size cache is a single unscoped SharedPreferences blob (`flux_chroot_prefs` / `chroot_size_bytes`). A second distro cannot keep its own last-good size.
-3. Kill confirm always prints `/data/local/tmp/chrootDebian13`. Killing Fedora orphans from this page is impossible.
+3. Kill confirm always prints `/data/local/kuro/chroot/debian13_chroot/rootfs`. Killing Fedora orphans from this page is impossible.
 4. Empty-state “Install chroot” always opens the Debian (`debian13_chroot`) wizard.
 5. No PRoot size surface. App storage can grow by several GB with no Settings readout.
 
@@ -146,22 +146,22 @@ Contrast is already correct: cream `secondary`, not `primary` as fill (204–208
 
 | Catalog id | `chrootSupported` | Host path constant | Absolute path |
 |---|---|---|---|
-| `debian13_chroot` | true | `DEBIAN_CHROOT_PATH` | `/data/local/tmp/chrootDebian13` |
-| `alpine_chroot` | true | `ALPINE_CHROOT_PATH` | `/data/local/tmp/chrootAlpine` |
-| `fedora_chroot` | true | `FEDORA_CHROOT_PATH` | `/data/local/tmp/chrootFedora` |
-| `void_chroot` | true | `VOID_CHROOT_PATH` | `/data/local/tmp/chrootVoid` |
-| `opensuse_chroot` | true | `OPENSUSE_CHROOT_PATH` | `/data/local/tmp/chrootOpenSUSE` |
-| `deepin_chroot` | true | `DEEPIN_CHROOT_PATH` | `/data/local/tmp/chrootDeepin` |
-| `chimera_chroot` | true | `CHIMERA_CHROOT_PATH` | `/data/local/tmp/chrootChimera` |
-| `manjaro_chroot` | true | `MANJARO_CHROOT_PATH` | `/data/local/tmp/chrootManjaro` |
-| `ubuntu_chroot` | true | `UBUNTU_CHROOT_PATH` | `/data/local/tmp/chrootUbuntu` |
-| `kali_chroot` | true | `KALI_CHROOT_PATH` | `/data/local/tmp/chrootKali` |
-| `parrot_chroot` | true | `PARROT_CHROOT_PATH` | `/data/local/tmp/chrootParrot` |
-| `archlinux_chroot` | true | `ARCH_CHROOT_PATH` | `/data/local/tmp/chrootArch` |
+| `debian13_chroot` | true | `DEBIAN_CHROOT_PATH` | `/data/local/kuro/chroot/debian13_chroot/rootfs` |
+| `alpine_chroot` | true | `ALPINE_CHROOT_PATH` | `/data/local/kuro/chroot/alpine_chroot/rootfs` |
+| `fedora_chroot` | true | `FEDORA_CHROOT_PATH` | `/data/local/kuro/chroot/fedora_chroot/rootfs` |
+| `void_chroot` | true | `VOID_CHROOT_PATH` | `/data/local/kuro/chroot/void_chroot/rootfs` |
+| `opensuse_chroot` | true | `OPENSUSE_CHROOT_PATH` | `/data/local/kuro/chroot/opensuse_chroot/rootfs` |
+| `deepin_chroot` | true | `DEEPIN_CHROOT_PATH` | `/data/local/kuro/chroot/deepin_chroot/rootfs` |
+| `chimera_chroot` | true | `CHIMERA_CHROOT_PATH` | `/data/local/kuro/chroot/chimera_chroot/rootfs` |
+| `manjaro_chroot` | true | `MANJARO_CHROOT_PATH` | `/data/local/kuro/chroot/manjaro_chroot/rootfs` |
+| `ubuntu_chroot` | true | `UBUNTU_CHROOT_PATH` | `/data/local/kuro/chroot/ubuntu_chroot/rootfs` |
+| `kali_chroot` | true | `KALI_CHROOT_PATH` | `/data/local/kuro/chroot/kali_chroot/rootfs` |
+| `parrot_chroot` | true | `PARROT_CHROOT_PATH` | `/data/local/kuro/chroot/parrot_chroot/rootfs` |
+| `archlinux_chroot` | true | `ARCH_CHROOT_PATH` | `/data/local/kuro/chroot/archlinux_chroot/rootfs` |
 
 Alias (profile + `pathForDistro` only, **not** a Distro card): `debian_chroot` → same path as `debian13_chroot`. List derivation must use catalog cards so Debian appears once.
 
-`pathForDistro` `else` → `CHROOT_PATH` (Debian). Coming-soon ids (`adelie`, `artix`, `backbox`, `centos_stream`, `gentoo`, `openkylin`, `rocky`) have `chrootSupported = true` but **no** `DistroInstallProfile` and **no** dedicated path. `TerminalLauncher.isDistroInstalledOnFs` returns `false` when `forId` is null. Those cards must never enter the storage list (`chrootPathOrNull` is null). Uncatalogued leftover dirs (`/data/local/tmp/chrootSomethingElse`) are **out of v1**; catalogued leftovers on the 12 known paths stay killable via universal scan.
+`pathForDistro` `else` → `CHROOT_PATH` (Debian). Coming-soon ids (`adelie`, `artix`, `backbox`, `centos_stream`, `gentoo`, `openkylin`, `rocky`) have `chrootSupported = true` but **no** `DistroInstallProfile` and **no** dedicated path. `TerminalLauncher.isDistroInstalledOnFs` returns `false` when `forId` is null. Those cards must never enter the storage list (`chrootPathOrNull` is null). Uncatalogued leftover dirs (`/data/local/kuro/chrootSomethingElse`) are **out of v1**; catalogued leftovers on the 12 known paths stay killable via universal scan.
 
 `ChrootPaths.CHROOT_PATH` remains the Debian historical default for unscoped APIs (helper, legacy builders). Settings must stop using it as “the” chroot.
 
@@ -169,7 +169,7 @@ Alias (profile + `pathForDistro` only, **not** a Distro card): `debian_chroot` �
 
 ```139:146:app/src/main/kotlin/com/ivarna/fluxlinux/core/terminal/TerminalLauncher.kt
     fun isDistroInstalledOnFs(ctx: Context, distroId: String): Boolean {
-        val profile = com.ivarna.fluxlinux.core.install.DistroInstallProfile.forId(distroId)
+        val profile = com.kuro.app.core.install.DistroInstallProfile.forId(distroId)
             ?: return false
         return when (profile.method) {
             "chroot" -> isChrootInstalled(profile.chrootPath ?: return false)
@@ -233,7 +233,7 @@ Dark scheme (`Theme.kt` 22–33): `primary = FluxDarkGrey` (#1A1C1E) is a **fill
 - New distros, new host paths, or coming-soon installers.
 - Changing chroot/proot **install**, **launch**, **uninstall**, or GUI start/stop scripts (except the tiny `chroot_processes.sh` path-refuse guard in PR2). Uninstall factories stay untouched.
 - Host-wide `pkill proot` / kill-all-PTYs.
-- Measuring or killing leftovers that are not in the installable catalog (no `/data/local/tmp/chroot*` glob as SSOT).
+- Measuring or killing leftovers that are not in the installable catalog (no `/data/local/kuro/chroot*` glob as SSOT).
 - Rewriting Home, Distros, Terminal settings, X11 settings, `FluxSwitch`, or `GlassSettingCard` internals.
 - Depending on the unfinished Home session-card / X11-chrome / first-Back-to-Home work.
 - A second Activity. Routing stays on `MainActivity` `Screen` enum.
@@ -255,7 +255,7 @@ Dark scheme (`Theme.kt` 22–33): `primary = FluxDarkGrey` (#1A1C1E) is a **fill
 | List vs detail routing | New `Screen` values + `storageTargetId`. Set id **before** flipping the screen. `storageTargetId == null` or vanished id → **pop to list**. `firstOrNull` everywhere — never `first { }`. | Matches `selectedDistro`. MainActivity `BackHandler` would skip an internal list flag. |
 | Universal visibility | **Always** show the All chroots row (even at 0 installed). Installed-only rows below for size. | Leftover orphans on a catalog path with no marker must still be killable (today’s Debian NOT INSTALLED / PRESENT behavior). |
 | Universal size | Sum of **successfully measured installed** roots. Partial = “N of M measured”. | A single timeout must not zero the total. Leftovers do not add size. |
-| Universal kill / scan | Sequential `list`/`killAll` over **all 12 `KNOWN_CHROOT_PATHS`**, not installed-only. Confirm names **every path that will be reaped** (the 12). Never glob `/data/local/tmp/chroot*`. | `readlink /proc/PID/root` still matches after marker/dir is gone. Uninstall scripts already reap first; this page is the leftover job. |
+| Universal kill / scan | Sequential `list`/`killAll` over **all 12 `KNOWN_CHROOT_PATHS`**, not installed-only. Confirm names **every path that will be reaped** (the 12). Never glob `/data/local/kuro/chroot*`. | `readlink /proc/PID/root` still matches after marker/dir is gone. Uninstall scripts already reap first; this page is the leftover job. |
 | Proc budget | List + universal **subtitle** use **cached** `chroot_proc_count_<id>` only. No `list`/`reap` until the user opens a detail or taps Refresh / Scan / Kill. Universal reap shows `k/N` + **Cancel**. | 12 × 25s list or 12 × 55s reap would stall the list for minutes. |
 | `invalidate` | Settings calls **`invalidate(path)` only**. Never no-arg `cache.clear()` from `refreshSize`. | No-arg wipe of Fedora’s TTL when Debian detail has no su makes Home flicker. |
 | `SizeUi.installed` | `= probe().installed` (marker ‖ shell). Status `PRESENT` = `dirExists && !installed`. Prefs `chroot_installed_<id>` stores **probe.installed**, not `markerOk \|\| dirExists`. | Today’s model treats leftover empty dirs as installed; list SSOT does not. |
@@ -380,7 +380,7 @@ sequenceDiagram
 
 ### Catalog helper (new, testable, no Compose)
 
-Add `com.ivarna.fluxlinux.core.chroot.GuestStorageCatalog` (name bikeshed OK; keep it out of `ui/`).
+Add `com.kuro.app.core.chroot.GuestStorageCatalog` (name bikeshed OK; keep it out of `ui/`).
 
 ```kotlin
 object GuestStorageCatalog {
@@ -437,7 +437,7 @@ object GuestStorageCatalog {
 }
 ```
 
-`KNOWN_CHROOT_PATHS` = the 12 constants in `ChrootPaths` (already asserted distinct in `ChrootPathsTest.new_chroot_paths_are_distinct`). `REFUSED_HOST_PATHS` = `""`, `/`, `/data`, `/data/`, `/data/local`, `/data/local/`, `/data/local/tmp`, `/data/local/tmp/`.
+`KNOWN_CHROOT_PATHS` = the 12 constants in `ChrootPaths` (already asserted distinct in `ChrootPathsTest.new_chroot_paths_are_distinct`). `REFUSED_HOST_PATHS` = `""`, `/`, `/data`, `/data/`, `/data/local`, `/data/local/`, `/data/local/kuro`, `/data/local/kuro/`.
 
 UI list composition:
 
@@ -554,9 +554,9 @@ Universal cache id = `__all_chroot__` (sum + last refresh). Treat as a cache of 
 Add a **tiny** allowlist fail-closed at the top of `chroot_processes.sh` (and the same check in `chroot_size.sh` for consistency):
 
 ```sh
-# After CHROOT_PATH="${2:-/data/local/tmp/chrootDebian13}"
+# After CHROOT_PATH="${2:-/data/local/kuro/chroot/debian13_chroot/rootfs}"
 case "$CHROOT_PATH" in
-  ""|"/"|"/data"|"/data/"|"/data/local"|"/data/local/"|"/data/local/tmp"|"/data/local/tmp/")
+  ""|"/"|"/data"|"/data/"|"/data/local"|"/data/local/"|"/data/local/kuro"|"/data/local/kuro/")
     printf '%s\n' "# chroot_processes v1"
     printf '%s\n' "# path=$CHROOT_PATH"
     printf '%s\n' "# error=refused_path"
@@ -705,11 +705,11 @@ TopBar: Chroot                    [←]
 
 [ Debian (Rooted)            INSTALLED > ]
   2.8 GB
-  /data/local/tmp/chrootDebian13
+  /data/local/kuro/chroot/debian13_chroot/rootfs
 
 [ Fedora (Rooted)            INSTALLED > ]
   1.3 GB
-  /data/local/tmp/chrootFedora
+  /data/local/kuro/chroot/fedora_chroot/rootfs
 
 [ Refresh sizes ]
 ```
@@ -905,12 +905,12 @@ No on-disk rootfs layout change. No marker format change (still `.flux_configure
 
 | Threat | Severity | Mitigation |
 |---|---|---|
-| Kill path set to `/` or `/data` | **Critical** | Kotlin `allowedKillPath` (12 constants only) **and** script `# error=refused_path` for empty/`/`/`/data`/`/data/local`/`/data/local/tmp`. Never `pathForDistro("adelie")`. |
+| Kill path set to `/` or `/data` | **Critical** | Kotlin `allowedKillPath` (12 constants only) **and** script `# error=refused_path` for empty/`/`/`/data`/`/data/local`/`/data/local/kuro`. Never `pathForDistro("adelie")`. |
 | Leftover orphans after marker gone | High (product) | Universal kill/scan unions **all 12 known paths**. Confirm names every reaped path. List size rows stay installed-only. |
 | Concurrent `su` / overlapping reap | Medium | One `Job` per screen, cancel on dispose. `forceClearSu` once at Job start. |
 | Confirm dialog omits path | High (UX/safety) | `confirmKillCopy(paths)` JVM-tested. |
 | PRoot walk during uninstall | Low | Title matcher `Uninstall ${distro.name}`; IOException → `gone`; never cache 0. |
-| SELinux false-negative on `/data/local/tmp` | Existing | Two-phase list: IO `probe(forceRoot=true)` every installable path. Do not add app-uid `File.exists` as SSOT. |
+| SELinux false-negative on `/data/local/kuro` | Existing | Two-phase list: IO `probe(forceRoot=true)` every installable path. Do not add app-uid `File.exists` as SSOT. |
 | Global `invalidate()` wipes sibling TTL | High | Settings calls `invalidate(path)` only (`ChrootSettingsModel.kt` 109 today is the bug). |
 | Prefs leak of paths | Negligible | Paths are well-known on-device locations, not secrets. |
 
@@ -952,7 +952,7 @@ Task: `./gradlew :app:testIvarnaDebugUnitTest --no-daemon`
 | Test class (new or extend) | Assertions |
 |---|---|
 | `ChrootPathsTest` (exists) | Keep 12 distinct paths + `pathForDistro` map. Document `pathForDistro("adelie")` else → Debian as a **hazard** the catalog helper must not call. |
-| `GuestStorageCatalogTest` **new** | `installableChroots()` = 12 ids, does **not** contain `debian_chroot`. `installedRows(predicate)` with injected FS: empty predicate → no rows; one id true → one row with `chrootPathOrNull` path. `chrootPathOrNull` null for `adelie`, `debian` (proot), `__all_chroot__`, `""`. Non-null and in the 12-constant set for each installable chroot id. Deduped host paths size == 12. `allowedKillPath` false for `""`, `"/"`, `"/data"`, `"/data/local"`, `"/data/local/tmp"`, `ChrootPaths.CHROOT_PATH+"/.."`. **List/kill builders never call `pathForDistro`** (`pathForDistro("adelie")` equals Debian and would wrongly pass the 12-set). |
+| `GuestStorageCatalogTest` **new** | `installableChroots()` = 12 ids, does **not** contain `debian_chroot`. `installedRows(predicate)` with injected FS: empty predicate → no rows; one id true → one row with `chrootPathOrNull` path. `chrootPathOrNull` null for `adelie`, `debian` (proot), `__all_chroot__`, `""`. Non-null and in the 12-constant set for each installable chroot id. Deduped host paths size == 12. `allowedKillPath` false for `""`, `"/"`, `"/data"`, `"/data/local"`, `"/data/local/kuro"`, `ChrootPaths.CHROOT_PATH+"/.."`. **List/kill builders never call `pathForDistro`** (`pathForDistro("adelie")` equals Debian and would wrongly pass the 12-set). |
 | `ChrootSettingsModel` aggregation **new** | `sumSizes` empty / all-ok / partial / all-fail. `confirmKillCopy(KNOWN_CHROOT_PATHS)` contains every one of the 12 paths. |
 | `ChrootInfoStoreTest` **new** | Use **`FakePrefsContext`**. `formatStorageBytes(null) == "—" to ""`; ~2.8 GiB → `"2.8","GB"`; 512 → `"512","B"`. Unscoped `chroot_last_ms` + `chroot_proc_last_ms` read as `debian13_chroot`. Scoped write does **not** delete unscoped keys. |
 | `ChrootProcessManagerTest` (exists) | Keep parse tests. Add: two-path remaining merge by pid (pure). |
@@ -980,19 +980,19 @@ No remote feature flag infrastructure exists; do not add one.
 **Policy** (same as `docs/plan/ui-home-x11-contrast-perf.md` and `docs/plans/fedora-chroot-flux-setuidgid.md`):
 
 - Flavor: **Ivarna**
-- Package: `com.ivarna.fluxlinux`
+- Package: `com.kuro.app`
 - Build: `./gradlew :app:assembleIvarnaRelease --no-daemon`
 - Install: `adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk`
-- **Do not uninstall** the existing APK (preserves already-installed proot containers and any `/data/local/tmp/chroot*`).
-- Launch: `adb shell am start -n com.ivarna.fluxlinux/.MainActivity`
+- **Do not uninstall** the existing APK (preserves already-installed proot containers and any `/data/local/kuro/chroot*`).
+- Launch: `adb shell am start -n com.kuro.app/.MainActivity`
 
 ### 0. Preconditions
 
 ```bash
 adb devices
-adb shell pm path com.ivarna.fluxlinux
-adb shell su -c 'ls -d /data/local/tmp/chroot* 2>/dev/null'
-adb shell ls /data/data/com.ivarna.fluxlinux/files/usr/var/lib/proot-distro/containers
+adb shell pm path com.kuro.app
+adb shell su -c 'ls -d /data/local/kuro/chroot* 2>/dev/null'
+adb shell ls /data/data/com.kuro.app/files/usr/var/lib/proot-distro/containers
 ```
 
 | Device has | Run | Skip / N/A |
@@ -1011,7 +1011,7 @@ cd /home/abhaybyte/repos/fluxlinux
 ./gradlew :app:testIvarnaDebugUnitTest --no-daemon
 ./gradlew :app:assembleIvarnaRelease --no-daemon
 adb install -r app/build/outputs/apk/ivarna/release/app-ivarna-release.apk
-adb shell am start -n com.ivarna.fluxlinux/.MainActivity
+adb shell am start -n com.kuro.app/.MainActivity
 ```
 
 ### 2. Checklist
@@ -1022,14 +1022,14 @@ adb shell am start -n com.ivarna.fluxlinux/.MainActivity
 | S2 | Chroot list (empty **or** populated) | Tap Chroot. Lands on **list**, not Debian detail. Uninstall-survives amber warning visible. | SOURCE-CODE SUPPORTED |
 | S3 | Empty CTA | If 0 **installed** chroots: “Install from Distros” + “Switch to the Chroot tab” → Home/Distros (PRoot tab; not a crashed wizard). All chroots row still present. | **N/A** (12 chroots on fixture) |
 | S4 | Universal row | First row is All chroots (even at 0 installed). Shows installed count. Size may be `—` then a number after Refresh sizes. Proc subtitle is cached (`—` until a detail Scan has run). | SOURCE-CODE SUPPORTED |
-| S5 | Debian detail | If Debian chroot installed: tap Debian (Rooted). Top bar = `Debian (Rooted)`. **Same widgets as today’s page**: Status, Root access, LINUX STORAGE, HOST PATH=`/data/local/tmp/chrootDebian13`, Processes, Scan, Kill, Refresh all. | SOURCE-CODE SUPPORTED |
+| S5 | Debian detail | If Debian chroot installed: tap Debian (Rooted). Top bar = `Debian (Rooted)`. **Same widgets as today’s page**: Status, Root access, LINUX STORAGE, HOST PATH=`/data/local/kuro/chroot/debian13_chroot/rootfs`, Processes, Scan, Kill, Refresh all. | SOURCE-CODE SUPPORTED |
 | S6 | Non-Debian detail | **N/A if only Debian.** Else tap it. HOST PATH matches the table. Size > 0 after measure. Kill confirm names **that** path, not Debian. | SOURCE-CODE SUPPORTED (Alpine) |
-| S7 | Size vs `du` | `adb shell su -c 'du -sb /data/local/tmp/chrootDebian13'` (UI excludes `sdcard/dev/proc/sys/mnt/run`). UI GB and `du` same **order of magnitude** (not 0, not 100× off). | **ADB-VERIFIED** (bytes; sum 30,168,982,561 ≈ 28.1 GB) |
-| S8 | Scan / kill (single) | Open a chroot shell (Terminal). Note host pid: `adb shell pidof com.ivarna.fluxlinux`. Detail Scan count ≥ 1. Kill confirm lists **that** path. After kill, shell dies; count → 0. `pidof com.ivarna.fluxlinux` still prints a pid; launcher still opens. | **PARTIAL** — widgets only; worker “0 running” ≠ live kill |
-| S9 | Universal kill | Open universal detail. Confirm lists **all 12 known paths** (not installed-only). If only one chroot: still that 12-path confirm (single-path smoke). If two guests: both die. `ls /data/local/tmp/chrootDebian13` still exists. Cancel mid-reap stops remaining `k/N`. | **PARTIAL** — confirm + Cancel unit-tested; no device mid-reap |
+| S7 | Size vs `du` | `adb shell su -c 'du -sb /data/local/kuro/chroot/debian13_chroot/rootfs'` (UI excludes `sdcard/dev/proc/sys/mnt/run`). UI GB and `du` same **order of magnitude** (not 0, not 100× off). | **ADB-VERIFIED** (bytes; sum 30,168,982,561 ≈ 28.1 GB) |
+| S8 | Scan / kill (single) | Open a chroot shell (Terminal). Note host pid: `adb shell pidof com.kuro.app`. Detail Scan count ≥ 1. Kill confirm lists **that** path. After kill, shell dies; count → 0. `pidof com.kuro.app` still prints a pid; launcher still opens. | **PARTIAL** — widgets only; worker “0 running” ≠ live kill |
+| S9 | Universal kill | Open universal detail. Confirm lists **all 12 known paths** (not installed-only). If only one chroot: still that 12-path confirm (single-path smoke). If two guests: both die. `ls /data/local/kuro/chroot/debian13_chroot/rootfs` still exists. Cancel mid-reap stops remaining `k/N`. | **PARTIAL** — confirm + Cancel unit-tested; no device mid-reap |
 | S10 | Back stack | Detail → system Back → list. List → Back → Settings. Settings → Back → Home. In-app ← matches. | SOURCE-CODE SUPPORTED |
 | S11 | PRoot list | Settings → PRoot. Installed proots listed. Copy says **inside app storage** (no uninstall-survives amber). No Kill button. | SOURCE-CODE SUPPORTED |
-| S12 | PRoot detail + universal | Tap a proot. HOST PATH is the **container** (`…/containers/<prootName>` — no `/rootfs`). Size vs `adb shell du -sb /data/data/com.ivarna.fluxlinux/files/usr/var/lib/proot-distro/containers/debian` — **order of magnitude** (walk ≠ `du`). Universal total ≈ sum of rows. | SOURCE-CODE + ADB path (walk 4.9 GB vs `du` 1.49 GB accepted) |
+| S12 | PRoot detail + universal | Tap a proot. HOST PATH is the **container** (`…/containers/<prootName>` — no `/rootfs`). Size vs `adb shell du -sb /data/data/com.kuro.app/files/usr/var/lib/proot-distro/containers/debian` — **order of magnitude** (walk ≠ `du`). Universal total ≈ sum of rows. | SOURCE-CODE + ADB path (walk 4.9 GB vs `du` 1.49 GB accepted) |
 | S13 | PRoot uninstall race | Optional: start Uninstall from Distro Settings (`title == "Uninstall ${name}"`), immediately Refresh size. No crash; size becomes `—` / “not installed”; row disappears after `refreshTrigger` / resume. | **N/A / TEST-ONLY** — JVM keep-cache PASS; fixture intact |
 | S14 | Regression | Home installed cards unchanged. Distros install still works. Open a Debian proot Terminal session; still works. Debian chroot install/uninstall from Distro Settings still works (do not run uninstall unless user consents). | SOURCE-CODE SUPPORTED |
 | S15 | Contrast (dark) | Titles `onBackground` / numbers `secondary`; no near-black-on-black filled buttons except the red kill. | UNVERIFIED (device) / CODE SUPPORTED |
@@ -1039,16 +1039,16 @@ adb shell am start -n com.ivarna.fluxlinux/.MainActivity
 
 ```bash
 # Chroot bytes (root)
-adb shell su -c 'du -sb /data/local/tmp/chrootDebian13 /data/local/tmp/chrootAlpine /data/local/tmp/chrootFedora /data/local/tmp/chrootVoid /data/local/tmp/chrootOpenSUSE /data/local/tmp/chrootDeepin /data/local/tmp/chrootChimera /data/local/tmp/chrootManjaro /data/local/tmp/chrootUbuntu /data/local/tmp/chrootKali /data/local/tmp/chrootParrot /data/local/tmp/chrootArch 2>/dev/null'
+adb shell su -c 'du -sb /data/local/kuro/chroot/debian13_chroot/rootfs /data/local/kuro/chroot/alpine_chroot/rootfs /data/local/kuro/chroot/fedora_chroot/rootfs /data/local/kuro/chroot/void_chroot/rootfs /data/local/kuro/chroot/opensuse_chroot/rootfs /data/local/kuro/chroot/deepin_chroot/rootfs /data/local/kuro/chroot/chimera_chroot/rootfs /data/local/kuro/chroot/manjaro_chroot/rootfs /data/local/kuro/chroot/ubuntu_chroot/rootfs /data/local/kuro/chroot/kali_chroot/rootfs /data/local/kuro/chroot/parrot_chroot/rootfs /data/local/kuro/chroot/archlinux_chroot/rootfs 2>/dev/null'
 
 # Processes whose root is Debian chroot
-adb shell su -c 'for p in /proc/[0-9]*; do r=$(readlink $p/root 2>/dev/null); [ "$r" = /data/local/tmp/chrootDebian13 ] && echo ${p#/proc/}; done'
+adb shell su -c 'for p in /proc/[0-9]*; do r=$(readlink $p/root 2>/dev/null); [ "$r" = /data/local/kuro/chroot/debian13_chroot/rootfs ] && echo ${p#/proc/}; done'
 
 # PRoot containers (same tree as HOST PATH / measure)
-adb shell du -sb /data/data/com.ivarna.fluxlinux/files/usr/var/lib/proot-distro/containers/* 2>/dev/null
+adb shell du -sb /data/data/com.kuro.app/files/usr/var/lib/proot-distro/containers/* 2>/dev/null
 
 # Host still alive after kill
-adb shell pidof com.ivarna.fluxlinux
+adb shell pidof com.kuro.app
 ```
 
 If any cell fails: fix the owning layer (catalog / model / UI / BackHandler), rebuild **release**, `adb install -r`, retest that cell plus S5 (Debian detail) and S10 (back stack). Never `uninstall`.
@@ -1059,7 +1059,7 @@ If any cell fails: fix the owning layer (catalog / model / UI / BackHandler), re
 
 Product questions 4–6 are **closed** (see Key Decisions 13–15 and the product-decision table). Remaining:
 
-1. **Uncatalogued host dirs.** If `/data/local/tmp/chrootSomethingElse` exists (not one of the 12 constants), this plan ignores it. Catalogued leftovers (marker gone, `PRESENT` / `NOT INSTALLED`) **are** covered by universal kill over all 12 known paths. A glob scanner is **not in v1**.
+1. **Uncatalogued host dirs.** If `/data/local/kuro/chrootSomethingElse` exists (not one of the 12 constants), this plan ignores it. Catalogued leftovers (marker gone, `PRESENT` / `NOT INSTALLED`) **are** covered by universal kill over all 12 known paths. A glob scanner is **not in v1**.
 2. **Coming-soon path map.** `adelie` / `artix` / `backbox` / `centos_stream` / `gentoo` / `openkylin` / `rocky` have `chrootSupported = true` and no `ChrootPaths` / profile. When they become installable they **must** get a constant + profile **before** they can appear here. Do not invent `chrootAdelie` now.
 3. **Multi-path reap script.** v1 is sequential Kotlin + `k/N` + Cancel. If S9 is still too slow after Cancel exists, a follow-up may add Alternative D. Not a v1 blocker.
 
@@ -1069,7 +1069,7 @@ Product questions 4–6 are **closed** (see Key Decisions 13–15 and the produc
 
 1. **Parameterize `ChrootSettingsModel` / `ChrootInfoStore` by `distroId` + host path.** Rationale: size/process/kill already take a path at the manager/script layer; only the settings model and UI are Debian-scoped. Forking a second page would drift from the current (correct) detail semantics.
 2. **Installed predicate = Home/Distros; Settings sequences the probe.** Rationale: `probe().installed` (marker ‖ shell) is the SSOT. `isChrootInstalled` never su-probes on the main thread (`ChrootDetection.kt` 74–77; `DesktopLauncher.kt` 138–139). Two-phase list: TTL/prefs first paint, then IO `probe(forceRoot=true)` every installable path, then measure those that came back true.
-3. **Use the real `ChrootPaths` / `DistroInstallProfile` map; never invent paths.** Rationale: 12 installable chroots already have distinct `/data/local/tmp/chroot*` constants and tests. Coming-soon ids have no map — they stay out.
+3. **Use the real `ChrootPaths` / `DistroInstallProfile` map; never invent paths.** Rationale: 12 installable chroots already have distinct `/data/local/kuro/chroot*` constants and tests. Coming-soon ids have no map — they stay out.
 4. **New `Screen` values for list vs detail (and PRoot).** Rationale: `MainActivity` `BackHandler` currently sends `SETTINGS_CHROOT` to Settings. Internal list/detail state would skip the list on system Back unless every future BackHandler edit remembers it.
 5. **Universal chroot is an aggregate, not a 13th rootfs — and it is always listed.** Rationale: size sums **installed** roots; kill/scan unions **all 12 known paths** so leftovers with no marker stay killable (today’s Debian PRESENT/NOT INSTALLED job). Confirm names every path that will be reaped.
 6. **Kill remains exact `/proc/PID/root == path`; Kotlin allowlist + script `refused_path`.** Rationale: the script default/empty path would otherwise `reap '/'`. `pathForDistro` else-branch is forbidden in the builder.

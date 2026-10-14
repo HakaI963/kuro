@@ -93,7 +93,7 @@ Systemd-owned `/usr/lib/kernel/install.d/*` (loaderentry/depmod/uki-copy) and `s
 
 ## Host notes (deviations from plan §4)
 
-- Workdir was `/tmp/opencode/flux-alarm-slim` (tmpfs): `bsdtar` failed to restore `security.capability` xattrs on tmpfs (`newuidmap`/`newgidmap` only); extracted with `--no-xattrs --no-acls`. GNU `tar` also aborted on the image's mode-000 dirs, so bsdtar with xattrs off was used. FluxLinux does not need those caps/xattrs.
+- Workdir was `/tmp/opencode/flux-alarm-slim` (tmpfs): `bsdtar` failed to restore `security.capability` xattrs on tmpfs (`newuidmap`/`newgidmap` only); extracted with `--no-xattrs --no-acls`. GNU `tar` also aborted on the image's mode-000 dirs, so bsdtar with xattrs off was used. Kuro does not need those caps/xattrs.
 - No sudo on host → default file+DB-delete path used (§4.5).
 - `chmod -R u+rX` applied before packing because the image ships some mode-000 files (`usr/lib/dbus-daemon-launch-helper`, tpm2 keystore, ca-certs dir) that a non-root `tar` cannot read.
 - `/etc/resolv.conf` was a dangling symlink (systemd stub) → replaced with a real file (8.8.8.8 / 1.1.1.1).

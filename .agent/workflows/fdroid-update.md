@@ -1,5 +1,5 @@
 ---
-description: How to prepare and publish a new FluxLinux release
+description: How to prepare and publish a new Kuro release
 ---
 
 # Release Workflow
@@ -79,7 +79,7 @@ cat docs/releases/v<PREV>.md         # use as format template
 git log v<PREV>..HEAD --oneline      # gather changelog content
 ```
 
-Format: `# FluxLinux v<VERSION_NAME> Release Notes` heading, then numbered `###` sub-sections per feature/fix area (each with bullet points), plus optional `### Migration Notes` and `### Known Issues` sections at the end.
+Format: `# Kuro v<VERSION_NAME> Release Notes` heading, then numbered `###` sub-sections per feature/fix area (each with bullet points), plus optional `### Migration Notes` and `### Known Issues` sections at the end.
 
 ### 5. Create Changelog TXT (F-Droid)
 
@@ -151,7 +151,7 @@ echo "RELEASE APK (dl):  $RELEASE_APK_COMMIT"
 
 ### 11. F-Droid (Auto)
 
-F-Droid metadata uses `UpdateCheckMode: Tags` — new tags are auto-picked up. No manual metadata update needed unless metadata fields (in `com.ivarna.fluxlinux.yml`) change.
+F-Droid metadata uses `UpdateCheckMode: Tags` — new tags are auto-picked up. No manual metadata update needed unless metadata fields (in `com.kuro.app.yml`) change.
 
 ---
 
@@ -162,10 +162,10 @@ F-Droid metadata uses `UpdateCheckMode: Tags` — new tags are auto-picked up. N
 | APK | `app/build/outputs/apk/release/app-release.apk` |
 | Release notes (per release) | `docs/releases/v<VERSION_NAME>.md` |
 | F-Droid changelog | `fastlane/metadata/android/en-US/changelogs/<VERSION_CODE>.txt` |
-| F-Droid metadata (in-repo) | `com.ivarna.fluxlinux.yml` |
+| F-Droid metadata (in-repo) | `com.kuro.app.yml` |
 | Version source | `app/build.gradle.kts` (`versionCode`, `versionName`) |
 | Commit in APK | `META-INF/version-control-info.textproto` → `revision` |
-| Package ID | `com.ivarna.fluxlinux` |
+| Package ID | `com.kuro.app` |
 | GitHub repo | `abhay-byte/fluxlinux` |
 
 ## Troubleshooting

@@ -1,7 +1,7 @@
 # Onboarding + Debian proot shell + ExtraKeys — results
 
 **Date:** 2026-08-10  
-**Package:** `com.ivarna.fluxlinux`  
+**Package:** `com.kuro.app`  
 **Branch:** `feat/embedded-terminal-bootstrap-proot-chroot`  
 **Device:** USB adb (`Y5WWBMJVOZSK4HU8`)  
 **APK:** `app/build/outputs/apk/ivarna/release/app-ivarna-release.apk` (215M)  
