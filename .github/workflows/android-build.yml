@@ -58,8 +58,20 @@ jobs:
       - name: Compile app Kotlin (ivarna debug)
         run: ./gradlew :app:compileIvarnaDebugKotlin --stacktrace
 
-      - name: Run unit tests (ivarna debug)
-        run: ./gradlew :app:testIvarnaDebugUnitTest --stacktrace
+      - name: Compile test Kotlin (ivarna debug)
+        run: ./gradlew :app:compileIvarnaDebugUnitTestKotlin --stacktrace
+
+      - name: Unit tests group 1 (install/desktop/gpu/data)
+        run: ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.install.*" --tests "com.ivarna.fluxlinux.core.desktop.*" --tests "com.ivarna.fluxlinux.core.gpu.*" --tests "com.ivarna.fluxlinux.core.data.*" --stacktrace
+
+      - name: Unit tests group 2 (legacy/root/chroot/proot/utils)
+        run: ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.legacy.*" --tests "com.ivarna.fluxlinux.core.root.*" --tests "com.ivarna.fluxlinux.core.chroot.*" --tests "com.ivarna.fluxlinux.core.proot.*" --tests "com.ivarna.fluxlinux.core.utils.*" --stacktrace
+
+      - name: Unit tests group 3 (terminal)
+        run: ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.core.terminal.*" --stacktrace
+
+      - name: Unit tests group 4 (ui)
+        run: ./gradlew :app:testIvarnaDebugUnitTest --tests "com.ivarna.fluxlinux.ui.*" --stacktrace
 
       - name: Build ivarna debug APK
         run: ./gradlew :app:assembleIvarnaDebug --stacktrace
