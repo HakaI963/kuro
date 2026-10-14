@@ -25,6 +25,10 @@ class MainActivity : ComponentActivity() {
         // Step 4: silent root availability check on every app open.
         // Background only — no UI, no dialogs, never blocks start.
         RootChecker.refreshSilent()
+        // Step 5c: re-validate the installed proot copy on every cold start;
+        // auto re-acquire in background if invalid (fresh installs without a
+        // copy are left for first container use — no surprise downloads).
+        com.kuro.app.engine.proot.ProotBinary.revalidateBackground(this)
         enableEdgeToEdge()
         val coldStart = savedInstanceState == null && !ColdStartGate.introShown
         setContent {

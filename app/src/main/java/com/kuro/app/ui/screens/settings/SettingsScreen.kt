@@ -24,6 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.kuro.app.core.root.RootChecker
 import com.kuro.app.core.root.RootStatus
 import com.kuro.app.core.system.BridgeInfo
@@ -39,9 +43,6 @@ import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.KuroSettingRow
 import com.kuro.app.ui.components.KuroSwitchRow
 import com.kuro.app.ui.components.firstLoadFade
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -145,6 +146,13 @@ fun SettingsScreen(
                     onClick = { RootChecker.requestRoot() }
                 )
             }
+        }
+
+        item {
+            ChrootHelperCard(
+                rootGranted = rootStatus is RootStatus.Granted,
+                reduceMotion = false
+            )
         }
 
         item {
@@ -358,6 +366,74 @@ private fun LastCrashRow() {
                     copied = true
                 }
             }
+        )
+    }
+}
+
+/**
+ * Step 5c: chroot helper row. Shows last gate results (persisted) and a
+ * user-initiated "Validate" action (enabled only when root is granted —
+ * gates run through su, so they must never fire on their own).
+ */
+@Composable
+private fun ChrootHelperCard(rootGranted: Boolean, reduceMotion: Boolean) {
+    val context = LocalContext.current
+    var gates by remember {
+        mutableStateOf<com.kuro.app.engine.proot.ChrootGates.Results?>(null)
+    }
+    var running by remember { mutableStateOf(false) }
+    fun reload() {
+        gates = runCatching {
+            com.kuro.app.engine.proot.ChrootGates.readLast(context.filesDir)
+        }.getOrNull()
+    }
+    LaunchedEffect(Unit) { reload() }
+    Text(text = stringResource(R.string.settings_chroot_title), style = MaterialTheme.typography.titleMedium)
+    Spacer(modifier = Modifier.height(12.dp))
+    com.kuro.app.ui.components.KuroCard(title = stringResource(R.string.settings_chroot_title)) {
+        Text(
+            text = stringResource(R.string.settings_chroot_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        val snapshot = gates
+        val (label, color) = when {
+            snapshot == null -> stringResource(R.string.settings_chroot_not_validated) to
+                MaterialTheme.colorScheme.onSurfaceVariant
+            snapshot.g1ok && snapshot.g2ok -> (
+                stringResource(R.string.settings_chroot_validated) + " • " +
+                    (snapshot.helperVersion ?: "")
+                ) to MaterialTheme.colorScheme.primary
+            else -> stringResource(R.string.settings_chroot_gates_failed) to
+                MaterialTheme.colorScheme.error
+        }
+        Text(text = label, style = MaterialTheme.typography.titleMedium, color = color)
+        if (snapshot != null && !(snapshot.g1ok && snapshot.g2ok)) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "g1: ${snapshot.g1detail}\ng2: ${snapshot.g2detail}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        com.kuro.app.ui.components.KuroSecondaryButton(
+            label = stringResource(R.string.settings_chroot_validate),
+            onClick = {
+                if (running) return@KuroSecondaryButton
+                running = true
+                CoroutineScope(Dispatchers.Main.immediate).launch {
+                    gates = withContext(Dispatchers.IO) {
+                        runCatching {
+                            com.kuro.app.engine.proot.ChrootGates.runGates(context)
+                        }.getOrNull()
+                    }
+                    running = false
+                }
+            },
+            enabled = rootGranted && !running,
+            reduceMotion = reduceMotion
         )
     }
 }
