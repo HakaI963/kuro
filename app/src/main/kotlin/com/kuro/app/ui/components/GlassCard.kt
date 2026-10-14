@@ -30,6 +30,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -170,7 +172,7 @@ fun DistroCard(
                         }
                         Text(
                             text = statusMessage
-                                ?: "${distro.id} • ${distro.sizeEstimate}",
+                                ?: distroCardSubtitle(distro.id),
                             color = if (statusIsError) colors.error else colors.onSurfaceVariant,
                             fontSize = 11.sp,
                             maxLines = 1,
@@ -330,6 +332,20 @@ fun MethodTabs(
             modifier = Modifier.weight(1f)
         )
     }
+}
+
+/** Catalog subtitle: distro id plus the real minimum rootfs download size. */
+@Composable
+private fun distroCardSubtitle(distroId: String): String {
+    val minBytes = remember(distroId) {
+        runCatching {
+            com.kuro.app.core.install.DistroInstallProfile.forId(distroId)?.rootfsMinBytes
+        }.getOrDefault(null)
+    }
+    val size = minBytes?.let {
+        if (it >= 1024L * 1024L) "${it / (1024L * 1024L)} MB+" else "${it / 1024L} KB+"
+    }
+    return listOfNotNull(distroId, size).joinToString(" • ")
 }
 
 @Composable
