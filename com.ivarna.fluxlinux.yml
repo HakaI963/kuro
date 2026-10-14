@@ -1,0 +1,127 @@
+AntiFeatures:
+  TetheredNet:
+    en-US: Downloads distro rootfs archives from GitHub release tag rootfs (and
+      optional guest GPU / SDK archives) after an in-app opt-in. The host bootstrap
+      is built from source and bundled in the APK.
+Categories:
+  - Development
+  - System
+License: GPL-3.0-only
+AuthorName: Abhay Raj
+AuthorWebSite: https://github.com/abhay-byte
+SourceCode: https://github.com/zenithblue-oss/fluxlinux
+IssueTracker: https://github.com/zenithblue-oss/fluxlinux/issues
+
+AutoName: FluxLinux
+
+RepoType: git
+Repo: https://github.com/zenithblue-oss/fluxlinux
+Binaries: https://github.com/zenithblue-oss/fluxlinux/releases/download/v%v/app-release.apk
+
+Builds:
+  - versionName: '1.6'
+    versionCode: 8
+    commit: 7879b65df9719e21a49586173acdaf26e2920269
+    subdir: app
+    gradle:
+      - yes
+    scanignore:
+      - assets/xfce4/icons/papirus-icon-theme-20250501.tar.gz
+      - assets/xfce4/theme/theme.zip
+      - assets/xfce4/cursor/cursor.zip
+      - assets/wallpaper/wallpaper.zip
+
+  - versionName: '1.7'
+    versionCode: 9
+    commit: d420b6d1966c7685f580f941a4e3965318a4e45c
+    subdir: app
+    gradle:
+      - yes
+    scanignore:
+      - assets/xfce4/icons/papirus-icon-theme-20250501.tar.gz
+      - assets/xfce4/theme/theme.zip
+      - assets/xfce4/cursor/cursor.zip
+      - assets/wallpaper/wallpaper.zip
+
+  - versionName: 1.8.0
+    versionCode: 10
+    commit: be70a2cbfc3fd95d5b9c7b473a1f1f734bec74d0
+    subdir: app
+    gradle:
+      - yes
+    scanignore:
+      - assets/xfce4/icons/papirus-icon-theme-20250501.tar.gz
+      - assets/xfce4/theme/theme.zip
+      - assets/xfce4/cursor/cursor.zip
+      - assets/wallpaper/wallpaper.zip
+
+  - versionName: 2.0.0
+    versionCode: 12
+    commit: v2.0.0
+    subdir: app
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y binutils bison patch gcc libc6-dev python3 xz-utils zstd
+        bzip2
+    gradle:
+      - ivarna
+    prebuild: python3 ../scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux
+      --list ../native/package-lists/termux-lib-ssot.txt --mode full
+    scanignore:
+      - native/bootstrap/
+      - app/src/ivarna/assets/pulse-runtime/
+      - app/src/zenithblue/assets/pulse-runtime/
+      - app/src/main/assets/scripts/opensuse/common/libevp_md2.so
+      - app/src/main/assets/scripts/common/setup/bwrap-proot-shim
+      - app/src/main/assets/loader.bin
+      - assets/xfce4/
+      - assets/wallpaper/
+
+  - versionName: 2.0.1
+    versionCode: 13
+    commit: v2.0.1
+    subdir: app
+    submodules: true
+    sudo:
+      - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
+      - apt-get update
+      - apt-get install -y --no-install-recommends openjdk-17-jdk-headless pandoc gtk-doc-tools
+        clang lld autoconf-archive gobject-introspection bash-static libssl-dev zlib1g-dev
+        libffi-dev libbz2-dev liblzma-dev libsqlite3-dev libreadline-dev autoconf autogen
+        automake autopoint
+        bison bzip2 curl ed file flex fuse-overlayfs g++ gawk gettext git gperf groff help2man
+        intltool jq libglib2.0-dev libltdl-dev libtool-bin lzip m4 make patch pkg-config python-is-python3
+        python3 python3-setuptools rsync tcl texinfo unzip xutils-dev xz-utils zip zstd
+        gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+      - mkdir -p /data/data/com.ivarna.fluxlinux/files/usr
+      - chown -R vagrant:vagrant /data
+    gradle:
+      - ivarna
+    scanignore:
+      - assets/xfce4/
+      - assets/wallpaper/
+      - native/termux-packages/packages/python-torch/0011-dlopen-libc.so.patch
+      - native/termux-packages/packages/sideloader/plist-d-Add-filename-for-termux-libplist-2.0.so.diff
+    scandelete:
+      - native/bootstrap/
+      - app/src/ivarna/assets/pulse-runtime/
+      - app/src/zenithblue/assets/pulse-runtime/
+      - app/src/main/assets/scripts/common/setup/bwrap-proot-shim
+      - app/src/main/assets/scripts/opensuse/common/libevp_md2.so
+    build:
+      - cd .. && rm -rf native/output/com.ivarna.fluxlinux native/bootstrap/com.ivarna.fluxlinux
+      - NDK=$$NDK$$ NO_DOCKER=1 ./scripts/build_packages_for_appid.sh com.ivarna.fluxlinux
+        --list termux-lib-ssot
+      - ./scripts/build_loader_apk.sh
+      - ./scripts/build_guest_helpers.sh
+      - python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux
+        --list native/package-lists/termux-lib-ssot.txt --mode full
+    ndk: r29
+
+AllowedAPKSigningKeys: 34f011660e5bb7140de5452e169e1399fd0e6586746daa5431d29d637f6d1a3c
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 2.0.1
+CurrentVersionCode: 13

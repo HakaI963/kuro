@@ -1,0 +1,7 @@
+- Embedded host + X11 — no external Termux required
+- 12-distro catalog; rootfs downloaded on demand (SHA256)
+- Host PulseAudio; guests via TCP 127.0.0.1
+- PRoot/Chroot storage settings + Legacy Termux leftovers
+- Guest shell toggle (bash/zsh); chroot without BusyBox NDK module
+- libXlorie.so compiled from source (NDK 29)
+- X11 display JNI fix (LorieView.nativeInit)

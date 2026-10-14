@@ -1,0 +1,116 @@
+# Storage, phantom-process and GPU driver TODO
+
+Work one item at a time, top to bottom. Tick status only after the device acceptance test passes.
+Build/test flavor: `ivarna` (`com.ivarna.fluxlinux`). Never touch distro rootfs builds.
+
+Status: `[ ]` todo, `[~]` in progress, `[x]` done.
+
+## 1. Shared storage in guests (#48 no /sdcard on HyperOS, #29 USB OTG / lsblk)
+
+Status: [x] done. Device test passed on Poco X6 Pro (2311DRK48I) and Lenovo TB336FU, ivarna debug: before grant guest `/sdcard/Download` showed a partial list and writes failed; after `appops set --uid com.ivarna.fluxlinux MANAGE_EXTERNAL_STORAGE allow` guest listed the full folder, a file written in guest `/sdcard` was readable via `adb shell cat /sdcard/...`, no app restart needed; Settings card shows "Shared storage" Not allowed/Allowed and opens the All files access page. Desktop start_gui (proot-distro path) and OTG volumes not device-tested. Chroot scripts already bind `/sdcard` (verified by grep only).
+
+- Onboarding page: done. "Access your files" (Step 5 of 5) sits between Options and the install; shown only when the manifest declares MANAGE_EXTERNAL_STORAGE (ivarna), Android 11+, and access not yet granted. Grant access / Skip for now / Continue (after grant). Shared helper `core/system/SharedStorageAccess.kt` also used by the Settings card. Device tested on Lenovo TB336FU.
+- Goal: guide user to grant All-files access, then bind `/sdcard` (-> `/storage/emulated/0`) and `/storage` (external SD / OTG volumes where readable) into proot and chroot guests.
+- Reference (nativecode-ai, `~/repos/termux-lib`):
+  - `app/src/main/java/com/zenithblue/nativecode/terminal/ProotFastCommandBuilder.kt:204-208` binds `/storage/emulated/0:/sdcard` only when dir exists and `canRead()`.
+  - Permission is requested by the bundled Termux app: `termux-app/app/src/main/AndroidManifest.xml:25-26` (WRITE + MANAGE_EXTERNAL_STORAGE), `termux-app/app/src/main/java/com/termux/app/TermuxActivity.java:719-727` (`ensureStoragePermissionGranted`).
+- Files: `app/src/ivarna/AndroidManifest.xml` (ivarna only, F-Droid), `core/terminal/ProotCommandBuilder.kt` (`storageBinds`), `ui/screens/SettingsScreen.kt` (prompt card), `assets/scripts/chroot/*` (verify `/sdcard` bind), `ProotCommandBuilderTest.kt`.
+- Acceptance: on HyperOS device grant via the card; a file written in guest `/sdcard` shows in `adb shell ls /sdcard`; `/storage` lists in guest; zenithblue manifest has no MANAGE_EXTERNAL_STORAGE.
+
+## 2. Phantom process killer (#41, exit 137)
+
+Status: [x] done. `core/system/PhantomProcessFixer.kt` + `ui/components/PhantomProcessDialog.kt` (Root / Shizuku via reflective `Shizuku.newProcess` / copyable adb), Settings card "Process killer fix", one-time warning on terminal/desktop start (Don't show again), exit 137 toast in DesktopLauncher. Device test (ivarna debug, Android 16, originals were null/null on both, restored via `settings delete` / `device_config delete`): Poco X6 Pro, flag set true -> Settings shows Enabled, dialog shown on Open Shell; Shizuku 13.6.0 (running, uid 0) permission prompt -> after Allow `settings get` = false, `device_config get max_phantom_processes` = 2147483647, dialog status Disabled, `dumpsys activity settings` showed max_phantom_processes=2147483647; Copy adb button + command text verified. Root path: device rooted (KernelSU) but the app is not in the KSU allowlist, so the grant prompt never completed (not verified). Lenovo TB336FU: Enabled shown, warning dialog shown, Shizuku not installed -> "Shizuku is not running" message, root -> "Cannot run program su" message, adb text OK. Long-session survival not tested.
+
+- Goal: detect state and offer three disable paths plus a warning (Android caps child processes per app; without this the app, terminal or desktop can be killed).
+  - (a) Root: already exists, `ui/screens/PrerequisitesScreen.kt` `PhantomProcessStep` (~L1305-1440, uses `RootUtils.runRootCommand`). Reuse, move to a shared helper.
+  - (b) Shizuku: via Shizuku API run `settings put global settings_enable_monitor_phantom_procs false` and/or `device_config put activity_manager max_phantom_processes 2147483647` (and `device_config set_sync_disabled_for_tests persistent` where needed).
+  - (c) PC/adb: show copyable commands (same strings as PrerequisitesScreen L1439-1440 plus sync-disable).
+- State detection: `settings get global settings_enable_monitor_phantom_procs`, `device_config get activity_manager max_phantom_processes` (readable only via shell/root; app-side fallback: show "unknown").
+- Files: new `core/system/PhantomProcessFixer.kt`, `ui/screens/` card in Settings + first-run warning dialog, `build.gradle.kts` (Shizuku dep, ivarna only if desired), Manifest provider.
+- Acceptance: after fix, `adb shell dumpsys activity settings | grep -i phantom` shows disabled; long desktop session survives; warning shown when not fixed.
+
+## 3. Adreno: auto-install Mesa Turnip into guest
+
+Status: [x] implemented (stable `mesa-*` pick, sha256, pinned fallback, offline Retry + auto-resume, marker). Adreno e2e verified on OnePlus 13R (Adreno 750, Android 16, Debian trixie proot, fresh onboarding): `/etc/fluxlinux/turnip_version` = `26.3.0-devel-20260824`; guest `vulkaninfo --summary` GPU0/GPU1 = `Turnip Adreno (TM) 750`, `turnip Mesa driver`, Mesa 26.3.0-devel (git-98f3d6229d) (llvmpipe only as GPU2); Settings GPU dialog shows installed 26.3.0-devel-20260824 / latest 26.3.0-devel-20260824. Offline path tested earlier on Lenovo only.
+
+- Repo found: `https://github.com/lfdevs/mesa-for-android-container`.
+- Release tags look like `mesa-26.3.0-devel-20260824` (standard, patched Turnip), `turnip-26.3.0-devel-20260824` (unpatched), `turnip-weekly` (untested weekly).
+- Asset naming: `mesa-for-android-container_<ver>_<distro>_arm64.tar.gz` (distro suffix: `alpine_3.24`, `debian_trixie`, `fedora_43`, `fedora_44`, `ubuntu_noble|questing|resolute`, `void`; arch is plain `.tar`). Install: `tar -xzf <asset> -C /` in guest, then `ldconfig`.
+- Latest: GitHub API `repos/lfdevs/mesa-for-android-container/releases/latest` (title without `turnip-` prefix), pick asset by guest distro suffix; verify `digest` (sha256) field of the asset.
+- Pinned fallback: `mesa-26.3.0-devel-20260824`, `https://github.com/lfdevs/mesa-for-android-container/releases/download/mesa-26.3.0-devel-20260824/mesa-for-android-container_26.3.0-devel-20260824_debian_trixie_arm64.tar.gz`, sha256 `c014cf66bdbff96417ee30d34f006cf51df64ae04893d599711b0b6b73b52ccf` (other distros: read from API; pin one per distro).
+- No internet: show dialog "no internet, driver not installed" with Retry.
+- Detect Adreno: `GpuAccelDetector.detect()` (`core/terminal/GpuAccelDetector.kt`) or `/dev/kgsl-3d0` / `/sys/class/kgsl`. README: Adreno 6xx/7xx/8xx (8xx needs mesa >= 26.0 / 26.3 build).
+- Files: new `core/gpu/GpuDriverInstaller.kt`, `assets/scripts/common/setup/setup_hw_accel_guest.sh`, UI card in Settings/onboarding.
+- Acceptance (OnePlus 13R): `vulkaninfo --summary` in guest shows Turnip Adreno 750.
+
+## 4. MediaTek Mali Valhall v10+ (PanVK)
+
+Status: [x] Verified on Poco X6 Pro (Mali-G615 MC6, Debian proot): auto-install via app UI, marker `/etc/fluxlinux/panvk_version` = `0.1.0-beta.16`, `vulkaninfo --summary`: `deviceName = Mali-G615 MC6`, `driverID = DRIVER_ID_MESA_PANVK`, `driverInfo = PanVK-kbase beta.16 (Mesa 26.3.0-devel)`. Lenovo TB336FU (Mali-G57, v9): Hardware Acceleration dialog shows "GPU driver (PanVK): Mali GPU is pre-Valhall-v10 ...", no install. Alpine (musl) on Poco: dialog shows "needs a glibc distro (alpine is musl)".
+
+Implementation notes: `core/gpu/PanvkInstaller.kt` (second config of `DriverRelease`, prereleases allowed because every driver tag is a prerelease; one universal ICD so newest `g*-csf-*` tag wins, no per-GPU tag). Arch from `/sys/class/misc/mali0/device/gpuinfo` (model table, else hex product id `>>12`), else CSF sysfs (`firmware_config`) = v10+, JM = pre-v10 (Lenovo gpuinfo is empty). glibc distros only (alpine/chimera skip). The glibc `.so` needs a shared `libSPIRV-Tools.so` and libwayland 1.24 symbols that Debian 13 lacks: guest script builds a small shim from the static spirv-tools archives with gcc (apt guests only; other distros fall back to VirGL if the ICD does not load). `.so` -> `/usr/local/lib64/libvulkan_panfrost.so` (the path the ICD json names), ICD -> `/usr/share/vulkan/icd.d/`. /dev/mali0 is world-rw and already visible in proot (`--bind=/dev`), no extra bind needed.
+
+- Repo: `https://github.com/zenithblue-oss/panvk-kbase-android`. Releases mix apps and drivers (`panplay-*`, `panprobe-*`, `g615-v11-csf-v0.1.0-beta.N`), so `/releases/latest` is NOT reliable: list releases, pick newest tag matching `^g\d+-v\d+-csf-`.
+- Assets (beta.16): `libvulkan_panfrost-glibc-aarch64.so` (guest/proot), `libvulkan_panfrost-android-aarch64.so` (bionic), `panfrost_icd.aarch64.json`, `SHA256SUMS`. Use the glibc `.so` + ICD json in guest (e.g. `/usr/share/vulkan/icd.d/`, fix `library_path`).
+- Pinned fallback: tag `g615-v11-csf-v0.1.0-beta.16`; `libvulkan_panfrost-glibc-aarch64.so` sha256 `bb92ce9c4dbbacd0899c0594a3b12dc29da73e0a45624e218a8c17ff3cb76def`; `panfrost_icd.aarch64.json` sha256 `1c27f9363261d7080491b4c72ade8805f3f22ab6932123256515d2cf76580ff2`. Base URL `https://github.com/zenithblue-oss/panvk-kbase-android/releases/download/<tag>/<asset>`.
+- Retry + inform on no internet, same as item 3.
+- Only MediaTek SoC (`ro.hardware`/`ro.soc.manufacturer`/`Build.SOC_MANUFACTURER` contains MediaTek or mt6xxx) AND Mali arch >= v10.
+- Arch detection options: (1) GPU_ID from `/dev/mali0` `KBASE_IOCTL_GET_GPUPROPS` (arch major = `gpu_id >> 28`; G615 = `0xB8A3...` -> 11); (2) GLES renderer string `Mali-G615` mapped via table: G310/G510/G610/G710 = v10, G615/G715 = v11, G620/G720 = v12, G625/G725/G925 = v13, G1 = v14, Immortalis-G715 = v11, Immortalis-G720 = v12, Immortalis-G925 = v13; (3) `/sys/class/misc/mali0/device/gpuinfo` (vendor dependent, read test on device). Prefer (2) for simplicity (existing `GpuAccelDetector` blob already contains renderer), confirm with (3).
+- README support status: only G615 (v11) tested; v10/v12-v14 untested, v9 experimental. Show "experimental" notice for non-G615.
+- Acceptance (Poco X6 Pro, Mali-G615): `VK_ICD_FILENAMES=<icd> vulkaninfo --summary` in guest lists PanVK.
+
+## 5. Make guests and desktop use the installed driver
+
+Status: [x] Adreno done and verified on OnePlus 13R (marker -> MESA_LOADER_DRIVER_OVERRIDE=kgsl in terminal; XFCE desktop terminal `glxinfo -B`: freedreno / FD750, Mesa 26.3.0-devel, direct rendering yes, Accelerated yes; `glxgears` 119 FPS). PanVK verified on Poco X6 Pro (Debian proot): marker + `/etc/profile.d/flux-gpu.sh` and `apply_gpu_env.sh` export `MESA_LOADER_DRIVER_OVERRIDE=zink`, `GALLIUM_DRIVER=zink`, `VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/panfrost_icd.aarch64.json`, `MESA_VK_WSI_DEBUG=sw` (gpu_mode `panvk`). XFCE desktop terminal `glxinfo -B`: `OpenGL renderer string: zink Vulkan 1.4(Mali-G615 MC6 (MESA_PANVK))`, direct rendering yes, Accelerated yes, OpenGL 4.6 compat; `glxgears` 92 FPS (8 s). No marker -> virgl/llvmpipe path unchanged.
+
+- Goal: terminal sessions and desktop start scripts export the right env for the installed driver; fall back to llvmpipe when none installed.
+- Env (verify per driver README before coding):
+  - Turnip (lfdevs standard release): `MESA_LOADER_DRIVER_OVERRIDE=kgsl`; `turnip-weekly` alone: `MESA_LOADER_DRIVER_OVERRIDE=zink`, `GALLIUM_DRIVER=zink`, `TU_DEBUG=noconform` if needed.
+  - PanVK: `VK_ICD_FILENAMES=<panfrost_icd.aarch64.json>`, `MESA_LOADER_DRIVER_OVERRIDE=zink`, `GALLIUM_DRIVER=zink`.
+  - None: `LIBGL_ALWAYS_SOFTWARE=1`, `GALLIUM_DRIVER=llvmpipe`.
+- Files: `core/terminal/ProotCommandBuilder.kt` (`guestEnvVars`/`guestLoginEnv`), chroot env in `assets/scripts/chroot/fluxlinux_chroot.sh`, `assets/scripts/**/start_gui*.sh`, `assets/scripts/common/setup/{setup_hw_accel_guest.sh,flux_gpu_common.sh}`, bind `/dev/kgsl-3d0` (Adreno) or `/dev/mali0` (Mali) into proot/chroot.
+- Acceptance: `glxinfo -B` in guest desktop reports the hardware GPU (Turnip/PanVK via zink); uninstalled driver reports llvmpipe.
+
+## Follow-ups (done)
+- [x] Host env stale after app update: `fluxlinux-host.env` was only written at bootstrap extract; warm path never refreshed it and the deploy marker ignored app updates. Now `refreshHostEnvIfStale` runs in `deployScripts`, marker is stamped with `lastUpdateTime`, warm `prepareHostBlocking` calls `deployScripts`. Verified on Lenovo TB336FU.
+- [x] Compositor log is driver-neutral ("for GPU acceleration").
+- [x] proot/chroot start_gui wait up to 15s for `X0` socket, fail clearly, ready line only after socket + live PID; chroot wrapper removes stale `X0`.
+- [x] `fix(host): refresh host env on app start` — `FluxApp.onCreate` runs `refreshHostEnvIfStale` before any host script. Verified on Poco X6 Pro + Lenovo TB336FU (env matches new `pm path` right after `am start`, no terminal opened).
+- [x] `fix(x11): Chromium/Electron typing (#45)` — root cause: `InitInput.c` created a 2nd master keyboard ("Lorie touch keyboard") for touch; Chromium's `TouchFactory` keeps only the last master keyboard and drops key events from the core one (XTEST too), so VS Code/Brave/Chromium got no text while xev/GTK worked. Removed the extra master pair (upstream reverted the same in termux-x11 139f219, issue #1099). Also `start_gui*.sh` re-extract `libXlorie.so` when the APK is newer (it was only extracted once, so app updates kept running the stale X server). Verified on Lenovo (proot Debian XFCE): `hello world 123 !@#` + shift combos typed in Chromium omnibox and xfce4-terminal. Not verified: touch input in Chromium (shares core pointer again), chroot, soft keyboard by hand.
+- [x] `feat(desktop): run KDE on the built-in X11` — KDE uses `DesktopLauncher.start(..., "kde", gpu)` -> `start_gui.sh` / `start_gui_chroot.sh` -> `start_debian13_gui.sh` with `FLUX_DESKTOP=kde` (`startplasma-x11`) and `FLUX_GPU_RUNTIME=software` for the Software option; Stop uses the XFCE stop path. Removed Termux RunCommand KDE intents, `start_gui_kde.sh`, `scripts/debian/chroot/{start,stop}`. Verified on Lenovo (proot, llvmpipe). Not verified: chroot, PanVK/Turnip renderer (Poco was in use by another session).
+- [ ] `feat(desktop): KDE OpenGL compositing via zink (opt-in)` — `flux_kde_env.sh` (written by both start scripts) sets `KWIN_COMPOSE=O2` + zink-on-Turnip (probe `glxinfo`, auto-fallback to kgsl) ONLY when guest has `/etc/fluxlinux/kde_gl`; default stays `N`. Reason: on Poco X6 Pro (PanVK beta.17, Mesa 25.0.7) `glxinfo -B` = `zink Vulkan 1.4(Mali-G615 MC6 (MESA_PANVK))`, glxgears ~105-135 FPS, `kwin_x11 --replace` logs "OpenGL compositing successfully initialized", but the X screen stays black with O2 (kwin + plasmashell alive, 3 min), also with `KWIN_USE_BUFFER_AGE=0`/sync vars and without `MESA_VK_WSI_DEBUG=sw`; `KWIN_OPENGL_INTERFACE=egl` makes kwin exit ("Invalid QOpenGLContext::globalShareContext"). O2 + llvmpipe is visible, so zink present to the composite overlay under Xlorie is the break. TODO: fix zink->overlay presentation (Xlorie composite overlay / DRI3), then make default for Turnip/PanVK. Turnip zink+O2 untested (OnePlus 13R unreachable over adb). Update: OnePlus 13R (Turnip, Mesa 26.3) O2 + zink also gives a black screen (kwin + plasmashell alive, `KWIN_COMPOSE=O2`); default Turnip KDE GL stays kgsl (glxgears `vblank_mode=0` ~990 FPS kgsl vs ~247 FPS zink `Turnip Adreno (TM) 750`), so zink is not made default.
+- [x] `fix(desktop): disable KWin compositing and effects by default on KDE` — `setup_kde_debian.sh` writes `/etc/xdg/kwinrc` (`[Compositing] Enabled=false`, blur/contrast/slide/translucency plugins off) + `/etc/xdg/kdeglobals` (`AnimationDurationFactor=0`) if absent; `flux_kde_env.sh` (both start scripts) re-applies in the flux user config via `kwriteconfig6/5` each start (existing installs), and sets `Enabled=true` only when `KWIN_COMPOSE=O2` (kde_gl opt-in). `KWIN_COMPOSE=N` kept. Verified: Lenovo (existing install: user kwinrc `Enabled=false`, plugins off, `AnimationDurationFactor=0`, `KWIN_COMPOSE=N`, Plasma shows), OnePlus 13R (fresh install via the KDE component: `/etc/xdg/kwinrc` + `kdeglobals` written, Plasma shows). Not verified: `qdbus` Compositing.active (D-Bus NoReply from the probe), chroot, Arch legacy KDE script (not changed), user config revert after removing the kde_gl marker.
+
+## E2E clean-install test (2026-10-07)
+Fresh install of the ivarna debug APK, onboarding through the UI, Debian + XFCE then KDE installed from the app.
+
+| Step | OnePlus 13R (Adreno 750, Turnip) | Poco X6 Pro (Mali-G615, PanVK) |
+|---|---|---|
+| Onboarding, storage grant (MANAGE_EXTERNAL_STORAGE allow) | pass | pass |
+| Debian + XFCE install | pass, ~458 s | pass, ~705 s |
+| GPU marker | `turnip_version` 26.3.0-devel-20260824 | `panvk_version` 0.1.0-beta.17 |
+| Phantom dialog (readable, fix applied) | pass (adb fix) | pass (Shizuku fix, status "Disabled (fixed)") |
+| Terminal (no python in ps, `/sdcard` real + writable) | pass | pass, opens in ~2.5 s |
+| `vulkaninfo` | Turnip Adreno 750 | Mali-G615 MC6, panvk beta.17 |
+| XFCE HW (`glxinfo -B`, glxgears) | FD750 kgsl, 120 FPS | zink on PanVK, ~103 FPS |
+| Chromium install + typing | pass | pass |
+| KDE install via app | pass, ~630 s | pass, ~564 s + 2nd phase |
+| KDE launch HW, compositing off | pass, 118 FPS | FAIL first run (RAM exhaustion), pass after fix, 215 FPS |
+| Settings (shared storage Allowed, process killer Disabled) | pass | pass |
+| GPU driver dialog | pass (installed vs latest shown) | not checked |
+| Legacy proot launcher toggle | pass | pass (toggled back off) |
+| Update path (`adb install -r`, relaunch) | pass | pass |
+| Chroot | not tested | not tested (needs KernelSU grant tap) |
+
+### Bugs
+- [x] KDE on PanVK killed the app: every Qt process (kded, ksmserver, plasmashell, ...) opened its own `/dev/mali0` device, about 260 MB each, 24 at login; MemAvailable fell 3.3 GB to 67 MB in ~15 s and the app plus cached apps were killed. `QT_QUICK_BACKEND=software` alone was not enough (xcb GLX probe opens the device). Fix: `fix(desktop): stop KDE on PanVK exhausting RAM with per-process Mali devices` (5ff5b45) exports `QT_QUICK_BACKEND=software QT_XCB_GL_INTEGRATION=none` when GPU_MODE=panvk and compositing is off. After: 12 Mali holders, ~2.8 GB free, KDE stable. Non-Qt GL (glxinfo, glxgears) still uses zink.
+- [x] Stale "Debian desktop is running" card: no liveness check. Fixed (319b9e8): `DesktopSessionQuery.reconcileStale` on Home resume connects to host `usr/tmp/.X11-unix/X0`; missing/refused clears prefs + stale socket/lock. Works for proot and chroot (no su). Poco: force-stop + relaunch shows no card; background + relaunch with live desktop still shows Running.
+- [x] KDE GPU picker hardcoded "Needs driver". Fixed (ba019d6): `GpuDriverInstaller.badge` from recorded installed version ("PanVK 0.1.0-beta.17" on Poco), "Software fallback" when not eligible. XFCE has no picker.
+- [ ] KDE session on both phones loops obexd / evolution-data-server dbus respawns (log noise). Skipped: needs guest autostart overrides, cannot verify safely without touching the rootfs.
+- [ ] OnePlus KDE died once after ~60 s (not reproduced, cause unknown, log uninformative). Second run stable 120 s+.
+- [x] VirGL picker tag showed "Software fallback" (ac5bf91): `GpuDriverInstaller.badge` now returns "VirGL" for virgl mode; unknown modes keep "Software fallback".
+- [x] #37 "v1.8 -> v2.0 wiped distros": not wiped. v1 distros live in the external Termux app (`com.termux`, proot-distro); v2 never touches that data (same applicationId, no migration or delete path on upgrade; verified by grep). v2 Home only lists its embedded runtime, so the Termux distros just disappear from the UI. Fix (08caa53): one-time dialog when `com.termux` is installed, telling the user the distros were not removed, to reinstall in v2, and to back up with `proot-distro backup <name>` or delete via Settings -> Legacy Termux. Device-tested on Poco (dialog shown, `flux_v1_notice` pref set on OK; no Termux on the test phones, so the Termux check was bypassed in a temporary build). Fresh v2 installs that also have Termux see it once.
+  - Follow-up (not built): import path. Restore a `proot-distro backup` tarball from /sdcard through the rootfs-from-file install path. Needs file picker + tar layout mapping (proot-distro backup keeps `rootfs/` prefix), too big for this fix.
+- [ ] #47 Chromium WebGL on PanVK (Poco, Debian 13 chromium, proot, XFCE): hardware WebGL NOT achievable, default left unchanged. Guest zink/PanVK works for native GL (`glxinfo`: "zink Vulkan 1.4(Mali-G615 MC6 (MESA_PANVK))", GL 4.6). Chromium's GPU process crashes on any ANGLE init: `GPU process exited unexpectedly: exit_code=256` x6, then `FATAL gpu_data_manager_impl_private.cc:417 GPU process isn't usable. Goodbye.`; only stderr is `pcilib: Cannot open /proc/bus/pci/devices`. Same with `--use-angle=gl|gles|vulkan|swiftshader|gl-egl`, `--use-gl=egl`, env MESA/zink unset, no Vulkan ICD, `--disable-gpu-sandbox`, `--no-zygote`, `PROOT_NO_SECCOMP=1`, `--ozone-platform=headless`, Vaapi off, `--disable-gpu`. `--use-gl=disabled --disable-gpu --disable-software-rasterizer` runs but gives NO WEBGL; `--use-gl=desktop` survives after 3 crashes with NO WEBGL; `--in-process-gpu` aborts the browser. Even SwiftShader crashing points at proot (memfd/exec mappings or syscall) rather than the Mali driver. Next: capture the crashpad dump in the user-data-dir, or test under chroot. OnePlus (Turnip) was not connected, not tested.
+
+### Not verified
+Chroot on both phones; OnePlus phantom restore and `/sdcard` cleanup (phone left adb mid-test); Poco GPU driver dialog.

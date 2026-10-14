@@ -1,14 +1,20 @@
 name: Android Build
 
 on:
+  push:
+    branches:
+      - kuro/step-6-fluxlinux-integration
   workflow_dispatch:
 
 jobs:
   build-debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (with submodules for termux-x11 native deps)
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -22,43 +28,32 @@ jobs:
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
-          ls "$ANDROID_SDK_ROOT/cmdline-tools/" || true
-          which sdkmanager || ls "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/" || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" "ndk;27.0.12077973" "cmake;3.22.1"
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" "ndk;29.0.14206865" "cmake;3.22.1"
           yes | sdkmanager --licenses || true
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> "$GITHUB_ENV"
-          "$ANDROID_SDK_ROOT/ndk/27.0.12077973/ndk-build" --version || true
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          "$ANDROID_SDK_ROOT/ndk/29.0.14206865/ndk-build" --version || true
           cmake --version || true
 
-      - name: Cache NDK and CMake
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk/ndk
-            /usr/local/lib/android/sdk/cmake
-          key: android-ndk-cmake-27.0.12077973-3.22.1
-
-      - name: Install Gradle 8.10.2
+      - name: Install native build prerequisites (termux-x11 CMake)
         run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.10.2-bin.zip -O /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /opt
-          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
-          /opt/gradle-8.10.2/bin/gradle --version
+          sudo apt-get update
+          sudo apt-get install -y ninja-build bison patch
+          python3 --version
+          ar --version | head -n 1
 
-      - name: Run unit tests
-        run: gradle testDebugUnitTest --stacktrace
+      - name: Assemble host bootstrap (bootstrap.tar from tracked .debs)
+        run: |
+          python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
+          bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
 
-      - name: Build stub and virtual debug APKs
-        run: gradle assembleStubDebug assembleVirtualDebug --stacktrace
+      - name: Run unit tests (ivarna debug)
+        run: ./gradlew :app:testIvarnaDebugUnitTest --stacktrace
 
-      - name: Upload stub debug APK
+      - name: Build ivarna debug APK
+        run: ./gradlew :app:assembleIvarnaDebug --stacktrace
+
+      - name: Upload ivarna debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: kuro-stub-debug-apk
-          path: app/build/outputs/apk/stub/debug/*.apk
-
-      - name: Upload virtual debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: kuro-virtual-debug-apk
-          path: app/build/outputs/apk/virtual/debug/*.apk
+          name: kuro-ivarna-debug-apk
+          path: app/build/outputs/apk/ivarna/debug/*.apk

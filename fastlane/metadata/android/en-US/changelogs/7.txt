@@ -1,0 +1,12 @@
+KDE Plasma Desktop & Zsh Optimizations (v1.5)
+
+New:
+* Full KDE Plasma 6 desktop environment
+* KDE launch and stop controls on home
+* Re-install/re-configure options in settings
+
+Fixes & Performance:
+* KDE window decoration rendering fixed
+* PulseAudio audio integration in KDE
+* Zsh startup 96% faster with optimized shell plugins
+* Fastfetch & pokemon-colorscripts startup backgrounded

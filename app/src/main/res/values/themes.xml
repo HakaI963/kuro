@@ -1,18 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Kuro" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/kuro_background</item>
-        <item name="android:statusBarColor">@color/kuro_background</item>
-        <item name="android:navigationBarColor">@color/kuro_background</item>
-        <item name="android:windowLightStatusBar">false</item>
-    </style>
-
-    <!-- Cold-start system splash: background color only, no icon, so there is
-         no black flash and no double splash before the Compose intro. -->
-    <style name="Theme.Kuro.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/kuro_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_solid</item>
-        <item name="windowSplashScreenAnimationDuration">0</item>
-        <item name="postSplashScreenTheme">@style/Theme.Kuro</item>
+    <style name="Theme.FluxLinux" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

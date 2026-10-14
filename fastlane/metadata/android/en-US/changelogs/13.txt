@@ -1,0 +1,8 @@
+- Faster terminal, direct proot launch
+- Shared storage access + onboarding (#48, #29)
+- Phantom process fix via Shizuku/root/adb (#41)
+- Turnip auto-install (Adreno), PanVK (MediaTek Mali v10+)
+- KDE on built-in X11; Chromium typing fix (#45)
+- Notification crash fix (#42, #46); UI contrast
+- v1 Termux leftover notice (#37)
+- 16 KB aligned libs; native code and terminal-emulator built from source, no Docker

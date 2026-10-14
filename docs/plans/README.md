@@ -1,0 +1,20 @@
+# Plans
+
+Implementation plans for larger FluxLinux workstreams.
+
+| Plan | Status | Summary |
+|------|--------|---------|
+| [termux-native-packages-dual-appid.md](./termux-native-packages-dual-appid.md) | **COMPLETE** | Custom Termux packages / `bootstrap.tar` + jniLibs for **both** `com.ivarna.fluxlinux` and `com.zenithblue.fluxlinux` (termux-lib SSOT 62/62). |
+| [embedded-terminal-bootstrap-proot-chroot.md](./embedded-terminal-bootstrap-proot-chroot.md) | **PARTIAL (Pass 2)** | Pass 1 port landed; Pass 2: Gradle packaging gate, dual-path kill, extract/rootfs recovery, cohesion, R1–R11. Debian → termux-flux-terminal; Debian Rooted → chroot-root-shell; Termux Native card dropped. |
+| [onboarding-simplified-terminal-display.md](./onboarding-simplified-terminal-display.md) | **IN PROGRESS (device smoke)** | B1–B7 + review-2 quality pass landed (cancel, exit codes, shared progress UI, data-driven deployer). Device smoke + KDE residual open. |
+| [terminal-grid-extrakeys-interactive.md](./terminal-grid-extrakeys-interactive.md) | **IMPLEMENTED (T1–T5)** | Terminal tab: nativecode-style **icon grid**, interactive `TerminalView`, full **ExtraKeys** (`685eebb`). Residual R1–R3 (chroot root gate, WINCH cols/rows, failure toasts) + **T6 device smoke** open. |
+| [rootfs-github-release-no-apk-bloat.md](./rootfs-github-release-no-apk-bloat.md) | **IMPLEMENTED (P0–P7)** | Remove 12 rootfs tarballs (~719 MiB STORED) from APK → on-demand download from GitHub release tag `rootfs` (OkHttp resume + SHA gate + progress phase). On-disk APK 866 MiB → ~147 MiB. Device R1–R12 pending smoke. |
+| [universal-guest-shell-toggle.md](./universal-guest-shell-toggle.md) | **IMPLEMENTED (PR1–PR3)** | Settings → Terminal bash/zsh switch for all 48 proot/chroot Terminal-page sessions. Launch-time `exec`/`--shell`; no passwd mutation. Device: openSUSE proot smoke pass. Residuals: comment cleanup + chroot/minirootfs smoke. |
+| [fedora-chroot-flux-setuidgid.md](./fedora-chroot-flux-setuidgid.md) | **IMPLEMENTED (device)** | Fedora chroot flux: Android busybox has no `chroot --userspec`; drop uid with staged `setuidgid` (numeric). Ivarna release installed. |
+| [busybox-module-bypass.md](./busybox-module-bypass.md) | **RESEARCH** | Why the NDK module is not required (Magisk/KSU/APatch already ship BusyBox). |
+| [busybox-module-bypass-impl.md](./busybox-module-bypass-impl.md) | **ITER 1 LANDED — ITER 2 OPEN** | B1–B14 landed + Debian chroot reinstall/XFCE on KSU. Iter 2: noexec `/data/local/tmp` pin last-resort. Worker: [worker-prompt-busybox-module-bypass-iter2.md](./worker-prompt-busybox-module-bypass-iter2.md). |
+| [chroot-proot-multi-distro-storage.md](./chroot-proot-multi-distro-storage.md) | **IMPLEMENTED (code APPROVE — device smoke PARTIAL)** | Settings → Chroot list → detail for 12 chroots + universal kill; Settings PRoot sizes. R1–R3 fixed. S8/S9 not independently live-proven. S13 N/A. |
+| [pulseaudio-host-guest-all-distros.md](./pulseaudio-host-guest-all-distros.md) | **COMPLETE** | Host Pulse in embedded PREFIX; guests are TCP clients. Device matrix + XFCE + Settings → Audio: [results/pulseaudio-device-report.md](./results/pulseaudio-device-report.md). |
+| [pulseaudio-wx-nativelib-exec.md](./pulseaudio-wx-nativelib-exec.md) | **COMPLETE** | targetSdk 36 W^X: exec `libpulseaudio.so` / `libpactl.so` from `nativeLibraryDir`. Do not pass that path through toybox `env` (`=` in `/data/app/~~…==/`). `--daemonize=yes`, not `--start`. |
+| [legacy-termux-proot-settings.md](./legacy-termux-proot-settings.md) | **IMPLEMENTED (Pass 1)** | Settings → Legacy Termux card + page to list / login / start-stop external Termux:X11 / uninstall leftover PRoot containers still living in `com.termux` from FluxLinux ≤ v1.8.0. Additive; does not touch embedded PRoot/Chroot or HEAD `start_gui.sh`. |
+| [fdroid-buildserver-native-so.md](./fdroid-buildserver-native-so.md) | **IMPLEMENTED** | `buildserver-trixie`: lint + scanner 0 problems; `assembleIvarnaRelease` SUCCESS (`libXlorie.so` compiled on the builder). `Binaries:` 404 until the `v2.0.0` GitHub APK exists. |
