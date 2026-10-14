@@ -47,10 +47,32 @@ jobs:
           bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
 
       - name: Gradle configure check (no resolution)
-        run: ./gradlew help --stacktrace
+        run: |
+          set +e
+          ./gradlew help --stacktrace > /tmp/g-help.log 2>&1
+          code=$?
+          if [ "$code" -ne "0" ]; then
+            python3 -c "
+          t = open('/tmp/g-help.log', errors='replace').read()
+          tail = t[-3500:].replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A')
+          print('::error::gradle-configure failed:%0A' + tail)
+          "
+            exit "$code"
+          fi
 
       - name: Gradle resolve main classpath (dependency check)
-        run: ./gradlew :app:dependencies --configuration ivarnaDebugRuntimeClasspath --stacktrace
+        run: |
+          set +e
+          ./gradlew :app:dependencies --configuration ivarnaDebugRuntimeClasspath --stacktrace > /tmp/g-resolve.log 2>&1
+          code=$?
+          if [ "$code" -ne "0" ]; then
+            python3 -c "
+          t = open('/tmp/g-resolve.log', errors='replace').read()
+          tail = t[-3500:].replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A')
+          print('::error::gradle-resolve failed:%0A' + tail)
+          "
+            exit "$code"
+          fi
 
       - name: Gradle resolve test classpath (dependency check)
         run: ./gradlew :app:dependencies --configuration ivarnaDebugUnitTestRuntimeClasspath --stacktrace
