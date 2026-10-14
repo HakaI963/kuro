@@ -159,6 +159,7 @@ fun AddDistroScreen(
             DistroStep.OPTIONS -> OptionsStepUi(
                 name = name,
                 onName = { name = it },
+                namePlaceholder = DistroNamePolicy.placeholder(distroId),
                 bridgeOn = bridgeOn,
                 onBridge = { bridgeOn = it },
                 interfaceMode = interfaceMode,
@@ -447,6 +448,7 @@ private fun SelectableDistroCard(entry: DistroEntry, selected: Boolean, onClick:
 private fun OptionsStepUi(
     name: String,
     onName: (String) -> Unit,
+    namePlaceholder: String,
     bridgeOn: Boolean,
     onBridge: (Boolean) -> Unit,
     interfaceMode: InterfaceMode,
@@ -477,7 +479,7 @@ private fun OptionsStepUi(
                 onValueChange = onName,
                 modifier = Modifier.fillMaxWidth(),
                 // Step 5d: computed from the selection, never hardcoded.
-                placeholder = { Text(DistroNamePolicy.placeholder(distroId)) },
+                placeholder = { Text(namePlaceholder) },
                 singleLine = true,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
             )
