@@ -1,143 +1,273 @@
 package com.kuro.app.core.system
 
+import android.opengl.EGL14
+import android.opengl.GLES20
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.SystemClock
-import com.kuro.app.core.utils.formatBytes
+import kotlinx.coroutines.delay
 import java.io.File
 
 /**
- * Step 4 (Stage 2 shell): REAL system metric readers for the System tab.
- * No mocks, no fake values. Anything unavailable renders as "−".
+ * Step 4b: REAL system metric readers, hardened.
+ * - Every reader is wrapped in runCatching and runs on Dispatchers.IO
+ *   (see SystemViewModel.refreshCycle). Per-tile isolation: one failing
+ *   source renders "-" for its tile and never throws.
+ * - No Thread.sleep anywhere: CPU sampling uses cancellable delay() so the
+ *   sampling coroutine dies with the System tab.
+ * - GLES is never queried without a context: kgsl sysfs first, else a fully
+ *   guarded offscreen EGL14 pbuffer (everything destroyed), else "-".
  */
 data class SystemMetrics(
-    val ramUsedBytes: Long,
-    val ramTotalBytes: Long,
+    val ramUsedBytes: Long?,
+    val ramTotalBytes: Long?,
     val cpuLoad01: Float?,
     val cpuTempC: Float?,
     val gpuRenderer: String?,
-    val storageFreeBytes: Long,
-    val storageTotalBytes: Long,
-    val kuroDataBytes: Long,
-    val kernelVersion: String,
-    val arch: String,
-    val uptimeMillis: Long
-) {
-    val ramUsedLabel: String get() = formatBytes(ramUsedBytes)
-    val ramTotalLabel: String get() = formatBytes(ramTotalBytes)
-}
+    val storageFreeBytes: Long?,
+    val storageTotalBytes: Long?,
+    val kuroDataBytes: Long?,
+    val kernelLabel: String?,
+    val arch: String?,
+    val uptimeMillis: Long?
+)
 
 object SystemMetricsReader {
-    fun read(appFilesDir: File): SystemMetrics {
-        val (used, total) = readMemInfo()
+    private const val KURO_CACHE_MS = 60_000L
+
+    @Volatile
+    private var cachedKuroBytes: Long? = null
+
+    @Volatile
+    private var cachedKuroAt: Long = 0L
+
+    /**
+     * One full refresh. Suspends ~1s for CPU sampling; cancellable.
+     * Never throws — every tile degrades to null ("-") independently.
+     */
+    suspend fun readCycle(appFilesDir: File): SystemMetrics {
+        val statFirst = readCpuStat()
+        delay(1000L)
+        val statSecond = readCpuStat()
         return SystemMetrics(
-            ramUsedBytes = used,
-            ramTotalBytes = total,
-            cpuLoad01 = readCpuLoad(),
+            ramUsedBytes = readRam().first,
+            ramTotalBytes = readRam().second,
+            cpuLoad01 = cpuLoad(statFirst, statSecond),
             cpuTempC = readCpuTemp(),
             gpuRenderer = readGpuRenderer(),
             storageFreeBytes = storageFreeBytes(),
             storageTotalBytes = storageTotalBytes(),
-            kuroDataBytes = dirSize(appFilesDir),
-            kernelVersion = System.getProperty("os.version") ?: "−",
-            arch = Build.SUPPORTED_ABIS.firstOrNull() ?: (System.getProperty("os.arch") ?: "−"),
-            uptimeMillis = SystemClock.elapsedRealtime()
+            kuroDataBytes = cachedKuroBytes(appFilesDir),
+            kernelLabel = readKernelLabel(),
+            arch = readArch(),
+            uptimeMillis = readUptime()
         )
     }
 
-    private fun readMemInfo(): Pair<Long, Long> {
-        var totalKb = 0L
-        var availKb = 0L
+    private fun readRam(): Pair<Long?, Long?> {
+        var totalKb: Long? = null
+        var availKb: Long? = null
         runCatching {
             File("/proc/meminfo").forEachLine { line ->
                 when {
-                    line.startsWith("MemTotal:") -> totalKb = line.filter { it.isDigit() }.toLong()
-                    line.startsWith("MemAvailable:") -> availKb = line.filter { it.isDigit() }.toLong()
+                    line.startsWith("MemTotal:") ->
+                        totalKb = line.filter { it.isDigit() }.takeIf { it.isNotEmpty() }?.toLong()
+                    line.startsWith("MemAvailable:") ->
+                        availKb = line.filter { it.isDigit() }.takeIf { it.isNotEmpty() }?.toLong()
                 }
             }
         }
-        val total = totalKb * 1024L
-        val used = (totalKb - availKb).coerceAtLeast(0L) * 1024L
+        val total = totalKb?.times(1024L)
+        val used = if (totalKb != null && availKb != null) {
+            (totalKb!! - availKb!!).coerceAtLeast(0L) * 1024L
+        } else null
         return used to total
     }
 
     private fun readCpuStat(): Pair<Long, Long>? {
         return runCatching {
-            val parts = File("/proc/stat").readLines().firstOrNull()
+            val parts = File("/proc/stat").bufferedReader().use { it.readLine() }
                 ?.split("\\s+".toRegex())?.drop(1)?.mapNotNull { it.toLongOrNull() }
                 ?: return null
             if (parts.size < 4) return null
-            val idle = parts[3] + parts.getOrNull(4).orZero()
+            val idle = parts[3] + parts.getOrElse(4) { 0L }
             val total = parts.sum()
             total to idle
         }.getOrNull()
     }
 
-    private fun Long?.orZero(): Long = this ?: 0L
-
-    private fun readCpuLoad(): Float? {
-        // Sample /proc/stat twice ~400ms apart; load = 1 - idleDelta/totalDelta.
-        val first = readCpuStat() ?: return null
-        runCatching { Thread.sleep(400) }
-        val second = readCpuStat() ?: return null
+    private fun cpuLoad(first: Pair<Long, Long>?, second: Pair<Long, Long>?): Float? {
+        if (first == null || second == null) return null
         val totalDelta = (second.first - first.first).toFloat()
-        val idleDelta = (second.second - first.second).toFloat()
+        // Guard: zero/negative delta (counter reset, single-core stall) = no data.
         if (totalDelta <= 0f) return null
+        val idleDelta = (second.second - first.second).toFloat()
         return (1f - idleDelta / totalDelta).coerceIn(0f, 1f)
     }
 
     private fun readCpuTemp(): Float? {
-        // Highest thermal-zone temperature that looks like a CPU sensor.
-        var best: Float? = null
+        data class Hit(val priority: Int, val temp: Float)
+        var best: Hit? = null
         runCatching {
-            File("/sys/class/thermal").listFiles { f -> f.name.startsWith("thermal_zone") }
-                ?.forEach { zone ->
-                    val type = runCatching { File(zone, "type").readText().trim() }.getOrNull() ?: ""
-                    val raw = runCatching { File(zone, "temp").readText().trim().toLongOrNull() }.getOrNull()
-                        ?: return@forEach
-                    if (raw <= 0L) return@forEach
-                    val celsius = raw / 1000f
-                    if (celsius !in 0f..150f) return@forEach
-                    val looksCpu = type.contains("cpu", ignoreCase = true) ||
-                        type.contains("soc", ignoreCase = true) ||
-                        type.contains("thermal", ignoreCase = true)
-                    if (looksCpu && (best == null || celsius > best!!)) best = celsius
+            val zones = File("/sys/class/thermal").listFiles { f -> f.name.startsWith("thermal_zone") }
+                ?: return null
+            zones.forEach { zone ->
+                val type = runCatching { File(zone, "type").readText().trim() }.getOrNull() ?: ""
+                val raw = runCatching { File(zone, "temp").readText().trim().toLongOrNull() }.getOrNull()
+                    ?: return@forEach
+                if (raw <= 0L) return@forEach
+                val celsius = raw / 1000f
+                if (celsius !in 0f..150f) return@forEach
+                val lower = type.lowercase()
+                val priority = when {
+                    "cpu" in lower -> 0
+                    "x0" in lower -> 1
+                    "monitor" in lower -> 2
+                    else -> 3
                 }
+                val cur = best
+                if (cur == null || priority < cur.priority ||
+                    (priority == cur.priority && celsius > cur.temp)
+                ) {
+                    best = Hit(priority, celsius)
+                }
+            }
         }
-        return best
+        return best?.temp
     }
 
     private fun readGpuRenderer(): String? {
-        // Honest GLES query: returns null without a GL context → caller shows "−".
+        // 1) kgsl sysfs — no GL context needed.
+        runCatching {
+            File("/sys/class/kgsl/kgsl-3d0/gpu_model").readText().trim()
+                .takeIf { it.isNotBlank() }
+                ?.let { return it }
+        }
+        // 2) Guarded offscreen EGL pbuffer on this (IO) thread, else "-".
+        return eglPbufferRenderer()
+    }
+
+    private fun eglPbufferRenderer(): String? {
         return runCatching {
-            val name = android.opengl.GLES20.glGetString(android.opengl.GLES20.GL_RENDERER)
-            val err = android.opengl.GLES20.glGetError()
-            if (name.isNullOrBlank() || err != android.opengl.GLES20.GL_NO_ERROR) null else name
+            val display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+            if (display == null || display == EGL14.EGL_NO_DISPLAY) return null
+            val version = IntArray(2)
+            if (!EGL14.eglInitialize(display, version, 0, version, 1)) return null
+            try {
+                val configAttribs = intArrayOf(
+                    EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+                    EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT,
+                    EGL14.EGL_NONE
+                )
+                val configs = arrayOfNulls<android.opengl.EGLConfig>(1)
+                val numConfigs = IntArray(1)
+                if (!EGL14.eglChooseConfig(display, configAttribs, 0, configs, 0, 1, numConfigs, 0) ||
+                    numConfigs[0] == 0 || configs[0] == null
+                ) return null
+                val surfaceAttribs = intArrayOf(
+                    EGL14.EGL_WIDTH, 64, EGL14.EGL_HEIGHT, 64, EGL14.EGL_NONE
+                )
+                val surface = EGL14.eglCreatePbufferSurface(display, configs[0], surfaceAttribs, 0)
+                if (surface == null || surface == EGL14.EGL_NO_SURFACE) return null
+                val contextAttribs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
+                val context = EGL14.eglCreateContext(
+                    display, configs[0], EGL14.EGL_NO_CONTEXT, contextAttribs, 0
+                )
+                if (context == null || context == EGL14.EGL_NO_CONTEXT) {
+                    EGL14.eglDestroySurface(display, surface)
+                    return null
+                }
+                try {
+                    if (!EGL14.eglMakeCurrent(display, surface, surface, context)) return null
+                    val name = GLES20.glGetString(GLES20.GL_RENDERER)
+                    if (name.isNullOrBlank()) null else name
+                } finally {
+                    EGL14.eglMakeCurrent(
+                        display,
+                        EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT
+                    )
+                    EGL14.eglDestroyContext(display, context)
+                    EGL14.eglDestroySurface(display, surface)
+                }
+            } finally {
+                EGL14.eglTerminate(display)
+            }
         }.getOrNull()
     }
 
-    private fun storageFreeBytes(): Long {
+    private fun storageFreeBytes(): Long? {
         return runCatching {
             val stat = StatFs(Environment.getDataDirectory().path)
             stat.availableBlocksLong * stat.blockSizeLong
-        }.getOrDefault(0L)
+        }.getOrNull()
     }
 
-    private fun storageTotalBytes(): Long {
+    private fun storageTotalBytes(): Long? {
         return runCatching {
             val stat = StatFs(Environment.getDataDirectory().path)
             stat.blockCountLong * stat.blockSizeLong
-        }.getOrDefault(0L)
+        }.getOrNull()
     }
 
-    fun dirSize(dir: File): Long {
-        var size = 0L
-        runCatching {
+    /** Recursive filesDir size, computed on IO, cached at most every 60s. */
+    fun cachedKuroBytes(appFilesDir: File): Long? {
+        val now = SystemClock.elapsedRealtime()
+        val cached = cachedKuroBytes
+        if (cached != null && now - cachedKuroAt < KURO_CACHE_MS) return cached
+        val size = runCatching {
+            var total = 0L
+            appFilesDir.walkTopDown().forEach { f ->
+                if (f.isFile) total += f.length()
+            }
+            total
+        }.getOrNull() ?: return cached
+        cachedKuroBytes = size
+        cachedKuroAt = now
+        return size
+    }
+
+    /** Uncached one-off dir size for Settings rows. Call on IO. */
+    fun dirSizeNow(dir: File): Long? {
+        return runCatching {
+            var total = 0L
             dir.walkTopDown().forEach { f ->
-                if (f.isFile) size += f.length()
+                if (f.isFile) total += f.length()
+            }
+            total
+        }.getOrNull()
+    }
+
+    private fun readKernelLabel(): String? {
+        val release = runCatching {
+            File("/proc/version").bufferedReader().use { it.readLine() }
+        }.getOrNull()?.trim().takeIf { !it.isNullOrBlank() }
+        val android = Build.VERSION.RELEASE ?: ""
+        return when {
+            release == null -> null
+            else -> {
+                // First token of /proc/version is "Linux"; the release token
+                // (3rd) is the human-meaningful one — fall back to 1st.
+                val tokens = release.split("\\s+".toRegex())
+                val kernel = tokens.getOrElse(2) { tokens.first() }
+                if (android.isNotBlank()) "$kernel • Android $android" else kernel
             }
         }
-        return size
+    }
+
+    private fun readArch(): String? {
+        return runCatching {
+            Build.SUPPORTED_ABIS.firstOrNull()
+                ?: System.getProperty("os.arch")?.takeIf { it.isNotBlank() }
+        }.getOrNull()
+    }
+
+    private fun readUptime(): Long? {
+        runCatching {
+            File("/proc/uptime").bufferedReader().use { it.readLine() }
+                ?.split("\\s+".toRegex())?.firstOrNull()?.toFloatOrNull()
+                ?.let { return (it * 1000L).toLong() }
+        }
+        return runCatching { SystemClock.elapsedRealtime() }.getOrNull()
     }
 }

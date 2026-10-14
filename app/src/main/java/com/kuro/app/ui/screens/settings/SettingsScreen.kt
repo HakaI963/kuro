@@ -64,10 +64,10 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         val filesDir = context.filesDir
         val proot = StoragePaths.prootBase(filesDir)
-        val prootBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSize(proot) }
-        val kuroBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSize(filesDir) }
-        prootSize = formatBytes(prootBytes)
-        kuroDataSize = formatBytes(kuroBytes)
+        val prootBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSizeNow(proot) }
+        val kuroBytes = withContext(Dispatchers.IO) { SystemMetricsReader.dirSizeNow(filesDir) }
+        prootSize = prootBytes?.let { formatBytes(it) }
+        kuroDataSize = kuroBytes?.let { formatBytes(it) }
     }
 
     LaunchedEffect(animateListIn) {
@@ -299,6 +299,8 @@ fun SettingsScreen(
                     description = stringResource(R.string.settings_build_value)
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                LastCrashRow()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                 KuroSettingRow(
                     title = stringResource(R.string.settings_legal),
                     description = stringResource(R.string.settings_legal_body)
@@ -306,5 +308,56 @@ fun SettingsScreen(
             }
         }
         item { Spacer(modifier = Modifier.height(90.dp)) }
+    }
+}
+
+/**
+ * Step 4b: "Last crash" row. Shows timestamp + first 3 trace lines from
+ * filesDir/crash.log; tap copies the FULL trace to the clipboard. Clean
+ * "no crashes" state when the log is absent.
+ */
+@Composable
+private fun LastCrashRow() {
+    val context = LocalContext.current
+    var entry by remember { mutableStateOf<com.kuro.app.core.crash.CrashLog.Entry?>(null) }
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        entry = withContext(Dispatchers.IO) {
+            runCatching {
+                com.kuro.app.core.crash.CrashLog.readLast(context.filesDir)
+            }.getOrNull()
+        }
+    }
+    if (copied) {
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(2000L)
+            copied = false
+        }
+    }
+    val snapshot = entry
+    if (snapshot == null) {
+        KuroSettingRow(
+            title = stringResource(R.string.settings_crash_title),
+            description = stringResource(R.string.settings_crash_none)
+        )
+    } else {
+        KuroSettingRow(
+            title = stringResource(R.string.settings_crash_title),
+            description = snapshot.timestampLabel + "\n" + snapshot.preview,
+            value = if (copied) stringResource(R.string.settings_crash_copied)
+            else stringResource(R.string.settings_crash_copy),
+            onClick = {
+                runCatching {
+                    val manager = context.getSystemService(android.content.ClipboardManager::class.java)
+                    manager?.setPrimaryClip(
+                        android.content.ClipData.newPlainText(
+                            "kuro-crash",
+                            snapshot.trace
+                        )
+                    )
+                    copied = true
+                }
+            }
+        )
     }
 }

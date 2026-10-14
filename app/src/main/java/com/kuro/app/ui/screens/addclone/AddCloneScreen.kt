@@ -156,22 +156,33 @@ private fun SourceStep(
     val apkPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri != null) {
+        // Step 4b: cancelled picker (null URI) is a no-op; every resolver
+        // call is guarded so a hostile provider can never crash the flow.
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
             runCatching {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
                     android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             }
-            var displayName = uri.lastPathSegment ?: "app.apk"
+            var displayName = uri.lastPathSegment?.takeIf { it.isNotBlank() } ?: "app.apk"
             var sizeBytes: Long? = null
             runCatching {
                 context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                     val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
                     if (cursor.moveToFirst()) {
-                        if (nameIdx >= 0) displayName = cursor.getString(nameIdx)
-                        if (sizeIdx >= 0) sizeBytes = cursor.getLong(sizeIdx).takeIf { it >= 0 }
+                        if (nameIdx >= 0) {
+                            runCatching { cursor.getString(nameIdx) }.getOrNull()
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { displayName = it }
+                        }
+                        if (sizeIdx >= 0) {
+                            runCatching { cursor.getLong(sizeIdx) }.getOrNull()
+                                ?.takeIf { it >= 0 }
+                                ?.let { sizeBytes = it }
+                        }
                     }
                 }
             }

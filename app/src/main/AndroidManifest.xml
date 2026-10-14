@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Step 4b manifest hygiene for Step 5 sessions. POST_NOTIFICATIONS is
+         declared now (no-op below API 33); the session service below declares
+         foregroundServiceType="specialUse". Nothing calls startForeground in
+         Step 4 — SessionService only creates its channel in onCreate. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Package visibility (Android 11+): query LAUNCHER apps only.
          Kuro does NOT declare QUERY_ALL_PACKAGES. A LAUNCHER-intent <queries>
          block is sufficient for the clone source list. See docs/ENGINE.md. -->
@@ -28,6 +37,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".sessions.SessionService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Linux container sessions persist until manually stopped." />
+        </service>
     </application>
 
 </manifest>
