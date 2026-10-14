@@ -98,9 +98,12 @@ class ElfProbeTest {
     }
 
     @Test
-    fun `android loader interp accepted`() {
+    fun `any interp is rejected, even the android linker`() {
+        // Step 5e: only fully static binaries (PT_INTERP absent) may exec.
         val r = report(header(withInterp = true, interp = "/system/bin/linker64"))!!
-        assertNull(ElfProbe.verdict(r))
+        val v = ElfProbe.verdict(r)
+        assertNotNull(v)
+        assertTrue(v!!.contains("PT_INTERP"))
     }
 
     @Test

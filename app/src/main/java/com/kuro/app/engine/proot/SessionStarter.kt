@@ -39,6 +39,10 @@ object SessionStarter {
                 InstallFailure.Exec("proot binary unavailable: ${e.message}")
             )
         }
+        ContainerEngineLog.append(
+            appContext.filesDir, "session",
+            "using proot executable ${binary.absolutePath}"
+        )
         val rootfs = com.kuro.app.core.system.StoragePaths
             .prootRootfsDir(appContext.filesDir, containerId)
         if (!rootfs.isDirectory || File(rootfs, "bin").exists().not()) {

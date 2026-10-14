@@ -361,6 +361,7 @@
     <!-- Step 5c binary validation -->
     <string name="diagnostics_proot_title">proot binary</string>
     <string name="diagnostics_proot_source">Source</string>
+    <string name="diagnostics_proot_path">Install path</string>
     <string name="diagnostics_proot_version">Version</string>
     <string name="diagnostics_proot_sha">SHA-256</string>
     <string name="diagnostics_proot_elf">ELF proof</string>

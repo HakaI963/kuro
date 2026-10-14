@@ -15,25 +15,35 @@ import java.util.zip.ZipInputStream
 
 /**
  * Step 5c: proot acquisition, reordered by reliability (first pass wins).
- * Every candidate must pass the VALIDATION GATE before use:
- *   a) ELF: static-capable (no Linux-loader PT_INTERP), EM_AARCH64, PIE.
+ * Step 5e: app-private storage cannot exec (error=13), so the winner is
+ * relocated to an allowed executable location BEFORE it counts:
+ *   1) nativeLibraryDir/libkuro-proot.so (APK-bundled .so validates in place;
+ *      downloaded candidates are copied there, chmod 700, re-validated), else
+ *   2) /data/local/tmp/kuro-proot via su (KernelSU, user-initiated only).
+ * Every candidate must pass the VALIDATION GATE from its final path:
+ *   a) ELF: fully static (PT_INTERP ABSENT — any interp rejects), EM_AARCH64, PIE.
  *   b) `proot -V` prints a version.
  *   c) smoke: `proot -w / /system/bin/sh -c 'echo proot-ok'` prints proot-ok.
- * Each candidate logs one proof/failure line; all-fail yields an honest error
- * card listing every logged reason. Never invokes su.
+ * Each candidate logs one proof/failure line to kuro-engine.log; all-fail
+ * yields an honest error card listing every logged reason. su is used ONLY
+ * for the /data/local/tmp fallback copy, and only when the caller allows it
+ * (user-initiated flows — never background revalidation).
  */
 data class ProotProvenance(
     val source: String,
     val sha256: String,
     val versionLine: String,
     val installedAt: Long,
-    val elfProof: List<String>
+    val elfProof: List<String>,
+    /** Step 5e: final validated executable path (null for pre-5e records). */
+    val path: String? = null
 ) {
     fun toLines(): List<String> = listOf(
         "source=$source",
         "sha256=$sha256",
         "version=$versionLine",
-        "installedAt=$installedAt"
+        "installedAt=$installedAt",
+        "path=${path ?: "-"}"
     ) + elfProof.map { "elf=$it" }
 
     companion object {
@@ -48,7 +58,8 @@ data class ProotProvenance(
                     sha256 = map["sha256"] ?: "?",
                     versionLine = map["version"] ?: "?",
                     installedAt = map["installedAt"]?.toLongOrNull() ?: 0L,
-                    elfProof = lines.filter { it.startsWith("elf=") }.map { it.removePrefix("elf=") }
+                    elfProof = lines.filter { it.startsWith("elf=") }.map { it.removePrefix("elf=") },
+                    path = map["path"]?.takeIf { it != "-" }
                 )
             }.getOrNull()
         }
@@ -73,15 +84,44 @@ object ProotAcquisition {
     const val PROVENANCE_FILE = "bin/proot.provenance"
     const val VALIDATION_FILE = "bin/proot.validation"
 
+    /**
+     * Step 5e: the only app-writable location the kernel/SELinux lets an
+     * app execute from is its own native library dir — and only for files
+     * the APK installer placed there (see app/src/main/jniLibs). Runtime
+     * copies are attempted (same dir, .so name) and re-validated; when the
+     * dir is not writable the copy fails honestly and we fall through.
+     */
+    const val APK_LIB_NAME = "libkuro-proot.so"
+
+    /** Step 5e: su-only fallback executable path (user-initiated only). */
+    const val TMP_FALLBACK_DIR = "/data/local/tmp"
+    const val TMP_FALLBACK_NAME = "kuro-proot"
+
+    fun apkLibFile(appContext: Context): File =
+        File(appContext.applicationInfo.nativeLibraryDir, APK_LIB_NAME)
+
+    fun tmpFallbackFile(): File = File(TMP_FALLBACK_DIR, TMP_FALLBACK_NAME)
+
     private const val HTTP_TIMEOUT_MS = 30_000
     private const val MAX_CANDIDATE_BYTES = 16L * 1024 * 1024
 
-    suspend fun acquire(appContext: Context): AcquireResult =
-        withContext(Dispatchers.IO) { acquireOnIo(appContext) }
+    suspend fun acquire(
+        appContext: Context,
+        allowSuCopy: Boolean = false
+    ): AcquireResult = withContext(Dispatchers.IO) { acquireOnIo(appContext, allowSuCopy) }
 
-    private fun acquireOnIo(appContext: Context): AcquireResult {
+    private fun acquireOnIo(appContext: Context, allowSuCopy: Boolean): AcquireResult {
         val filesDir = appContext.filesDir
         val reasons = mutableListOf<String>()
+        // apk-lib first: already lives in the executable location (in-place
+        // validation, no copy). Downloads follow in reliability order.
+        val apkLine = gateApkLib(appContext)
+        if (apkLine.second != null) {
+            ContainerEngineLog.append(filesDir, "proot-acquire", apkLine.first)
+            return AcquireResult.Success(apkLine.second!!)
+        }
+        reasons.add(apkLine.first)
+        ContainerEngineLog.append(filesDir, "proot-acquire", apkLine.first)
         val candidates: List<Pair<String, () -> ByteArray?>> = listOf(
             "alpine-apk" to { fetchAlpine(filesDir) },
             "ahmed-ndk" to { fetchAhmed() },
@@ -90,24 +130,180 @@ object ProotAcquisition {
         )
         candidates.forEach { (source, fetch) ->
             val (line, installed) = runCatching {
-                gateCandidate(appContext, source) { fetch() }
+                gateCandidate(appContext, source, allowSuCopy) { fetch() }
             }.getOrElse { e ->
                 ("$source: fetch crashed: ${e.message}" to null)
             }
             reasons.add(line)
+            ContainerEngineLog.append(filesDir, "proot-acquire", line)
             if (installed != null) return AcquireResult.Success(installed)
         }
         reasons.add(
             "build-script: local CI build only, not attempted on device " +
                 "(see scripts/build-proot.sh)"
         )
-        reasons.forEach { ContainerEngineLog.append(filesDir, "proot-acquire", it) }
+        ContainerEngineLog.append(filesDir, "proot-acquire", reasons.last())
         return AcquireResult.Failure(reasons)
+    }
+
+    /**
+     * Step 5e: APK-bundled .so candidate — validates IN PLACE (it already
+     * lives in the executable location). No copy, no su, no network.
+     */
+    private fun gateApkLib(appContext: Context): Pair<String, ProotProvenance?> {
+        val filesDir = appContext.filesDir
+        val lib = apkLibFile(appContext)
+        if (!lib.isFile) {
+            return ("apk-lib: absent at ${lib.absolutePath} (reinstall the APK?)" to null)
+        }
+        val elf = ElfProbe.inspect(lib)
+            ?: return ("apk-lib: not an ELF binary" to null)
+        val proof = elf.proofLines()
+        val verdict = ElfProbe.verdict(elf)
+        if (verdict != null) {
+            writeValidation(filesDir, "apk-lib", proof, "", "rejected", ok = false)
+            return ("apk-lib: REJECTED: $verdict | ${proof.joinToString(" ")}" to null)
+        }
+        val (versionLine, versionErr, versionCode) = runVersion(lib)
+        if (versionCode != 0 || !versionLine.contains("proot", ignoreCase = true)) {
+            writeValidation(filesDir, "apk-lib", proof, versionLine, "proot -V exit=$versionCode", ok = false)
+            return ("apk-lib: REJECTED: proot -V exit=$versionCode " +
+                "stderr=${versionErr.take(200)} | ${proof.joinToString(" ")}" to null)
+        }
+        val (smokeOk, smokeErr, smokeCode) = runSmoke(lib)
+        if (!smokeOk) {
+            writeValidation(filesDir, "apk-lib", proof, versionLine, "smoke exit=$smokeCode", ok = false)
+            return ("apk-lib: REJECTED: smoke exit=$smokeCode " +
+                "stderr=${smokeErr.take(200)} | ${proof.joinToString(" ")}" to null)
+        }
+        val sha = runCatching { Sha256.ofBytes(lib.readBytes()) }.getOrDefault("?")
+        val provenance = ProotProvenance(
+            source = "apk-lib",
+            sha256 = sha,
+            versionLine = versionLine.take(120),
+            installedAt = System.currentTimeMillis(),
+            elfProof = proof,
+            path = lib.absolutePath
+        )
+        persistProvenance(filesDir, provenance)
+        writeValidation(
+            filesDir, "apk-lib", proof, versionLine.take(120),
+            "smoke=proot-ok exit=0", ok = true
+        )
+        return ("apk-lib: PASS ${proof.joinToString(" ")} | $versionLine | " +
+            "smoke=proot-ok | path=${lib.absolutePath}" to provenance)
+    }
+
+    /**
+     * True when an exec attempt failed because the FILE LOCATION forbids
+     * execution (Android error=13 on app-private storage) rather than the
+     * binary being bad. Only this failure mode may proceed to relocation.
+     * Pure (unit-tested).
+     */
+    fun isLocationBlocked(stderr: String, exitCode: Int): Boolean =
+        exitCode == -1 && ("permission denied" in stderr.lowercase() || "eacces" in stderr.lowercase())
+
+    private fun runVersion(binary: File): Triple<String, String, Int> {
+        val (out, err, code) = ExecCapture.run(listOf(binary.absolutePath, "-V"), 10_000L)
+        val line = out.lineSequence().firstOrNull { it.isNotBlank() } ?: ""
+        return Triple(line, err, code)
+    }
+
+    private fun runSmoke(binary: File): Triple<Boolean, String, Int> {
+        val (out, err, code) = ExecCapture.run(
+            listOf(binary.absolutePath, "-w", "/", "/system/bin/sh", "-c", "echo proot-ok"),
+            15_000L
+        )
+        return Triple(code == 0 && "proot-ok" in out, err, code)
+    }
+
+    /**
+     * Step 5e: install [staged] bytes at an executable location and
+     * RE-VALIDATE from the final path. Order: nativeLibraryDir (no su),
+     * then /data/local/tmp via su (only when [allowSuCopy]).
+     * Returns the validated final file, or null with the logged reason.
+     */
+    private fun relocateToExecLocation(
+        appContext: Context,
+        staged: File,
+        source: String,
+        allowSuCopy: Boolean
+    ): Pair<File?, String?> {
+        // 1) Native library dir: write .new, chmod, rename over, validate.
+        val libDir = File(appContext.applicationInfo.nativeLibraryDir)
+        val libFinal = File(libDir, APK_LIB_NAME)
+        val libNew = File(libDir, "$APK_LIB_NAME.new")
+        val libFailure = runCatching {
+            runCatching { if (libNew.exists()) libNew.delete() }
+            staged.copyTo(libNew, overwrite = true)
+            chmod700(libNew)
+            runCatching { if (libFinal.exists()) libFinal.delete() }
+            if (!libNew.renameTo(libFinal)) {
+                libNew.copyTo(libFinal, overwrite = true)
+                runCatching { libNew.delete() }
+            }
+            chmod700(libFinal)
+            val (versionLine, versionErr, versionCode) = runVersion(libFinal)
+            if (versionCode != 0 || !versionLine.contains("proot", ignoreCase = true)) {
+                throw IllegalStateException(
+                    "proot -V exit=$versionCode stderr=${versionErr.take(200)}"
+                )
+            }
+            val (smokeOk, smokeErr, smokeCode) = runSmoke(libFinal)
+            if (!smokeOk) {
+                throw IllegalStateException("smoke exit=$smokeCode stderr=${smokeErr.take(200)}")
+            }
+        }.exceptionOrNull()
+        if (libFailure == null) return (libFinal to null)
+        runCatching { if (libNew.exists()) libNew.delete() }
+        val libReason = "$source: lib/ install failed: ${libFailure.message}"
+        // 2) su fallback — user-initiated flows only, never background.
+        if (!allowSuCopy) {
+            return (null to "$libReason; su fallback skipped (not user-initiated)")
+        }
+        val dst = tmpFallbackFile()
+        val su = ExecCapture.run(suInstallCommand(staged, dst), 30_000L)
+        if (su.third != 0 || !dst.isFile) {
+            return (null to "$libReason; tmp fallback failed: " +
+                "su exit=${su.third} stderr=${su.second.take(200)}")
+        }
+        val (tVersionLine, tVersionErr, tVersionCode) = runVersion(dst)
+        if (tVersionCode != 0 || !tVersionLine.contains("proot", ignoreCase = true)) {
+            return (null to "$libReason; tmp fallback -V failed: " +
+                "exit=$tVersionCode stderr=${tVersionErr.take(200)}")
+        }
+        val (tSmokeOk, tSmokeErr, tSmokeCode) = runSmoke(dst)
+        if (!tSmokeOk) {
+            return (null to "$libReason; tmp fallback smoke failed: " +
+                "exit=$tSmokeCode stderr=${tSmokeErr.take(200)}")
+        }
+        return (dst to null)
+    }
+
+    /**
+     * Pure su copy+chmod command builder (unit-tested): refresh [dst] from
+     * [src] as root. Validation afterwards runs WITHOUT su (plain exec).
+     */
+    fun suInstallCommand(src: File, dst: File): List<String> {
+        val inner = "rm -f '${dst.absolutePath}' && " +
+            "cp '${src.absolutePath}' '${dst.absolutePath}' && " +
+            "chmod 700 '${dst.absolutePath}'"
+        return listOf("su", "-c", inner)
+    }
+
+    private fun persistProvenance(filesDir: File, provenance: ProotProvenance) {
+        runCatching {
+            File(filesDir, PROVENANCE_FILE).apply {
+                parentFile?.mkdirs()
+                writeText(provenance.toLines().joinToString("\n", postfix = "\n"))
+            }
+        }
     }
 
     private fun gateCandidate(
         appContext: Context,
         source: String,
+        allowSuCopy: Boolean,
         fetch: () -> ByteArray?
     ): Pair<String, ProotProvenance?> {
         val filesDir = appContext.filesDir
@@ -118,7 +314,9 @@ object ProotAcquisition {
             return ("$source: fetch failed: ${e.message}" to null)
         }
         if (bytes.isEmpty()) return ("$source: empty download" to null)
-        // 1) Stage to a temp file (exec needs a path).
+        // 1) Stage to a temp file (exec needs a path; note: app-private
+        // storage cannot exec on targetSdk 29+ — error=13 is EXPECTED here
+        // and only gates relocation, never success).
         val tmp = File(filesDir, "bin/.proot-candidate")
         try {
             tmp.parentFile?.mkdirs()
@@ -128,7 +326,7 @@ object ProotAcquisition {
             return ("$source: staging failed: ${e.message}" to null)
         }
         try {
-            // a) ELF forensics.
+            // a) ELF forensics — Step 5e: ANY PT_INTERP rejects.
             val elf = ElfProbe.inspect(tmp)
                 ?: return ("$source: not an ELF binary" to null).also { tmp.delete() }
             val proof = elf.proofLines()
@@ -138,57 +336,58 @@ object ProotAcquisition {
                 writeValidation(filesDir, source, proof, "", "rejected", ok = false)
                 return ("$source: REJECTED: $verdict | ${proof.joinToString(" ")}" to null)
             }
-            // b) proot -V.
-            val (versionOut, versionErr, versionCode) = ExecCapture.run(
-                listOf(tmp.absolutePath, "-V"), 10_000L
-            )
-            val versionLine = versionOut.lineSequence().firstOrNull { it.isNotBlank() } ?: ""
-            if (versionCode != 0 || !versionLine.contains("proot", ignoreCase = true)) {
+            // b+c) Staged -V + smoke: informative only. A location-blocked
+            // exec (error=13) proceeds to relocation; any REAL failure
+            // (bad output, nonzero exit) rejects the candidate outright.
+            val (stagedVersion, stagedVersionErr, stagedVersionCode) = runVersion(tmp)
+            val stagedBlocked = isLocationBlocked(stagedVersionErr, stagedVersionCode)
+            if (!stagedBlocked &&
+                (stagedVersionCode != 0 || !stagedVersion.contains("proot", ignoreCase = true))
+            ) {
                 tmp.delete()
-                writeValidation(filesDir, source, proof, versionLine, "proot -V exit=$versionCode", ok = false)
-                return ("$source: REJECTED: proot -V exit=$versionCode " +
-                    "stderr=${versionErr.take(200)} | ${proof.joinToString(" ")}" to null)
+                writeValidation(filesDir, source, proof, stagedVersion, "proot -V exit=$stagedVersionCode", ok = false)
+                return ("$source: REJECTED: staged proot -V exit=$stagedVersionCode " +
+                    "stderr=${stagedVersionErr.take(200)} | ${proof.joinToString(" ")}" to null)
             }
-            // c) smoke: real guest-less run through the binary itself.
-            val (smokeOut, smokeErr, smokeCode) = ExecCapture.run(
-                listOf(tmp.absolutePath, "-w", "/", "/system/bin/sh", "-c", "echo proot-ok"),
-                15_000L
-            )
-            if (smokeCode != 0 || "proot-ok" !in smokeOut) {
-                tmp.delete()
-                writeValidation(filesDir, source, proof, versionLine, "smoke exit=$smokeCode", ok = false)
-                return ("$source: REJECTED: smoke exit=$smokeCode " +
-                    "stderr=${smokeErr.take(200)} | ${proof.joinToString(" ")}" to null)
+            if (!stagedBlocked) {
+                val (stagedSmokeOk, stagedSmokeErr, stagedSmokeCode) = runSmoke(tmp)
+                if (!stagedSmokeOk) {
+                    tmp.delete()
+                    writeValidation(filesDir, source, proof, stagedVersion, "smoke exit=$stagedSmokeCode", ok = false)
+                    return ("$source: REJECTED: staged smoke exit=$stagedSmokeCode " +
+                        "stderr=${stagedSmokeErr.take(200)} | ${proof.joinToString(" ")}" to null)
+                }
             }
-            // Winner: install, chmod, provenance.
-            val dest = ProotBinary.binaryFile(filesDir)
-            runCatching { if (dest.exists()) dest.delete() }
-            if (!tmp.renameTo(dest)) {
-                tmp.copyTo(dest, overwrite = true)
-                tmp.delete()
+            // d) Relocate to an executable location + RE-VALIDATE from there.
+            // ONLY a binary passing -V AND smoke from its final path wins.
+            val (final, relocateReason) = relocateToExecLocation(appContext, tmp, source, allowSuCopy)
+            tmp.delete()
+            if (final == null) {
+                writeValidation(filesDir, source, proof, stagedVersion, "relocate", ok = false)
+                return ("$source: REJECTED: $relocateReason | ${proof.joinToString(" ")}" to null)
             }
-            chmod700(dest)
+            // Winner: provenance records the FINAL executable path.
             val sha = Sha256.ofBytes(bytes)
+            val (finalVersion, _, _) = runVersion(final)
             val provenance = ProotProvenance(
                 source = source,
                 sha256 = sha,
-                versionLine = versionLine.take(120),
+                versionLine = finalVersion.take(120),
                 installedAt = System.currentTimeMillis(),
-                elfProof = proof
+                elfProof = proof,
+                path = final.absolutePath
             )
-            File(filesDir, PROVENANCE_FILE).apply {
-                parentFile?.mkdirs()
-                writeText(provenance.toLines().joinToString("\n", postfix = "\n"))
-            }
+            persistProvenance(filesDir, provenance)
             writeValidation(
-                filesDir, source, proof, versionLine.take(120),
+                filesDir, source, proof, finalVersion.take(120),
                 "smoke=proot-ok exit=0", ok = true
             )
             ContainerEngineLog.append(
                 filesDir, "proot-acquire",
-                "$source: INSTALLED $versionLine sha=${sha.take(16)}…"
+                "$source: INSTALLED $finalVersion sha=${sha.take(16)}… path=${final.absolutePath}"
             )
-            return ("$source: PASS ${proof.joinToString(" ")} | $versionLine | smoke=proot-ok" to provenance)
+            return ("$source: PASS ${proof.joinToString(" ")} | $finalVersion | " +
+                "smoke=proot-ok | path=${final.absolutePath}" to provenance)
         } finally {
             runCatching { if (tmp.exists()) tmp.delete() }
         }
