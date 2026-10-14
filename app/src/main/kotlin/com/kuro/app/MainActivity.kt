@@ -22,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DevicesFold
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Terminal
@@ -876,7 +877,7 @@ class MainActivity : ComponentActivity() {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Rounded.DevicesFold,
+                                        imageVector = Icons.Rounded.DevicesFold,
                                         contentDescription = "Kuro",
                                         tint = androidx.compose.ui.graphics.Color.White,
                                         modifier = Modifier.size(20.dp)
