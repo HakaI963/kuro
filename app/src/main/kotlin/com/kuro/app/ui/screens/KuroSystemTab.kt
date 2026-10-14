@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,12 +51,13 @@ fun KuroSystemTab(
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "kuro-home")
-    val bg by infiniteTransition.animateColor(
-        initialValue = Color(0xFF0A0E14),
-        targetValue = Color(0xFF151D2A),
+    val morph by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(animation = tween(4000), repeatMode = RepeatMode.Reverse),
         label = "bg"
     )
+    val bg = lerp(Color(0xFF0A0E14), Color(0xFF151D2A), morph)
     Box(modifier = modifier.fillMaxSize().background(bg)) {
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp),
