@@ -10,6 +10,10 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,8 +43,8 @@ fun RootAccessScreen(
         testing = true
         suResult = null
         suFailed = false
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main.immediate).launch {
-            val (out, err, code) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        CoroutineScope(Dispatchers.Main.immediate).launch {
+            val (out, err, code) = withContext(Dispatchers.IO) {
                 runSuId()
             }
             testing = false
