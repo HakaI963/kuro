@@ -56,6 +56,32 @@
 
 ---
 
+## 🔨 Build (CI)
+
+```bash
+# Host bootstrap is assembled from tracked .debs (needs ar, tar, python3):
+python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
+bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
+# Then a normal Gradle build (JDK 17, Android SDK 36, NDK 29 + 27, CMake 3.22):
+./gradlew :app:testIvarnaDebugUnitTest :app:assembleIvarnaDebug
+```
+
+GitHub Actions (`.github/workflows/android-build.yml`) does exactly this on every
+push: submodules → SDK/NDK/CMake → bootstrap assembly → unit tests → debug APK.
+
+## 🧩 Architecture (Step 6)
+
+- **Linux containers**: FluxLinux engine — `libproot.so`/`libbash.so` ship as APK
+  jniLibs (executed from `nativeLibraryDir`), rootfs archives download on demand
+  from the GitHub `rootfs` release tag (Range resume, SHA256-pinned), terminal
+  via embedded pty, XFCE4 via embedded Termux:X11.
+- **App cloning**: BlackBox-family virtual engine (`:clone-engine` + `:blackbox`
+  vendored core under `third_party/NewBlackbox`, Apache-2.0) with Room metadata,
+  behind the **Clones** tab (list, New Clone from installed apps or APK, launch,
+  delete — LaunchResult/typed errors only, never fake success).
+- **UI**: 4 tabs (System | Terminal | Clones | Settings), dark-first tonal
+  palette, opaque roots; all service notifications branded **Kuro Engine**.
+
 ## 🐧 Supported Distros
 
 Twelve guests. **Every one** installs as **PRoot** (no root) or **Chroot** (rooted), with **XFCE4** on the in-app X11 display and **host PulseAudio**. Rootfs archives download on demand from the GitHub [`rootfs`](https://github.com/abhay-byte/fluxlinux/releases/tag/rootfs) tag after an in-app opt-in.
