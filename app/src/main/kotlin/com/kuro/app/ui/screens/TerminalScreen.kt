@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -187,7 +188,7 @@ fun TerminalScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFF0A0E14))
             .windowInsetsPadding(WindowInsets.statusBars)
             .windowInsetsPadding(
                 WindowInsets.ime.union(WindowInsets.navigationBars)
@@ -195,7 +196,7 @@ fun TerminalScreen(
             )
     ) {
         // Step 7: minimalist top bar (56dp) — distro name left, close/stop right.
-        val activeTitle = titles.getOrElse(activeIndex) { "" }.ifBlank { "Terminal" }
+        val activeTitle = titles.getOrElse(activeIndex) { "" }.ifBlank { "Kuro" }
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -156,7 +156,7 @@ object TerminalLauncher {
      * tree (missing marker) re-extracts on the next call with containers preserved.
      *
      * @param forceHostSetup re-run setup_termux validation even when the marker exists
-     *   (used by Settings "Initialize Host Environment" / Prerequisites).
+     *   (used by Settings "Initialize Host Environment" forced re-run).
      */
     fun prepareHost(
         ctx: Context,

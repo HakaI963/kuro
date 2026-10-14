@@ -3,7 +3,7 @@ name: Android Build
 on:
   push:
     branches:
-      - kuro/step-7-complete-redesign
+      - kuro/step8-nuke-ui
   workflow_dispatch:
 
 jobs:

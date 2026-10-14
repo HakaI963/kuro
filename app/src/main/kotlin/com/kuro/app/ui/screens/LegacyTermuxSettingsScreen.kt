@@ -416,7 +416,7 @@ fun LegacyTermuxSettingsScreen(
                 )
             }
 
-            // Prerequisites Card
+            // Requirements card (Termux app / X11 / RUN_COMMAND gates)
             GlassSettingCard {
                 Column(
                     modifier = Modifier

@@ -136,7 +136,7 @@ object ChrootSettingsModel {
                 dirExists = false,
                 bytes = null,
                 dimmedCache = false,
-                hint = "Root required · install via onboarding after granting su"
+                hint = "Root required · install via Distros after granting su"
             )
         }
 

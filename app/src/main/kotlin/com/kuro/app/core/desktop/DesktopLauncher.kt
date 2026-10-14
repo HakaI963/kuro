@@ -176,7 +176,7 @@ object DesktopLauncher {
                 val prootName = profile?.prootName ?: "debian"
                 if (!TerminalLauncher.isProotInstalled(app, prootName)) {
                     startInFlight = false
-                    toast(app, "Distro not installed. Complete onboarding first.")
+                    toast(app, "Distro not installed. Complete install first.")
                     finishStart(app, distroId, false, "Distro not installed", onResult)
                     return@prepareHost
                 }

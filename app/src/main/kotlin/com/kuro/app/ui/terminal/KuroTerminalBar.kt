@@ -23,12 +23,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +43,7 @@ import com.termux.view.TerminalView
  * center D-pad (Up above Left/Down/Right), right [ENT][BKSP][keyboard].
  * Keys inject through [TerminalKeyInjector] (the proven nativecode inject
  * path); modifiers reuse the shared lockable [TerminalModifierState].
- * Buttons use tertiaryContainer / onTertiaryContainer.
+ * Buttons use flat #1B2534 pills / #EAF0F8 text (#7C6CFF when active).
  */
 @Composable
 fun KuroTerminalBar(
@@ -80,7 +80,7 @@ fun KuroTerminalBar(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(MaterialTheme.colorScheme.surface)
+            .background(Color(0xFF0A0E14))
             .padding(horizontal = 6.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -164,14 +164,13 @@ private fun KuroBarKey(
     locked: Boolean = false,
     onLongPress: (() -> Unit)? = null
 ) {
-    val colors = MaterialTheme.colorScheme
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(36.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(
-                if (active) colors.tertiary else colors.tertiaryContainer
+                if (active) Color(0xFF7C6CFF) else Color(0xFF1B2534)
             )
             .combinedClickable(
                 onClick = onTap,
@@ -182,7 +181,7 @@ private fun KuroBarKey(
             text = label,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            color = if (active) colors.onTertiary else colors.onTertiaryContainer
+            color = if (active) Color.White else Color(0xFFEAF0F8)
         )
         if (locked) {
             Box(
@@ -190,7 +189,7 @@ private fun KuroBarKey(
                     .align(Alignment.TopEnd)
                     .padding(3.dp)
                     .size(5.dp)
-                    .background(colors.onTertiary, androidx.compose.foundation.shape.CircleShape)
+                    .background(Color.White, androidx.compose.foundation.shape.CircleShape)
             )
         }
     }
@@ -203,20 +202,19 @@ private fun KuroBarIconKey(
     onTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colors = MaterialTheme.colorScheme
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .height(20.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(colors.tertiaryContainer)
+            .background(Color(0xFF1B2534))
             .combinedClickable(onClick = onTap)
             .padding(horizontal = 6.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = description,
-            tint = colors.onTertiaryContainer,
+            tint = Color(0xFFEAF0F8),
             modifier = Modifier.size(16.dp)
         )
     }

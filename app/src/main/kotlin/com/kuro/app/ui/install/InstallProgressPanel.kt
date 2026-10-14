@@ -59,7 +59,7 @@ import com.kuro.app.ui.theme.FluxDarkGrey
 import com.kuro.app.ui.theme.FluxHairline
 
 /**
- * Shared install progress UI for onboarding + Distros [InstallConfigScreen].
+ * Shared install progress UI for Distros [InstallConfigScreen].
  */
 @Composable
 fun InstallProgressPanel(

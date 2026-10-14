@@ -80,7 +80,7 @@ import com.kuro.app.ui.components.GlassSettingCard
 
 /**
  * Settings hub (nativecode-style): nav cards open detail pages.
- * Legacy Termux leftover manager on its own page; connection-fix / Prerequisites cards removed.
+ * Legacy Termux leftover manager on its own page; connection-fix cards removed.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -89,7 +89,6 @@ fun SettingsScreen(
     permissionState: PermissionState,
     onStartService: (Intent) -> Unit,
     onStartActivity: (Intent) -> Unit,
-    onNavigateToOnboarding: (() -> Unit)? = null,
     onNavigateToTroubleshooting: (() -> Unit)? = null,
     onNavigateToRootCheck: (() -> Unit)? = null,
     onNavigateToTerminalSettings: (() -> Unit)? = null,
@@ -293,19 +292,6 @@ fun SettingsScreen(
                     Modifier.padding(16.dp).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (onNavigateToOnboarding != null) {
-                        // secondary = cream in dark theme — primary is near-black and vanishes on glass
-                        Button(
-                            onClick = { onNavigateToOnboarding() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary,
-                                contentColor = MaterialTheme.colorScheme.onSecondary
-                            ),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
-                        ) {
-                            Text("Show onboarding", fontWeight = FontWeight.Bold)
-                        }
-                    }
                     if (onNavigateToTroubleshooting != null) {
                         Button(
                             onClick = { onNavigateToTroubleshooting() },

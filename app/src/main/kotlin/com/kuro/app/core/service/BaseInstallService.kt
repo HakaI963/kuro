@@ -18,7 +18,7 @@ import com.kuro.app.R
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Foreground keep-alive during base desktop / onboarding install (proot + chroot).
+ * Foreground keep-alive during base desktop install (proot + chroot).
  *
  * Long rootfs extract and package installs can take many minutes; without an FGS
  * Android may kill the process when the user leaves the app or under memory pressure.

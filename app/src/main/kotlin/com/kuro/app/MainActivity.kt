@@ -56,8 +56,6 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 
 // Screen navigation enum
 enum class Screen {
-    ONBOARDING,
-    PREREQUISITES,
     HOME,
     SETTINGS,
     SETTINGS_TERMINAL,
@@ -546,6 +544,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             dispatchLegacyTermuxCallback(intent)
         }
+        com.kuro.app.core.utils.StateManager.setOnboardingComplete(this, true)
         requestNotificationPermissionIfNeeded()
         setContent {
             // Step 7: user-selected theme (System default), persisted.
@@ -556,40 +555,11 @@ class MainActivity : ComponentActivity() {
             }
             
             KuroTheme(themeMode = currentThemeMode) {
-                val onboardingComplete = StateManager.isOnboardingComplete(this@MainActivity)
                 val showPhantomPrompt by com.kuro.app.core.system.PhantomProcessFixer.promptVisible.collectAsState()
                 if (showPhantomPrompt) {
                     com.kuro.app.ui.components.PhantomProcessDialog(warning = true) {
                         com.kuro.app.core.system.PhantomProcessFixer.promptVisible.value = false
                     }
-                }
-
-                // One-time v1.x notice (#37): v1 distros lived in the external Termux app.
-                val noticePrefs = remember { getSharedPreferences("kuro_notice", MODE_PRIVATE) }
-                var showV1Notice by remember {
-                    mutableStateOf(
-                        !noticePrefs.getBoolean("seen", false) &&
-                            com.kuro.app.core.legacy.LegacyTermuxBridge.isTermuxInstalled(this@MainActivity)
-                    )
-                }
-                if (showV1Notice) {
-                    val dismissV1Notice = {
-                        noticePrefs.edit().putBoolean("seen", true).apply()
-                        showV1Notice = false
-                    }
-                    AlertDialog(
-                        onDismissRequest = dismissV1Notice,
-                        title = { Text("Upgrading from Kuro 1.x?") },
-                        text = {
-                            Text(
-                                "Your v1.x distros live in the Termux app and were not removed by this update. " +
-                                    "Kuro 2 uses its own runtime; reinstall distros here.\n\n" +
-                                    "Old data is still in Termux. Back up with `proot-distro backup <name>` " +
-                                    "in Termux, or delete it in Settings -> Legacy Termux."
-                            )
-                        },
-                        confirmButton = { TextButton(onClick = dismissV1Notice) { Text("OK") } }
-                    )
                 }
 
                 // Permission State (Lifted for Settings and Home access)
@@ -598,9 +568,7 @@ class MainActivity : ComponentActivity() {
                 )
 
                 // Navigation state
-                var currentScreen by remember { 
-                    mutableStateOf(if (onboardingComplete) Screen.HOME else Screen.ONBOARDING) 
-                }
+                var currentScreen by remember { mutableStateOf(Screen.HOME) }
                 currentScreenRef = remember { kotlinx.coroutines.flow.MutableStateFlow(currentScreen) }
                 LaunchedEffect(currentScreen) { currentScreenRef?.value = currentScreen }
                 
@@ -627,6 +595,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(externalScreen) {
                     if (externalScreen != currentScreen) currentScreen = externalScreen
                 }
+                val initState by com.kuro.app.KuroInit.state.collectAsState()
 
                 // Portrait while a terminal session is active; Home stays
                 // rotation-free so the landscape dashboard can breathe.
@@ -667,8 +636,6 @@ class MainActivity : ComponentActivity() {
                         || currentScreen == Screen.INSTALL_WIZARD) {
                         currentScreen = Screen.HOME
                         currentTab = BottomTab.HOME
-                    } else if (currentScreen == Screen.ONBOARDING || currentScreen == Screen.PREREQUISITES) {
-                        finish()
                     } else if (currentScreen == Screen.HOME && currentTab != BottomTab.HOME) {
                         if (currentTab == BottomTab.TERMINAL) {
                             com.kuro.app.ui.terminal.hideIme(window.decorView)
@@ -805,7 +772,8 @@ class MainActivity : ComponentActivity() {
                                 onOpenClonesTab = { currentTab = BottomTab.CLONES },
                                 onOpenSettingsTab = { currentTab = BottomTab.SETTINGS },
                                 onNavigateToInstall = onNavigateToInstall,
-                                onOpenTerminal = onOpenTerminal
+                                onOpenTerminal = onOpenTerminal,
+                                engineReady = when (initState) { com.kuro.app.KuroInit.InitState.READY -> true; com.kuro.app.KuroInit.InitState.FAILED -> false; else -> null }
                             )
                         }
                         BottomTab.TERMINAL -> {
@@ -834,10 +802,6 @@ class MainActivity : ComponentActivity() {
                                 permissionState = permissionState,
                                 onStartService = onStartServiceStub,
                                 onStartActivity = onStartActivityStub,
-                                onNavigateToOnboarding = {
-                                    com.kuro.app.core.utils.StateManager.setOnboardingComplete(this@MainActivity, false)
-                                    currentScreen = Screen.ONBOARDING
-                                },
                                 onNavigateToTroubleshooting = { currentScreen = Screen.TROUBLESHOOTING },
                                 onNavigateToRootCheck = { currentScreen = Screen.ROOT_ACCESS },
                                 onNavigateToTerminalSettings = {
@@ -977,29 +941,6 @@ class MainActivity : ComponentActivity() {
                     label = "kuro-screen-switch"
                 ) { screen ->
                 when (screen) {
-                    Screen.ONBOARDING -> {
-                        com.kuro.app.ui.onboarding.OnboardingFlowScreen(
-                            onFinished = {
-                                StateManager.setOnboardingComplete(this@MainActivity, true)
-                                currentScreen = Screen.HOME
-                                currentTab = BottomTab.HOME
-                            },
-                            onOpenTerminal = {
-                                StateManager.setOnboardingComplete(this@MainActivity, true)
-                                currentScreen = Screen.HOME
-                                currentTab = BottomTab.TERMINAL
-                            },
-                            onStartDesktop = { distroId ->
-                                StateManager.setOnboardingComplete(this@MainActivity, true)
-                                currentScreen = Screen.HOME
-                                currentTab = BottomTab.HOME
-                                // GUI flags owned by DesktopLauncher
-                                com.kuro.app.core.desktop.DesktopLauncher.start(
-                                    this@MainActivity, distroId
-                                )
-                            }
-                        )
-                    }
                     Screen.HOME -> {
                         val hazeState = remember { HazeState() }
                         val showTopBar = !showSessions
@@ -1069,10 +1010,6 @@ class MainActivity : ComponentActivity() {
                             permissionState = permissionState,
                             onStartService = onStartServiceStub,
                             onStartActivity = onStartActivityStub,
-                            onNavigateToOnboarding = {
-                                StateManager.setOnboardingComplete(this@MainActivity, false)
-                                currentScreen = Screen.ONBOARDING
-                            },
                             onNavigateToTroubleshooting = { currentScreen = Screen.TROUBLESHOOTING },
                             onNavigateToRootCheck = { currentScreen = Screen.ROOT_ACCESS },
                             onNavigateToTerminalSettings = {
@@ -1206,7 +1143,6 @@ class MainActivity : ComponentActivity() {
                             currentTab = BottomTab.TERMINAL
                         }
                     }
-                    Screen.PREREQUISITES -> { currentScreen = Screen.HOME }
                     Screen.ROOT_ACCESS -> {
                         com.kuro.app.ui.screens.RootAccessScreen(
                             onBack = { currentScreen = Screen.SETTINGS },
@@ -1321,6 +1257,18 @@ class MainActivity : ComponentActivity() {
                          }
                     }
                 }
+                }
+                if (initState == com.kuro.app.KuroInit.InitState.WORKING) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.height(12.dp))
+                            Text("Setting up...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
         }

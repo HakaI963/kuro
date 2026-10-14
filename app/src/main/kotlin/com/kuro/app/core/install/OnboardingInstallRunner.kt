@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Runs the simplified onboarding / base install with phase progress + live log.
+ * Runs the simplified base install with phase progress + live log.
  * Proot: prepareHost → flux_install (family) → customization via proot-distro.
  * Chroot: root check → prepareHost → setup_*_chroot → family → customization in chroot.
  *
@@ -525,7 +525,7 @@ class OnboardingInstallRunner(private val ctx: Context) {
 
     /**
      * Run the guest hw-accel installer with host-detected FLUX_GPU.
-     * Failure is logged and does not fail onboarding (family first-paint is VirGL).
+     * Failure is logged and does not fail the install (family first-paint is VirGL).
      */
     private fun runHwAccelIfPresent(
         profile: DistroInstallProfile,

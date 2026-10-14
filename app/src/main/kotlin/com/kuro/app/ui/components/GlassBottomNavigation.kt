@@ -21,13 +21,13 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,11 +44,10 @@ enum class BottomTab(val title: String, val icon: ImageVector) {
 private val BottomNavItems = BottomTab.entries.toList()
 
 /**
- * Step 7: opaque Kuro bottom bar (64dp, surface at 0.95 alpha) with a single
- * sliding pill indicator (64x32dp, fully rounded, primaryContainer) that
- * glides between tabs with a 200ms tween. Selected icon+label use
- * onPrimaryContainer; unselected use onSurfaceVariant. The haze param is kept
- * for call-site compatibility; the bar itself is opaque so tabs never blend.
+ * Step 8: flat Kuro bottom bar (64dp, 0xFF1B2534) with a single sliding
+ * pill indicator (64x32dp, fully rounded, 0xFF7C6CFF) that glides between
+ * tabs with a 200ms tween. Selected icon+label use 0xFFEAF0F8; unselected
+ * use 0xFF9AA7B8. The haze param is kept for call-site compatibility.
  */
 @Composable
 fun GlassBottomNavigation(
@@ -59,14 +58,13 @@ fun GlassBottomNavigation(
 ) {
     @Suppress("UNUSED_PARAMETER")
     val _haze = hazeState
-    val colors = MaterialTheme.colorScheme
     val selectedIndex = BottomNavItems.indexOf(selectedTab).coerceAtLeast(0)
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .background(colors.surface.copy(alpha = 0.95f))
+            .background(Color(0xFF1B2534))
     ) {
         val tabWidth = maxWidth / BottomNavItems.size
         val pillOffset by animateDpAsState(
@@ -81,13 +79,13 @@ fun GlassBottomNavigation(
                 .align(Alignment.CenterStart)
                 .width(64.dp)
                 .height(32.dp)
-                .background(colors.primaryContainer, RoundedCornerShape(50))
+                .background(Color(0xFF7C6CFF), RoundedCornerShape(50))
         )
         Row(modifier = Modifier.matchParentSize()) {
             BottomNavItems.forEach { tab ->
                 val selected = tab == selectedTab
                 val contentColor =
-                    if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant
+                    if (selected) Color(0xFFEAF0F8) else Color(0xFF9AA7B8)
                 Box(
                     modifier = Modifier
                         .weight(1f)

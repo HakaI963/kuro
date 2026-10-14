@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Streams `logcat` output for the app's own UID into a bounded buffer so
- * onboarding / setup screens can show live logs without shell access.
+ * install / setup screens can show live logs without shell access.
  * Apps can only read logcat lines for their own UID, which is exactly what
  * host-setup produces (TerminalLauncher, BootstrapInstaller, libbash …).
  */

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,8 +24,6 @@ import com.kuro.app.core.utils.StateManager
 import com.kuro.app.ui.components.DistroCard
 import com.kuro.app.ui.components.MethodTab
 import com.kuro.app.ui.components.MethodTabs
-import com.kuro.app.ui.theme.FluxAccentMagenta
-import com.kuro.app.ui.theme.GlassWhiteMedium
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
@@ -89,7 +88,7 @@ fun DistroScreen(
     // Step 7: catalog grid — 2 columns, cards show logo, name and size.
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(Color(0xFF0A0E14)),
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 128.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -99,7 +98,7 @@ fun DistroScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Available Distros",
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = Color(0xFFEAF0F8),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -109,6 +108,10 @@ fun DistroScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     androidx.compose.material3.FilledTonalButton(
                         onClick = onOpenSessions,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFF1B2534),
+                            contentColor = Color(0xFFEAF0F8)
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -148,7 +151,7 @@ fun DistroScreen(
                         } else {
                             "No PRoot distros left to install"
                         },
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        color = Color(0xFF9AA7B8),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }

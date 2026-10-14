@@ -102,7 +102,7 @@ object ShellCommandRunner {
         processHolder?.set(proc)
         return try {
             // Close stdin so interactive scripts (`read -p "Press Enter…"`) get EOF
-            // instead of hanging forever under onboarding / non-TTY ProcessBuilder.
+            // instead of hanging forever under headless / non-TTY ProcessBuilder.
             try {
                 proc.outputStream.close()
             } catch (_: Exception) {
