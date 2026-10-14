@@ -53,7 +53,7 @@ fun KuroSystemTab(
     val bg by infiniteTransition.animateColor(
         initialValue = Color(0xFF0A0E14),
         targetValue = Color(0xFF151D2A),
-        animation = infiniteRepeatable(animation = tween(4000), repeatMode = RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(animation = tween(4000), repeatMode = RepeatMode.Reverse),
         label = "bg"
     )
     Box(modifier = modifier.fillMaxSize().background(bg)) {
