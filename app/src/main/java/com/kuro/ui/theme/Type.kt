@@ -1,4 +1,4 @@
-package com.kuro.app.ui.theme
+package com.kuro.app.clone.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

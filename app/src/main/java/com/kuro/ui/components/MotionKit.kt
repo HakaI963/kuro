@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import com.kuro.app.ui.theme.MotionTokens
+import com.kuro.app.clone.theme.MotionTokens
 
 @Composable
 fun pressScaleValue(

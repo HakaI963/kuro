@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import com.kuro.app.ui.theme.MotionTokens
+import com.kuro.app.clone.theme.MotionTokens
 
 @Composable
 fun LoadingSkeleton(

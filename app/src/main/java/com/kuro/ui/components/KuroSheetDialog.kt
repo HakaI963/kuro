@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.kuro.app.ui.theme.MotionTokens
+import com.kuro.app.clone.theme.MotionTokens
 
 @Composable
 fun KuroListItem(

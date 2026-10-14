@@ -1,4 +1,4 @@
-package com.kuro.app.ui.theme
+package com.kuro.app.clone.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

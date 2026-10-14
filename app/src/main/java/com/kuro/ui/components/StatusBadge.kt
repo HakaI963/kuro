@@ -13,7 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kuro.app.R
 import com.kuro.app.domain.models.CloneStatus
-import com.kuro.app.ui.theme.KuroPalette
+import com.kuro.app.clone.theme.KuroPalette
 
 @Composable
 fun StatusBadge(status: CloneStatus, modifier: Modifier = Modifier) {
