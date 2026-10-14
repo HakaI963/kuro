@@ -43,9 +43,6 @@ import com.kuro.app.ui.components.KuroSecondaryButton
 import com.kuro.app.ui.components.KuroSettingRow
 import com.kuro.app.ui.components.KuroSwitchRow
 import com.kuro.app.ui.components.firstLoadFade
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 fun SettingsScreen(

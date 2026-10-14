@@ -59,7 +59,7 @@ object ProotBinary {
         }
     }
 
-    private fun ensureOnIo(app: Context): File {
+    private suspend fun ensureOnIo(app: Context): File {
         val dest = binaryFile(app.filesDir)
         if (dest.exists() && fullGate(app, dest)) return dest
         // Installed copy missing or invalid: run the acquisition pipeline.

@@ -113,11 +113,11 @@ object ProotAcquisition {
         val filesDir = appContext.filesDir
         val bytes: ByteArray
         try {
-            bytes = fetch() ?: return "$source: no bytes produced"
+            bytes = fetch() ?: return ("$source: no bytes produced" to null)
         } catch (e: Exception) {
-            return "$source: fetch failed: ${e.message}"
+            return ("$source: fetch failed: ${e.message}" to null)
         }
-        if (bytes.isEmpty()) return "$source: empty download"
+        if (bytes.isEmpty()) return ("$source: empty download" to null)
         // 1) Stage to a temp file (exec needs a path).
         val tmp = File(filesDir, "bin/.proot-candidate")
         try {
