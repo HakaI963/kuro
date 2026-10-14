@@ -811,7 +811,7 @@ class MainActivity : ComponentActivity() {
                                 onStartService = onStartServiceStub,
                                 onStartActivity = onStartActivityStub,
                                 onNavigateToOnboarding = {
-                                    StateManager.setOnboardingComplete(this@MainActivity, false)
+                                    com.ivarna.fluxlinux.core.utils.StateManager.setOnboardingComplete(this@MainActivity, false)
                                     currentScreen = Screen.ONBOARDING
                                 },
                                 onNavigateToTroubleshooting = { currentScreen = Screen.TROUBLESHOOTING },
