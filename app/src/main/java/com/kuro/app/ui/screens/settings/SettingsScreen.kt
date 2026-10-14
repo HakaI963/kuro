@@ -145,6 +145,8 @@ fun SettingsScreen(
                     label = stringResource(R.string.settings_root_request),
                     onClick = { RootChecker.requestRoot() }
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                RootTestRow()
             }
         }
 
@@ -367,6 +369,71 @@ private fun LastCrashRow() {
                 }
             }
         )
+    }
+}
+
+/**
+ * Step 5f: explicit "Test root" action. Runs `su -c id` (user-initiated, so
+ * the KernelSU prompt may appear) and shows either the uid line or a hint
+ * to grant Kuro root in the KernelSU manager. Never runs on its own.
+ */
+@Composable
+private fun RootTestRow() {
+    var testing by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    KuroSecondaryButton(
+        label = stringResource(R.string.settings_root_test),
+        onClick = {
+            if (testing) return@KuroSecondaryButton
+            testing = true
+            result = null
+            failed = false
+            CoroutineScope(Dispatchers.Main.immediate).launch {
+                val (out, err, code) = withContext(Dispatchers.IO) {
+                    com.kuro.app.engine.proot.ExecCapture.run(listOf("su", "-c", "id"), 10_000L)
+                }
+                testing = false
+                if (code == 0 && "uid=" in out) {
+                    result = out.trim().take(120)
+                } else {
+                    failed = true
+                    result = if (err.isNotBlank()) err.trim().take(120) else null
+                }
+            }
+        },
+        enabled = !testing
+    )
+    val snapshot = result
+    if (testing) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.settings_root_checking),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else if (snapshot != null && !failed) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = snapshot,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    } else if (failed) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.settings_root_test_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error
+        )
+        if (snapshot != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = snapshot,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

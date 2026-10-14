@@ -305,6 +305,8 @@
     <string name="settings_root_checking">Checking…</string>
     <string name="settings_root_desc">Checked silently on every app open. Root is only requested when you ask.</string>
     <string name="settings_root_request">Request root access</string>
+    <string name="settings_root_test">Test root access</string>
+    <string name="settings_root_test_hint">Grant root access to Kuro in KernelSU settings.</string>
     <string name="settings_section_sessions">Sessions</string>
     <string name="settings_sessions_title">Session behavior</string>
     <string name="settings_sessions_desc">Sessions persist via a foreground service until you stop them manually.</string>
