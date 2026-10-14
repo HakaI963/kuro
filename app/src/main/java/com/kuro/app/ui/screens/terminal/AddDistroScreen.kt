@@ -28,11 +28,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.os.Build
 import com.kuro.app.R
 import com.kuro.app.core.system.StoragePaths
 import com.kuro.app.data.containers.ContainerType
+import com.kuro.app.engine.proot.InstallSpec
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroDialog
 import com.kuro.app.ui.components.KuroPrimaryButton
@@ -41,26 +47,84 @@ import com.kuro.app.ui.components.KuroSwitchRow
 
 private enum class DistroStep { TYPE, DISTRO, OPTIONS, CREATE }
 
-private enum class InterfaceMode { TERMINAL_ONLY, TERMINAL_GUI }
+/** Step 5: TUI | XFCE4 | KDE (Plasma). Stored in container config. */
+enum class InterfaceMode { TUI, XFCE4, KDE }
+
+/** Filesystem-safe dir name derived from the container name. */
+fun containerDirName(name: String, fallback: String): String {
+    val base = name.ifBlank { fallback }.lowercase()
+        .map { c -> if (c.isLetterOrDigit() || c == '-' || c == '_') c else '-' }
+        .joinToString("").trim('-')
+        .take(32)
+    return base.ifBlank { "container" }
+}
+
+/** Unique container id under the proot dir (appends -2, -3, …). */
+fun uniqueContainerId(filesDir: java.io.File, base: String): String {
+    var id = base
+    var n = 2
+    while (StoragePaths.prootContainerDir(filesDir, id).exists()) {
+        id = "$base-$n"
+        n++
+    }
+    return id
+}
 
 @Composable
 fun AddDistroScreen(
     onDone: () -> Unit,
+    onOpenContainer: (String) -> Unit,
     modifier: Modifier = Modifier,
-    reduceMotion: Boolean = false
+    reduceMotion: Boolean = false,
+    installVm: InstallViewModel = viewModel()
 ) {
     var step by remember { mutableStateOf(DistroStep.TYPE) }
     var type by remember { mutableStateOf(ContainerType.PROOT) }
     var distroId by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
     var bridgeOn by remember { mutableStateOf(true) }
-    var interfaceMode by remember { mutableStateOf(InterfaceMode.TERMINAL_ONLY) }
+    var interfaceMode by remember { mutableStateOf(InterfaceMode.TUI) }
     var keepAlive by remember { mutableStateOf(true) }
     var wakeLock by remember { mutableStateOf(false) }
     var shell by remember { mutableStateOf("bash") }
-    var showStep5 by remember { mutableStateOf(false) }
+    var showChrootNote by remember { mutableStateOf(false) }
+    var installId by remember { mutableStateOf<String?>(null) }
+    var installSpec by remember { mutableStateOf<InstallSpec?>(null) }
 
+    val context = LocalContext.current
     val distro = distroId?.let(DistroCatalog::byId)
+    val effectiveName = name.ifBlank { distro?.name?.lowercase() ?: "container" }
+    // POST_NOTIFICATIONS for the progress notification (FGS itself is exempt,
+    // but the progress details need it on API 33+). Fire-and-forget.
+    val notifPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
+    fun beginInstall() {
+        val entry = distro ?: return
+        if (Build.VERSION.SDK_INT >= 33) {
+            notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        val filesDir = context.filesDir
+        val id = uniqueContainerId(
+            filesDir,
+            containerDirName(effectiveName, entry.id)
+        )
+        val spec = InstallSpec(
+            installId = "inst-${System.currentTimeMillis().toString(36)}",
+            containerId = id,
+            containerName = effectiveName,
+            distroId = entry.id,
+            shell = shell,
+            bridgeEnabled = bridgeOn,
+            interfaceMode = interfaceMode.name,
+            keepAlive = keepAlive,
+            wakeLock = wakeLock
+        )
+        installId = spec.installId
+        installSpec = spec
+        installVm.start(context, spec)
+    }
 
     Column(
         modifier = modifier
@@ -95,33 +159,52 @@ fun AddDistroScreen(
                 shell = shell,
                 onShell = { shell = it },
                 type = type,
+                dirName = containerDirName(name, distro?.name ?: "container"),
                 onBack = { step = DistroStep.DISTRO },
                 onContinue = { step = DistroStep.CREATE }
             )
-            DistroStep.CREATE -> CreateStepUi(
-                type = type,
-                distroName = distro?.name ?: "−",
-                distroVersion = distro?.version ?: "−",
-                name = name.ifBlank { distro?.name?.lowercase() ?: "container" },
-                bridgeOn = bridgeOn,
-                interfaceMode = interfaceMode,
-                keepAlive = keepAlive,
-                wakeLock = wakeLock,
-                shell = shell,
-                onBack = { step = DistroStep.OPTIONS },
-                onCreate = { showStep5 = true }
-            )
+            DistroStep.CREATE -> {
+                val activeInstall = installId
+                val activeSpec = installSpec
+                if (activeInstall != null && activeSpec != null) {
+                    // Real staged install (proot). Chroot never reaches here.
+                    InstallProgressStep(
+                        spec = activeSpec,
+                        installId = activeInstall,
+                        onOpenContainer = onOpenContainer,
+                        onDone = onDone
+                    )
+                } else {
+                    CreateStepUi(
+                        type = type,
+                        distroName = distro?.name ?: "−",
+                        distroVersion = distro?.version ?: "−",
+                        name = effectiveName,
+                        bridgeOn = bridgeOn,
+                        interfaceMode = interfaceMode,
+                        keepAlive = keepAlive,
+                        wakeLock = wakeLock,
+                        shell = shell,
+                        onBack = { step = DistroStep.OPTIONS },
+                        onCreate = {
+                            // Chroot has no engine until Step 6 — honest note.
+                            // Proot starts the real pipeline.
+                            if (type == ContainerType.CHROOT) showChrootNote = true
+                            else beginInstall()
+                        }
+                    )
+                }
+            }
         }
     }
 
-    if (showStep5) {
-        // The ONLY allowed non-functional state: honest, no progress, no success.
+    if (showChrootNote) {
         KuroDialog(
-            title = stringResource(R.string.distro_step5_title),
-            body = stringResource(R.string.distro_step5_body),
+            title = stringResource(R.string.distro_chroot_step6_title),
+            body = stringResource(R.string.distro_chroot_step6_body),
             confirmLabel = stringResource(R.string.distro_got_it),
-            onConfirm = { showStep5 = false },
-            onDismiss = { showStep5 = false },
+            onConfirm = { showChrootNote = false },
+            onDismiss = { showChrootNote = false },
             reduceMotion = reduceMotion
         )
     }
@@ -364,6 +447,7 @@ private fun OptionsStepUi(
     shell: String,
     onShell: (String) -> Unit,
     type: ContainerType,
+    dirName: String,
     onBack: () -> Unit,
     onContinue: () -> Unit
 ) {
@@ -387,7 +471,8 @@ private fun OptionsStepUi(
             )
         }
         item {
-            KuroCard(title = stringResource(R.string.distro_bridge_title)) {
+            // Single title + row (no duplicated heading).
+            KuroCard {
                 KuroSwitchRow(
                     title = stringResource(R.string.distro_bridge_title),
                     description = stringResource(R.string.distro_bridge_desc),
@@ -399,23 +484,33 @@ private fun OptionsStepUi(
         item {
             Text(text = stringResource(R.string.distro_interface_label), style = MaterialTheme.typography.labelLarge)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.weight(1f)) {
-                    SelectableTypeCard(
-                        title = stringResource(R.string.distro_interface_terminal),
-                        desc = "",
-                        extra = "",
-                        selected = interfaceMode == InterfaceMode.TERMINAL_ONLY,
-                        onClick = { onInterface(InterfaceMode.TERMINAL_ONLY) }
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    SelectableTypeCard(
-                        title = stringResource(R.string.distro_interface_gui),
-                        desc = "",
-                        extra = "",
-                        selected = interfaceMode == InterfaceMode.TERMINAL_GUI,
-                        onClick = { onInterface(InterfaceMode.TERMINAL_GUI) }
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SelectableTypeCard(
+                    title = stringResource(R.string.distro_interface_tui),
+                    desc = "",
+                    extra = "",
+                    selected = interfaceMode == InterfaceMode.TUI,
+                    onClick = { onInterface(InterfaceMode.TUI) }
+                )
+                SelectableTypeCard(
+                    title = stringResource(R.string.distro_interface_xfce),
+                    desc = "",
+                    extra = "",
+                    selected = interfaceMode == InterfaceMode.XFCE4,
+                    onClick = { onInterface(InterfaceMode.XFCE4) }
+                )
+                SelectableTypeCard(
+                    title = stringResource(R.string.distro_interface_kde),
+                    desc = "",
+                    extra = "",
+                    selected = interfaceMode == InterfaceMode.KDE,
+                    onClick = { onInterface(InterfaceMode.KDE) }
+                )
+                if (interfaceMode != InterfaceMode.TUI) {
+                    Text(
+                        text = stringResource(R.string.distro_desktop_note),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -455,11 +550,18 @@ private fun OptionsStepUi(
             }
         }
         item {
+            // Storage line shows the path for the SELECTED type.
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val storageLine = if (type == ContainerType.PROOT) {
+                java.io.File(
+                    StoragePaths.prootBase(context.filesDir),
+                    dirName
+                ).absolutePath
+            } else {
+                StoragePaths.chrootPreview(dirName)
+            }
             Text(
-                text = if (type == ContainerType.PROOT)
-                    stringResource(R.string.distro_storage_line_proot)
-                else
-                    stringResource(R.string.distro_storage_line_chroot),
+                text = storageLine,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -510,9 +612,11 @@ private fun CreateStepUi(
                 SummaryRow(distroName + " " + distroVersion)
                 SummaryRow(if (type == ContainerType.PROOT) "proot" else "chroot")
                 SummaryRow(
-                    if (interfaceMode == InterfaceMode.TERMINAL_ONLY)
-                        stringResource(R.string.distro_interface_terminal)
-                    else stringResource(R.string.distro_interface_gui)
+                    when (interfaceMode) {
+                        InterfaceMode.TUI -> stringResource(R.string.distro_interface_tui)
+                        InterfaceMode.XFCE4 -> stringResource(R.string.distro_interface_xfce)
+                        InterfaceMode.KDE -> stringResource(R.string.distro_interface_kde)
+                    }
                 )
                 SummaryRow("shell: $shell")
                 SummaryRow(

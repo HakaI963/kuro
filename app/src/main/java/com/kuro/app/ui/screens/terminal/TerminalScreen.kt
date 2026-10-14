@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,10 +59,17 @@ fun TerminalScreen(
     onListShown: () -> Unit = {}
 ) {
     val containers by vm.containers.collectAsState()
+    val startError by vm.startError.collectAsState()
+    val deleted by vm.deleted.collectAsState()
+    val context = LocalContext.current
     var guiNoteFor by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf<LinuxContainer?>(null) }
 
     LaunchedEffect(animateListIn) {
         if (!animateListIn) onListShown()
+    }
+    LaunchedEffect(Unit) {
+        vm.ensureLoaded(context)
     }
 
     LazyColumn(
@@ -94,9 +102,9 @@ fun TerminalScreen(
                         ContainerCard(
                             container = c,
                             onOpen = { onOpenSession(c.id) },
-                            onStop = { vm.stop(c.id) },
+                            onStop = { vm.stop(c.id, context) },
                             onGui = { guiNoteFor = c.name },
-                            onDelete = { vm.delete(c.id) },
+                            onDelete = { confirmDelete = c },
                             reduceMotion = reduceMotion
                         )
                     }
@@ -122,6 +130,46 @@ fun TerminalScreen(
             confirmLabel = stringResource(R.string.distro_got_it),
             onConfirm = { guiNoteFor = null },
             onDismiss = { guiNoteFor = null },
+            reduceMotion = reduceMotion
+        )
+    }
+
+    val pendingDelete = confirmDelete
+    if (pendingDelete != null) {
+        KuroDialog(
+            title = stringResource(R.string.terminal_confirm_delete_title),
+            body = stringResource(R.string.terminal_confirm_delete_body),
+            confirmLabel = stringResource(R.string.terminal_delete_confirm),
+            dismissLabel = stringResource(R.string.terminal_delete_keep),
+            onConfirm = {
+                vm.delete(context, pendingDelete.id)
+                confirmDelete = null
+            },
+            onDismiss = { confirmDelete = null },
+            reduceMotion = reduceMotion
+        )
+    }
+
+    val freed = deleted
+    if (freed != null) {
+        KuroDialog(
+            title = stringResource(R.string.terminal_freed_title),
+            body = "${freed.first}: ${formatBytes(freed.second)}",
+            confirmLabel = stringResource(R.string.distro_got_it),
+            onConfirm = { vm.clearDeleted() },
+            onDismiss = { vm.clearDeleted() },
+            reduceMotion = reduceMotion
+        )
+    }
+
+    val err = startError
+    if (err != null) {
+        KuroDialog(
+            title = err.second.title,
+            body = err.second.detail,
+            confirmLabel = stringResource(R.string.distro_got_it),
+            onConfirm = { vm.clearStartError() },
+            onDismiss = { vm.clearStartError() },
             reduceMotion = reduceMotion
         )
     }
@@ -208,12 +256,23 @@ private fun ContainerCard(
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(modifier = Modifier.weight(1f)) {
-                    KuroOutlineButton(
-                        label = stringResource(R.string.terminal_action_gui),
-                        onClick = onGui,
-                        modifier = Modifier.fillMaxWidth(),
-                        reduceMotion = reduceMotion
-                    )
+                    if (container.withGui) {
+                        // GUI-mode containers: disabled Desktop action, labeled.
+                        KuroOutlineButton(
+                            label = stringResource(R.string.terminal_action_desktop),
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = false,
+                            reduceMotion = reduceMotion
+                        )
+                    } else {
+                        KuroOutlineButton(
+                            label = stringResource(R.string.terminal_action_gui),
+                            onClick = onGui,
+                            modifier = Modifier.fillMaxWidth(),
+                            reduceMotion = reduceMotion
+                        )
+                    }
                 }
                 Box(modifier = Modifier.weight(1f)) {
                     KuroOutlineButton(
@@ -223,6 +282,14 @@ private fun ContainerCard(
                         reduceMotion = reduceMotion
                     )
                 }
+            }
+            if (container.withGui) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.terminal_desktop_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

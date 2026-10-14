@@ -29,4 +29,12 @@ class SettingsViewModel : ViewModel() {
             ServiceLocator.virtualEngine.init()
         }
     }
+
+    /** Step 5: "Stop all sessions" kills live pty process groups, not just flags. */
+    fun stopAllSessions(context: android.content.Context) {
+        val app = context.applicationContext
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.kuro.app.engine.proot.ProotSessions.stopAll(app, ServiceLocator.database)
+        }
+    }
 }

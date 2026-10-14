@@ -71,6 +71,11 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(project(":engine"))
+    implementation(project(":termux-terminal-emulator"))
+    implementation(project(":termux-terminal-view"))
+    implementation(libs.okhttp)
+    implementation(libs.commons.compress)
+    implementation(libs.xz.java)
 
     "virtualImplementation"(project(":engine-blackbox"))
     "virtualImplementation"(project(":blackbox"))

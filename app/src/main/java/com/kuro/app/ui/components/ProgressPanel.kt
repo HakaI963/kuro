@@ -26,13 +26,20 @@ fun ProgressPanel(
     subtitle: String,
     progress: Float,
     steps: List<ProgressStep>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    determinate: Boolean = true
 ) {
     KuroCard(modifier = modifier, title = title, subtitle = subtitle) {
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (determinate) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         steps.forEach { step ->
             Row(

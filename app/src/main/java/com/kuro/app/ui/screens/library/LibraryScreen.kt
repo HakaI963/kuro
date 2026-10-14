@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -23,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,7 +32,6 @@ import com.kuro.app.ui.components.EmptyStateView
 import com.kuro.app.ui.components.KuroBottomSheet
 import com.kuro.app.ui.components.KuroListItem
 import com.kuro.app.ui.components.KuroSearchBar
-import com.kuro.app.ui.components.RealAppIcon
 import com.kuro.app.ui.components.SectionHeader
 import com.kuro.app.ui.components.firstLoadFade
 
@@ -51,7 +48,6 @@ fun LibraryScreen(
 ) {
     val state by vm.uiState.collectAsState()
     val sheetFor by vm.showSheetFor.collectAsState()
-    val sources by vm.sources.collectAsState(initial = emptyList())
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(state.message) {
@@ -109,24 +105,9 @@ fun LibraryScreen(
                     }
                 }
             }
-            // Sources section.
-            item {
-                SectionHeader(title = stringResource(R.string.library_section_sources))
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    sources.take(8).forEach { app ->
-                        RowWithIcon(
-                            title = app.label,
-                            subtitle = app.packageName,
-                            packageName = app.packageName,
-                            fallbackLetter = app.iconLetter
-                        )
-                    }
-                }
-            }
+            // Step 5: "Available sources" section deleted. The tab shows the
+            // header, the New-clone action and the clones list only; source
+            // picking lives inside the New clone flow.
             item { Spacer(modifier = Modifier.height(90.dp)) }
         }
     }
@@ -151,19 +132,5 @@ fun LibraryScreen(
     }
 }
 
-@Composable
-private fun RowWithIcon(title: String, subtitle: String, packageName: String, fallbackLetter: String) {
-    androidx.compose.foundation.layout.Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RealAppIcon(packageName = packageName, fallbackLetter = fallbackLetter)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
+// Step 5: RowWithIcon + "Available sources" removed with the sources section.
+// Source picking lives inside the New clone flow.

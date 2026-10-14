@@ -24,7 +24,9 @@ data class LinuxContainer(
     val status: ContainerStatus,
     val sizeBytes: Long,
     val withGui: Boolean,
-    val bridgeEnabled: Boolean
+    val bridgeEnabled: Boolean,
+    val interfaceMode: String = "TUI",
+    val wakeLock: Boolean = false
 )
 
 object ContainerStore {
@@ -55,5 +57,16 @@ object ContainerStore {
         _containers.update { list ->
             list.map { if (it.id == id) it.copy(status = status) else it }
         }
+    }
+
+    fun updateSize(id: String, sizeBytes: Long) {
+        _containers.update { list ->
+            list.map { if (it.id == id) it.copy(sizeBytes = sizeBytes) else it }
+        }
+    }
+
+    /** Step 5: replace the whole list (startup sync from Room). */
+    fun replaceAll(containers: List<LinuxContainer>) {
+        _containers.value = containers
     }
 }

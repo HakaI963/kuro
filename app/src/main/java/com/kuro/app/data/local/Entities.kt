@@ -24,3 +24,28 @@ data class ActivityRecord(
     val timestampMillis: Long,
     val detail: String
 )
+
+/** Step 5: persisted container config (live status stays in memory). */
+@Entity(tableName = "containers")
+data class ContainerRecord(
+    @PrimaryKey val id: String,
+    val name: String,
+    val distroId: String,
+    val type: String,
+    val shell: String,
+    val bridgeEnabled: Boolean,
+    val keepAlive: Boolean,
+    val wakeLock: Boolean,
+    val interfaceMode: String,
+    val createdAt: Long
+)
+
+/** Step 5: persisted session metadata (live fd/pid stay in memory). */
+@Entity(tableName = "sessions")
+data class SessionRecord(
+    @PrimaryKey val id: String,
+    val containerId: String,
+    val pid: Int,
+    val startedAt: Long,
+    val status: String
+)
