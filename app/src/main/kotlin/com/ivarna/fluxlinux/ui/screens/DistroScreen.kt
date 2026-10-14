@@ -40,7 +40,8 @@ fun DistroScreen(
     hazeState: HazeState,
     onStartService: (android.content.Intent) -> Unit,
     onStartActivity: (android.content.Intent) -> Unit,
-    onNavigateToInstall: (com.ivarna.fluxlinux.core.data.Distro) -> Unit
+    onNavigateToInstall: (com.ivarna.fluxlinux.core.data.Distro) -> Unit,
+    onOpenSessions: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     
@@ -99,6 +100,17 @@ fun DistroScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 )
+                if (onOpenSessions != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.FilledTonalButton(
+                        onClick = onOpenSessions,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Text(text = "Open terminal sessions")
+                    }
+                }
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }

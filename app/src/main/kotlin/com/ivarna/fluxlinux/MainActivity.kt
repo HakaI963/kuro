@@ -81,10 +81,11 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch { }
             currentScreenRef?.value = Screen.HOME
             currentTabRef?.value = BottomTab.TERMINAL
+            showSessionsRef?.value = true
         } else if (intent.getStringExtra("EXTRA_TARGET_PAGE") == "home" || intent.getStringExtra("target_page") == "home") {
             setIntent(intent)
             currentScreenRef?.value = Screen.HOME
-            currentTabRef?.value = BottomTab.HOME
+            currentTabRef?.value = BottomTab.SYSTEM
         }
     }
 
@@ -93,6 +94,9 @@ class MainActivity : ComponentActivity() {
 
     /** Bottom-tab holder so FGS / external intents can select Terminal. */
     private var currentTabRef: kotlinx.coroutines.flow.MutableStateFlow<BottomTab>? = null
+
+    /** Sessions-overlay holder so FGS taps land on live sessions. */
+    private var showSessionsRef: kotlinx.coroutines.flow.MutableStateFlow<Boolean>? = null
 
     private fun handleScriptCallback(intent: android.content.Intent) {
         android.util.Log.d("FluxLinux", "handleScriptCallback called with action: ${intent.action}, data: ${intent.data}")
@@ -591,11 +595,20 @@ class MainActivity : ComponentActivity() {
                 currentScreenRef = remember { kotlinx.coroutines.flow.MutableStateFlow(currentScreen) }
                 LaunchedEffect(currentScreen) { currentScreenRef?.value = currentScreen }
                 
-                var currentTab by remember { mutableStateOf(BottomTab.HOME) }
+                var currentTab by remember { mutableStateOf(BottomTab.SYSTEM) }
                 currentTabRef = remember { kotlinx.coroutines.flow.MutableStateFlow(currentTab) }
                 LaunchedEffect(currentTab) { currentTabRef?.value = currentTab }
+                // Sessions overlay inside the Terminal tab (DistroScreen <-> TerminalScreen).
+                var showSessions by remember { mutableStateOf(false) }
+                showSessionsRef = remember { kotlinx.coroutines.flow.MutableStateFlow(showSessions) }
+                LaunchedEffect(showSessions) { showSessionsRef?.value = showSessions }
+                val externalSessions by (showSessionsRef
+                    ?: kotlinx.coroutines.flow.MutableStateFlow(false)).collectAsState()
+                LaunchedEffect(externalSessions) {
+                    if (externalSessions != showSessions) showSessions = externalSessions
+                }
                 // FGS / external intent may flip tab via currentTabRef
-                val externalTab by (currentTabRef ?: kotlinx.coroutines.flow.MutableStateFlow(BottomTab.HOME))
+                val externalTab by (currentTabRef ?: kotlinx.coroutines.flow.MutableStateFlow(BottomTab.SYSTEM))
                     .collectAsState()
                 LaunchedEffect(externalTab) {
                     if (externalTab != currentTab) currentTab = externalTab
@@ -610,10 +623,13 @@ class MainActivity : ComponentActivity() {
                 val openTerminalTab: () -> Unit = {
                     currentScreen = Screen.HOME
                     currentTab = BottomTab.TERMINAL
+                    showSessions = true
                 }
 
                 BackHandler {
-                    if (currentScreen == Screen.SETTINGS_CHROOT_DETAIL) {
+                    if (showSessions) {
+                        showSessions = false
+                    } else if (currentScreen == Screen.SETTINGS_CHROOT_DETAIL) {
                         currentScreen = Screen.SETTINGS_CHROOT
                     } else if (currentScreen == Screen.SETTINGS_PROOT_DETAIL) {
                         currentScreen = Screen.SETTINGS_PROOT
@@ -630,14 +646,14 @@ class MainActivity : ComponentActivity() {
                         || currentScreen == Screen.DISTRO_SETTINGS
                         || currentScreen == Screen.INSTALL_WIZARD) {
                         currentScreen = Screen.HOME
-                        currentTab = BottomTab.HOME
+                        currentTab = BottomTab.SYSTEM
                     } else if (currentScreen == Screen.ONBOARDING || currentScreen == Screen.PREREQUISITES) {
                         finish()
-                    } else if (currentScreen == Screen.HOME && currentTab != BottomTab.HOME) {
+                    } else if (currentScreen == Screen.HOME && currentTab != BottomTab.SYSTEM) {
                         if (currentTab == BottomTab.TERMINAL) {
                             com.ivarna.fluxlinux.ui.terminal.hideIme(window.decorView)
                         }
-                        currentTab = BottomTab.HOME
+                        currentTab = BottomTab.SYSTEM
                     } else {
                         finish()
                     }
@@ -759,33 +775,65 @@ class MainActivity : ComponentActivity() {
                     hazeState: HazeState
                 ) {
                     when (tab) {
-                        BottomTab.HOME -> {
-                            com.ivarna.fluxlinux.ui.screens.HomeScreen(
-                                permissionState = permissionState,
-                                hazeState = hazeState,
-                                scriptRefreshTrigger = refreshKey + lifecycleRefreshKey,
-                                onStartService = onStartServiceStub,
-                                onStartActivity = onStartActivityStub,
-                                // Pass navigation callbacks
+                        BottomTab.SYSTEM -> {
+                            com.ivarna.fluxlinux.ui.screens.KuroSystemTab(
+                                onOpenTerminalTab = { showSessions = true },
+                                onOpenClonesTab = { currentTab = BottomTab.CLONES },
+                                onOpenSettingsTab = { currentTab = BottomTab.SETTINGS },
                                 onNavigateToInstall = onNavigateToInstall,
-                                onNavigateToSettings = onNavigateToDistroSettings,
-                                onOpenTerminal = onOpenTerminal,
-                                onShowTerminal = openTerminalTab
-                            )
-                        }
-                        BottomTab.DISTROS -> {
-                            com.ivarna.fluxlinux.ui.screens.DistroScreen(
-                                permissionState = permissionState,
-                                hazeState = hazeState,
-                                onStartService = onStartServiceStub,
-                                onStartActivity = onStartActivityStub,
-                                onNavigateToInstall = onNavigateToInstall
+                                onOpenTerminal = onOpenTerminal
                             )
                         }
                         BottomTab.TERMINAL -> {
-                            com.ivarna.fluxlinux.ui.screens.TerminalScreen(
-                                onBack = { currentTab = BottomTab.HOME },
-                                embeddedInBottomNav = false
+                            if (showSessions) {
+                                com.ivarna.fluxlinux.ui.screens.TerminalScreen(
+                                    onBack = { showSessions = false },
+                                    embeddedInBottomNav = false
+                                )
+                            } else {
+                                com.ivarna.fluxlinux.ui.screens.DistroScreen(
+                                    permissionState = permissionState,
+                                    hazeState = hazeState,
+                                    onStartService = onStartServiceStub,
+                                    onStartActivity = onStartActivityStub,
+                                    onNavigateToInstall = onNavigateToInstall,
+                                    onOpenSessions = { showSessions = true }
+                                )
+                            }
+                        }
+                        BottomTab.CLONES -> {
+                            com.ivarna.fluxlinux.ui.screens.CloneTabScreen()
+                        }
+                        BottomTab.SETTINGS -> {
+                            com.ivarna.fluxlinux.ui.screens.SettingsScreen(
+                                onBack = { currentTab = BottomTab.SYSTEM },
+                                permissionState = permissionState,
+                                onStartService = onStartServiceStub,
+                                onStartActivity = onStartActivityStub,
+                                onNavigateToOnboarding = {
+                                    StateManager.setOnboardingComplete(this@MainActivity, false)
+                                    currentScreen = Screen.ONBOARDING
+                                },
+                                onNavigateToTroubleshooting = { currentScreen = Screen.TROUBLESHOOTING },
+                                onNavigateToRootCheck = { currentScreen = Screen.ROOT_ACCESS },
+                                onNavigateToTerminalSettings = {
+                                    currentScreen = Screen.SETTINGS_TERMINAL
+                                },
+                                onNavigateToX11Settings = {
+                                    currentScreen = Screen.SETTINGS_X11
+                                },
+                                onNavigateToAudioSettings = {
+                                    currentScreen = Screen.SETTINGS_AUDIO
+                                },
+                                onNavigateToChrootSettings = {
+                                    currentScreen = Screen.SETTINGS_CHROOT
+                                },
+                                onNavigateToProotSettings = {
+                                    currentScreen = Screen.SETTINGS_PROOT
+                                },
+                                onNavigateToLegacyTermuxSettings = {
+                                    currentScreen = Screen.SETTINGS_LEGACY_TERMUX
+                                }
                             )
                         }
                     }
@@ -890,7 +938,7 @@ class MainActivity : ComponentActivity() {
                             onFinished = {
                                 StateManager.setOnboardingComplete(this@MainActivity, true)
                                 currentScreen = Screen.HOME
-                                currentTab = BottomTab.HOME
+                                currentTab = BottomTab.SYSTEM
                             },
                             onOpenTerminal = {
                                 StateManager.setOnboardingComplete(this@MainActivity, true)
@@ -900,7 +948,7 @@ class MainActivity : ComponentActivity() {
                             onStartDesktop = { distroId ->
                                 StateManager.setOnboardingComplete(this@MainActivity, true)
                                 currentScreen = Screen.HOME
-                                currentTab = BottomTab.HOME
+                                currentTab = BottomTab.SYSTEM
                                 // GUI flags owned by DesktopLauncher
                                 com.ivarna.fluxlinux.core.desktop.DesktopLauncher.start(
                                     this@MainActivity, distroId
@@ -910,27 +958,27 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.HOME -> {
                         val hazeState = remember { HazeState() }
-                        val showTopBar = currentTab != BottomTab.TERMINAL
+                        val showTopBar = !showSessions
                         val desktopUi by com.ivarna.fluxlinux.core.desktop.DesktopLauncher.uiState.collectAsState()
                         val stateRefresh by com.ivarna.fluxlinux.core.utils.StateManager.refreshTrigger.collectAsState()
                         val session = remember(desktopUi, stateRefresh) {
                             com.ivarna.fluxlinux.core.desktop.DesktopSessionQuery.current(this@MainActivity, desktopUi)
                         }
 
-                        LaunchedEffect(currentTab) {
-                            if (currentTab != BottomTab.TERMINAL) {
+                        LaunchedEffect(currentTab, showSessions) {
+                            if (currentTab != BottomTab.TERMINAL || !showSessions) {
                                 com.ivarna.fluxlinux.ui.terminal.hideIme(window.decorView)
                             }
                         }
 
                         GlassScaffold(
                             hazeState = hazeState,
-                            blurContent = currentTab == BottomTab.HOME,
+                            blurContent = currentTab == BottomTab.SYSTEM,
                             topBar = {
                                 if (showTopBar) {
                                     TopBar(
                                         hazeState = hazeState,
-                                        onSettingsClick = { currentScreen = Screen.SETTINGS },
+                                        onSettingsClick = { currentTab = BottomTab.SETTINGS },
                                         onTerminalClick = { currentTab = BottomTab.TERMINAL },
                                         onOpenDisplay = {
                                             com.ivarna.fluxlinux.core.desktop.DesktopLauncher.reopenDisplay(this@MainActivity)
@@ -940,7 +988,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             bottomBar = {
-                                if (currentTab != BottomTab.TERMINAL) {
+                                if (!showSessions) {
                                     GlassBottomNavigation(
                                         selectedTab = currentTab,
                                         onTabSelected = { currentTab = it },
@@ -1011,7 +1059,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToDistros = {
                                 currentScreen = Screen.HOME
-                                currentTab = BottomTab.DISTROS
+                                currentTab = BottomTab.TERMINAL
                             }
                         )
                     }
@@ -1047,7 +1095,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToDistros = {
                                 currentScreen = Screen.HOME
-                                currentTab = BottomTab.DISTROS
+                                currentTab = BottomTab.TERMINAL
                             }
                         )
                     }
@@ -1113,7 +1161,7 @@ class MainActivity : ComponentActivity() {
                                  hazeState = hazeState,
                                  onInstallComplete = {
                                      currentScreen = Screen.HOME
-                                     currentTab = BottomTab.HOME
+                                     currentTab = BottomTab.SYSTEM
                                  }
                              )
                          } else {

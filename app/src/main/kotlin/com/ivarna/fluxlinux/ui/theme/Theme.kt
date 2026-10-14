@@ -16,20 +16,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Fallback Dark Scheme (Dark Grey Primary, Cream Secondary)
-// Note: primary is cream (same as light scheme) so default Material controls
-// (TextButton, Checkbox, progress, filled Button) stay visible on dark backgrounds.
+// Kuro dark tonal scheme (dark-first; light kept consistent but unused —
+// the app forces dark mode).
 private val DarkColorScheme = darkColorScheme(
     primary = BrandCream,
-    onPrimary = FluxDarkGrey,
-    secondary = BrandCream, // Light Secondary for Dark Mode (High Contrast)
+    onPrimary = Color.White,
+    secondary = Color(0xFF49D6C2),
     onSecondary = FluxDarkGrey,
-    tertiary = FluxAccentMagenta,
+    tertiary = FluxAccentCyan,
     background = FluxDarkSurface,
     surface = FluxDarkGrey,
+    surfaceContainer = Color(0xFF151D2A),
+    surfaceContainerHigh = Color(0xFF1B2534),
     onBackground = TextWhite,
     onSurface = TextWhite,
     onSurfaceVariant = TextGrey,
+    outline = Color(0xFF263244),
+    outlineVariant = Color(0xFF263244),
+    error = FluxDanger,
 )
 
 // Fallback Light Scheme (Soft Cream Primary, Dark Text)
@@ -61,17 +65,23 @@ fun FluxLinuxTheme(
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) {
-                // Use Dynamic Dark but override Primary & Secondary
+                // Use Dynamic Dark but override with the Kuro tonal palette.
                 dynamicDarkColorScheme(context).copy(
                     primary = BrandCream,
-                    onPrimary = FluxDarkGrey,
-                    secondary = BrandCream, // Light Secondary for Dark Mode
+                    onPrimary = Color.White,
+                    secondary = Color(0xFF49D6C2),
                     onSecondary = FluxDarkGrey,
+                    tertiary = FluxAccentCyan,
                     background = FluxDarkSurface,
                     surface = FluxDarkGrey,
+                    surfaceContainer = Color(0xFF151D2A),
+                    surfaceContainerHigh = Color(0xFF1B2534),
                     onBackground = TextWhite,
                     onSurface = TextWhite,
-                    onSurfaceVariant = TextGrey
+                    onSurfaceVariant = TextGrey,
+                    outline = Color(0xFF263244),
+                    outlineVariant = Color(0xFF263244),
+                    error = FluxDanger
                 )
             } else {
                 // Use Dynamic Light but override Primary & Secondary
