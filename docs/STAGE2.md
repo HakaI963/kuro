@@ -11,7 +11,7 @@ must stay non-functional (no fake progress, no fake success) until its stage.
 |---|---|---|
 | Step 4 | Stage 2 UI shell: System / Terminal / Clones / Settings tabs, distro wizard UI, SAF APK selection UI, root/status/storage/bridge cards | done |
 | Step 4b | Startup crash fix: global crash.log tooling, splash finally-handoff, per-tile metric isolation, guarded EGL GPU path, exec-based root probe, SessionService manifest hygiene | this branch |
-| Step 5 | proot container engine: real download, install, terminal sessions, foreground-service persistence | next |
+| Step 5 | proot container engine: real download, install, terminal sessions, foreground-service persistence | done (docs/STEP5.md) |
 | Step 6 | chroot backend: root via KernelSU, `/data/local/kuro` filesystems | planned |
 | Step 7 | Kuro Bridge + APK install: localhost service, `kuro` CLI in distros, APK-file installs | planned |
 | Step 8 | Kuro View (GUI): container graphical output | planned |
@@ -48,10 +48,13 @@ background.
 
 ## Honest placeholders (normative — keep honest until the stated step)
 
-- Add-distro Create → dialog "Container engine integration lands in the next
-  build stage (Step 5)." No download progress anywhere.
-- Terminal session screen → designed "no session running" state until Step 5.
-- "Add Kuro View" action → Step 8 note dialog.
+- ~~Add-distro Create → dialog "Container engine integration lands in the next
+  build stage (Step 5)."~~ DONE in Step 5 for proot (real pipeline). Chroot
+  Create still shows its honest Step 6 note.
+- ~~Terminal session screen → designed "no session running" state until Step 5.~~
+  DONE in Step 5 (live pty attach; ended-note + restart when dead).
+- "Add Kuro View" action → Step 8 note dialog (kept for TUI; GUI modes show a
+  disabled Desktop action labeled for a later update).
 - APK file source → real SAF pick + real name/size, then "APK install engine
   arrives in Step 7" state. Installed-apps source stays fully functional.
 - Kuro Bridge card values (port/token) → labeled static placeholders until Step 7.

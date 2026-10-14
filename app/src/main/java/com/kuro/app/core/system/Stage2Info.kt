@@ -20,6 +20,23 @@ object StoragePaths {
 
     fun prootBase(appFilesDir: File): File = File(appFilesDir, "containers")
 
+    /** Step 5 layout: filesDir/distros/proot/<id>/rootfs (own fs per container). */
+    fun prootDistrosDir(appFilesDir: File): File = File(File(appFilesDir, "distros"), "proot")
+
+    fun prootContainerDir(appFilesDir: File, id: String): File =
+        File(prootDistrosDir(appFilesDir), id)
+
+    fun prootRootfsDir(appFilesDir: File, id: String): File =
+        File(prootContainerDir(appFilesDir, id), "rootfs")
+
+    /** Tarball cache (reusable for re-creates). */
+    fun downloadCacheDir(cacheDir: File): File = File(cacheDir, "downloads")
+
+    fun tarballFile(cacheDir: File, distroId: String, url: String): File {
+        val base = url.substringAfterLast('/').takeIf { it.isNotBlank() } ?: "$distroId.tar.xz"
+        return File(downloadCacheDir(cacheDir), "$distroId-$base")
+    }
+
     fun deviceFreeLabel(): String {
         val free = runCatching {
             val stat = StatFs(Environment.getDataDirectory().path)

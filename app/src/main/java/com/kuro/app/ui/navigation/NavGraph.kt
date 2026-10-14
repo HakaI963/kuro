@@ -83,6 +83,11 @@ fun KuroNavGraph(
                 content = {
                     AddDistroScreen(
                         onDone = { navController.popBackStack() },
+                        onOpenContainer = { containerId ->
+                            navController.navigate(Routes.terminalSession(containerId)) {
+                                popUpTo(Routes.ADD_DISTRO) { inclusive = true }
+                            }
+                        },
                         reduceMotion = reduceMotion
                     )
                 }

@@ -35,3 +35,33 @@ interface ActivityDao {
     @Query("DELETE FROM activity WHERE timestampMillis < :before")
     suspend fun pruneBefore(before: Long)
 }
+
+@Dao
+interface ContainerDao {
+    @Query("SELECT * FROM containers ORDER BY createdAt ASC")
+    fun observeAll(): Flow<List<ContainerRecord>>
+
+    @Query("SELECT * FROM containers WHERE id = :id LIMIT 1")
+    suspend fun get(id: String): ContainerRecord?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(record: ContainerRecord)
+
+    @Query("DELETE FROM containers WHERE id = :id")
+    suspend fun delete(id: String)
+}
+
+@Dao
+interface SessionDao {
+    @Query("SELECT * FROM sessions ORDER BY startedAt DESC")
+    fun observeAll(): Flow<List<SessionRecord>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(record: SessionRecord)
+
+    @Query("UPDATE sessions SET status = :status WHERE id = :id")
+    suspend fun setStatus(id: String, status: String)
+
+    @Query("DELETE FROM sessions WHERE containerId = :containerId")
+    suspend fun deleteForContainer(containerId: String)
+}

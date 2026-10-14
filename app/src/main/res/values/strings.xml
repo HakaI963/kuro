@@ -263,8 +263,10 @@
     <string name="distro_bridge_title">Kuro Bridge</string>
     <string name="distro_bridge_desc">Control Kuro clones from inside this distro via the kuro command</string>
     <string name="distro_interface_label">Interface mode</string>
-    <string name="distro_interface_terminal">Terminal only</string>
-    <string name="distro_interface_gui">Terminal + GUI (Kuro View)</string>
+    <string name="distro_interface_tui">TUI</string>
+    <string name="distro_interface_xfce">XFCE4</string>
+    <string name="distro_interface_kde">KDE (Plasma)</string>
+    <string name="distro_desktop_note">Desktop environment installs with the Kuro View update; terminal is available immediately.</string>
     <string name="distro_keep_alive">Keep session alive in background</string>
     <string name="distro_keep_alive_desc">Sessions persist via foreground service until you stop them</string>
     <string name="distro_wakelock">Wake lock while running</string>
@@ -325,4 +327,34 @@
     <string name="settings_crash_none">No crashes recorded</string>
     <string name="settings_crash_copy">Copy</string>
     <string name="settings_crash_copied">Copied to clipboard</string>
+
+    <!-- Step 5 install pipeline -->
+    <string name="install_downloading">Downloading</string>
+    <string name="install_verifying">Verifying checksum</string>
+    <string name="install_extracting">Extracting</string>
+    <string name="install_bootstrapping">Bootstrapping</string>
+    <string name="install_ready_title">Container ready</string>
+    <string name="install_ready_body">Installed and bootstrapped. Open a terminal to start a live shell.</string>
+    <string name="install_cancel">Cancel install</string>
+    <string name="install_retry">Retry</string>
+    <string name="install_copy_detail">Copy detail</string>
+    <string name="install_copied">Copied</string>
+    <string name="install_open_terminal">Open terminal</string>
+    <string name="install_back">Back to Terminal</string>
+    <string name="install_no_checksum">No published checksum — size verified</string>
+    <string name="distro_chroot_step6_title">Chroot arrives in Step 6</string>
+    <string name="distro_chroot_step6_body">Chroot containers need root via KernelSU and land in Step 6. Proot containers work today with no root.</string>
+
+    <!-- Terminal live actions -->
+    <string name="terminal_action_desktop">Desktop (Kuro View)</string>
+    <string name="terminal_desktop_note">arrives in a later update</string>
+    <string name="terminal_confirm_delete_title">Delete this container?</string>
+    <string name="terminal_confirm_delete_body">Stops its sessions and removes the filesystem. This cannot be undone.</string>
+    <string name="terminal_delete_confirm">Delete</string>
+    <string name="terminal_delete_keep">Keep</string>
+    <string name="terminal_freed_title">Container deleted</string>
+    <string name="session_ended_title">Session ended</string>
+    <string name="session_start_new">Start new session</string>
+    <string name="session_starting">Starting…</string>
+    <string name="terminal_open_new">New session</string>
 </resources>

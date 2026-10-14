@@ -167,7 +167,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 KuroSecondaryButton(
                     label = stringResource(R.string.settings_sessions_stop_all),
-                    onClick = { ContainerStore.stopAll() },
+                    onClick = { vm.stopAllSessions(context) },
                     enabled = running > 0
                 )
             }
