@@ -6,12 +6,12 @@ in a foreground service. No fake progress anywhere — every stage reports
 measured values or an honest typed error.
 
 ## Vendored components (unmodified except build-system patches)
-
 | Component | Source (pinned) | License | Notes |
 |---|---|---|---|
 | `terminal-emulator` + JNI (`:termux-terminal-emulator`) | termux/termux-app tag **v0.118.2** (`21c0d51`) | Apache-2.0 (repo's own exception statement + jackpal origin; see below) | VT emulation core + `termux.c` pty JNI (`createSubprocess`, `setPtyWindowSize`, `waitFor`, `close`). Builds `libtermux.so` via ndkBuild. |
 | `terminal-view` (`:termux-terminal-view`) | same tag | Apache-2.0 (same statement) | `TerminalView` renderer + input. |
-| proot binary (`app/src/main/assets/proot/proot-aarch64`) | proot-me/proot release **v5.3.0** asset `proot-v5.3.0-aarch64-static` | **GPLv2** | Static aarch64, verified by `file(1)`. Runs as a child process (fork+exec), never linked. Full provenance: `third_party/proot/PROVENANCE.md`. v5.4+/5.5 `proot` assets are x86_64 — wrong arch. |
+| proot binary (`app/src/main/assets/proot/proot-aarch64`) | Alpine **proot-static 5.4.0-r2** (`usr/bin/proot.static` from the official edge/community/aarch64 `.apk`) — Step 5c replacement, see below | **GPL-2.0-or-later** | Static-PIE musl aarch64, ET_DYN, no PT_INTERP (verified by `file(1)`/`readelf(1)`). Runs as a child process (fork+exec), never linked. Full provenance: `third_party/proot/PROVENANCE.md`. |
+| kuro-chroot helper (`app/src/main/assets/kuro-chroot`) | Built from `third_party/kuro-chroot/kuro-chroot.c` via `scripts/build-kuro-chroot.sh` (musl-cross static) | Kuro (no third-party code; pure C) | Static-PIE aarch64 for Step 6 chroot sessions; device gates g1/g2 in Settings. |
 | talloc (fallback builds only) | samba.org talloc 2.4.2, static | LGPLv3 (talloc) — only used by `scripts/build-proot.sh`, not shipped | proot's allocator dependency for source rebuilds. |
 | Apache Commons Compress 1.27.1 | Maven Central | Apache-2.0 | tar reading (symlinks, modes, traversal guard in `TarPathGuard`). |
 | XZ for Java 1.9 (`org.tukaani:xz`) | Maven Central | Public domain (Unlicense-style; see its `COPYING`) | `.tar.xz` decompression backend for Commons Compress. |
@@ -95,3 +95,16 @@ Multiple sessions per container via selector chips + New session.
 Typed `InstallFailure` (network / checksum / extract / exec / permission /
 storage), each with title + copyable detail, retry where meaningful, cancel
 anywhere with partial cleanup. Everything also lands in `kuro-engine.log`.
+
+## Step 5c: validated static proot + kuro-chroot helper
+
+The Step 5 asset (proot-me v5.3.0 static aarch64) was ET_EXEC (non-PIE):
+Android only executes PIE, so `execve` could never succeed. Step 5c adds an
+ELF forensics gate (`engine.proot.ElfProbe`: EM_AARCH64 + ET_DYN + no
+Linux-loader PT_INTERP, logged forever) and a reliability-ordered acquisition
+pipeline (`engine.proot.ProotAcquisition`): Alpine musl-static `.apk` →
+NDK-built PRoot releases → proot-static-build assets → bundled asset →
+(local CI build script). Winner installs to `filesDir/bin/proot` with
+provenance + validation proof visible in Engine Diagnostics; all-fail yields
+an honest card listing each logged reason. Cold starts re-validate and
+auto re-acquire in background. See `third_party/proot/PROVENANCE.md`.

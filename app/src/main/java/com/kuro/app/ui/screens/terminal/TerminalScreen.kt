@@ -83,6 +83,9 @@ fun TerminalScreen(
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
+            // Step 5c: engine status reflects the validated binary (version + source).
+            ProotEngineStatusLine()
+            Spacer(modifier = Modifier.height(12.dp))
             SectionHeader(title = stringResource(R.string.terminal_section_sessions))
             Spacer(modifier = Modifier.height(12.dp))
             if (containers.isEmpty()) {
@@ -296,8 +299,7 @@ private fun ContainerCard(
 }
 
 @Composable
-fun TypeBadge(type: ContainerType, modifier: Modifier = Modifier) {
-    Box(
+fun TypeBadge(type: ContainerType, modifier: Modifier = Modifier) {    Box(
         modifier = modifier
             .clip(RoundedCornerShape(999.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -310,6 +312,48 @@ fun TypeBadge(type: ContainerType, modifier: Modifier = Modifier) {
                 stringResource(R.string.terminal_type_chroot),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+/** Step 5c: Terminal tab reflects the validated binary (version + source). */
+@Composable
+private fun ProotEngineStatusLine() {
+    val context = LocalContext.current
+    var provenance by remember {
+        mutableStateOf<com.kuro.app.engine.proot.ProotProvenance?>(null)
+    }
+    var loaded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        provenance = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            com.kuro.app.engine.proot.ProotAcquisition.readProvenance(context.filesDir)
+        }
+        loaded = true
+    }
+    val prov = provenance
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(
+                    if (prov != null) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = if (!loaded) {
+                stringResource(R.string.state_loading)
+            } else if (prov != null) {
+                "${stringResource(R.string.terminal_engine_title)}: " +
+                    "${prov.versionLine} • ${prov.source}"
+            } else {
+                "${stringResource(R.string.terminal_engine_title)}: " +
+                    stringResource(R.string.terminal_engine_missing)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -1,38 +1,46 @@
-# proot binary provenance (Step 5)
+# proot binary provenance (Step 5c — supersedes the Step 5 note below)
 
-## Shipped asset
+## Shipped asset (current)
 
-- Path in repo: `app/src/main/assets/proot/proot-aarch64` (1,479,432 bytes)
-- What it is: official static aarch64 build of PRoot, release asset
-  `proot-v5.3.0-aarch64-static` from `proot-me/proot` release **v5.3.0**
-  (`https://github.com/proot-me/proot/releases/tag/v5.3.0`).
-- Verified 2026-10-14 with `file(1)`:
-  `ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked`
-- Observed SHA-256 (informational; the on-device `proot -V` run is the
-  functional verification, see `engine.proot.ProotBinary`):
-  `fa10b1a7818c2f5b1dcb5834450570c368c9ecf66d31521509621b95c4538a45`
-- License: **GPLv2** (`COPYING` in proot-me/proot at tag v5.3.0 —
-  "GNU GENERAL PUBLIC LICENSE, Version 2, June 1991"). The binary is used
-  unmodified as a shipped asset; proot runs as a child process (fork+exec),
-  it is not linked into the app.
+- Path in repo: `app/src/main/assets/proot/proot-aarch64` (402,632 bytes)
+- What it is: the `usr/bin/proot.static` binary from the official Alpine
+  Linux package **proot-static 5.4.0-r2** (edge/community/aarch64),
+  downloaded as
+  `https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/proot-static-5.4.0-r2.apk`
+  (.apk = gzipped tar; binary extracted unmodified).
+- Verified 2026-10-14 with `file(1)` + `readelf(1)`:
+  `ELF 64-bit LSB pie executable, ARM aarch64, static-pie linked`,
+  `ET_DYN`, **no PT_INTERP**. Static-PIE musl executes on Android with no
+  loader; ET_DYN satisfies the kernel PIE requirement.
+- Observed SHA-256 (informational; the on-device validation gate —
+  ELF + `proot -V` + smoke — is the functional verification):
+  `9e3a279932f365e84641ecda16b11f98a938f1c47b9b84fc993d68ce4d1f9bf8`
+- License: **GPL-2.0-or-later** (APKINDEX `L:GPL-2.0-or-later`, Alpine package
+  `o:proot` upstream proot-me). Runs as a child process (fork+exec), never
+  linked into the app.
 
-## Why v5.3.0 and not newer
+## Why this replaced the Step 5 asset (root cause, kept on record)
 
-Newer proot-me releases (v5.4.x, v5.5.0) publish a single `proot` asset whose
-ELF header identifies it as **x86_64** (e_machine 0x3E, checked 2026-10-14).
-v5.3.0 is the newest release publishing an explicitly labeled static aarch64
-asset (e_machine 0xB7). Kuro targets aarch64 devices, so v5.3.0 is correct.
+The Step 5 asset (proot-me v5.3.0 `proot-v5.3.0-aarch64-static`,
+sha `fa10b1a7…`) was **ET_EXEC (non-PIE)**: `readelf -h` showed
+`Type: EXEC` with fixed virtual addresses. Android only executes PIE
+(ET_DYN), so `execve` could never succeed — every distro failed with
+"proot -V produced no version output". The Step 5c validation gate
+(`ElfProbe`: EM_AARCH64 + ET_DYN + no Linux-loader PT_INTERP) rejects this
+build type with the reason logged, so it can never silently regress.
 
 ## Fallback: build from source
 
-If the asset ever needs rebuilding (newer release, reproducible build), use
-`scripts/build-proot.sh`: it cross-compiles proot + a static talloc with the
-Android NDK (same NDK as CI) and drops the result at the asset path above.
-Re-verify with `file` (must read aarch64 + statically linked) and update the
-SHA-256 line in this file.
+If the asset ever needs rebuilding (newer proot release, reproducible build),
+use `scripts/build-proot.sh`: static musl cross-build (musl.cc toolchain +
+static talloc via `scripts/talloc-cross-answers.txt`). Re-verify with `file`
+(must read aarch64 + static-pie/DYN, no INTERP), pass the validation gate on
+device, and update the SHA-256 line in this file.
 
 ## At first use (on device)
 
-`engine.proot.ProotBinary` extracts the asset to `filesDir/bin/proot`,
-`chmod 700`, then runs `proot -V` through a guarded process call and checks
-the output. Any failure is an honest error state in the UI — never silent.
+`engine.proot.ProotBinary` runs the installed copy through the full gate, else
+`engine.proot.ProotAcquisition` tries (in order): Alpine .apk, NDK builds,
+proot-static-build assets, bundled asset. Winner installs to
+`filesDir/bin/proot` (chmod 700) with provenance recorded; all-fail yields an
+honest error card listing each logged reason.

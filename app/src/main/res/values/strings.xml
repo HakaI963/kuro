@@ -357,4 +357,27 @@
     <string name="session_start_new">Start new session</string>
     <string name="session_starting">Starting…</string>
     <string name="terminal_open_new">New session</string>
+
+    <!-- Step 5c binary validation -->
+    <string name="diagnostics_proot_title">proot binary</string>
+    <string name="diagnostics_proot_source">Source</string>
+    <string name="diagnostics_proot_version">Version</string>
+    <string name="diagnostics_proot_sha">SHA-256</string>
+    <string name="diagnostics_proot_elf">ELF proof</string>
+    <string name="diagnostics_proot_smoke">Smoke test</string>
+    <string name="diagnostics_proot_none">No validated proot binary yet</string>
+    <string name="diagnostics_chroot_title">kuro-chroot helper</string>
+    <string name="diagnostics_chroot_g1">Gate g1 (version via su)</string>
+    <string name="diagnostics_chroot_g2">Gate g2 (mount cycle via su)</string>
+    <string name="diagnostics_chroot_none">Gates not run yet</string>
+    <string name="diagnostics_passed">passed</string>
+    <string name="diagnostics_failed">failed</string>
+    <string name="terminal_engine_title">proot engine</string>
+    <string name="terminal_engine_missing">proot not installed yet</string>
+    <string name="settings_chroot_title">Chroot helper</string>
+    <string name="settings_chroot_desc">Static helper for Step 6 chroot sessions</string>
+    <string name="settings_chroot_validate">Validate chroot helper</string>
+    <string name="settings_chroot_validated">Validated</string>
+    <string name="settings_chroot_not_validated">Not validated yet</string>
+    <string name="settings_chroot_gates_failed">Gates failed — see detail</string>
 </resources>
