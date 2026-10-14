@@ -10,7 +10,7 @@ measured values or an honest typed error.
 |---|---|---|---|
 | `terminal-emulator` + JNI (`:termux-terminal-emulator`) | termux/termux-app tag **v0.118.2** (`21c0d51`) | Apache-2.0 (repo's own exception statement + jackpal origin; see below) | VT emulation core + `termux.c` pty JNI (`createSubprocess`, `setPtyWindowSize`, `waitFor`, `close`). Builds `libtermux.so` via ndkBuild. |
 | `terminal-view` (`:termux-terminal-view`) | same tag | Apache-2.0 (same statement) | `TerminalView` renderer + input. |
-| proot binary (`app/src/main/assets/proot/proot-aarch64`, also shipped as `app/src/main/jniLibs/arm64-v8a/libkuro-proot.so` for the Step 5e executable location) | Alpine **proot-static 5.4.0-r2** (`usr/bin/proot.static` from the official edge/community/aarch64 `.apk`) — Step 5c replacement, see below | **GPL-2.0-or-later** | Static-PIE musl aarch64, ET_DYN, no PT_INTERP (verified by `file(1)`/`readelf(1)`). Runs as a child process (fork+exec), never linked. Full provenance: `third_party/proot/PROVENANCE.md`. |
+| proot binary (`app/src/main/assets/proot/proot-aarch64`, also shipped as `app/src/main/jniLibs/arm64-v8a/libkuro-proot.so` — offline byte source, relocated to codeCache per Step 5f) | Alpine **proot-static 5.4.0-r2** (`usr/bin/proot.static` from the official edge/community/aarch64 `.apk`) — Step 5c replacement, see below | **GPL-2.0-or-later** | Static-PIE musl aarch64, ET_DYN, no PT_INTERP (verified by `file(1)`/`readelf(1)`). Runs as a child process (fork+exec), never linked. Full provenance: `third_party/proot/PROVENANCE.md`. |
 | kuro-chroot helper (`app/src/main/assets/kuro-chroot`) | Built from `third_party/kuro-chroot/kuro-chroot.c` via `scripts/build-kuro-chroot.sh` (musl-cross static) | Kuro (no third-party code; pure C) | Static-PIE aarch64 for Step 6 chroot sessions; device gates g1/g2 in Settings. |
 | talloc (fallback builds only) | samba.org talloc 2.4.2, static | LGPLv3 (talloc) — only used by `scripts/build-proot.sh`, not shipped | proot's allocator dependency for source rebuilds. |
 | Apache Commons Compress 1.27.1 | Maven Central | Apache-2.0 | tar reading (symlinks, modes, traversal guard in `TarPathGuard`). |
@@ -74,9 +74,10 @@ Multiple sessions per container via selector chips + New session.
 
 - proot containers: `<filesDir>/distros/proot/<id>/rootfs` (one fs per container)
 - tarball cache: `<cacheDir>/downloads/<distro>-<file>` (Range-resume + reuse)
-- proot binary: `nativeLibraryDir/libkuro-proot.so` (APK-bundled .so validates
-  in place; Step 5e) or `/data/local/tmp/kuro-proot` (su fallback); legacy
-  `filesDir/bin/proot` is never executed (targetSdk 29+ error=13)
+- proot binary: `codeCacheDir/files/bin/proot` (Step 5f; validated `-V` +
+  smoke from there) or `cacheDir/bin/proot` fallback; `/data/local/tmp/`
+  only via su with granted root; legacy `filesDir/bin/proot` is never
+  executed (targetSdk 29+ error=13)
 - engine log: `<filesDir>/kuro-engine.log` (1 MB rotate); crash log unchanged
 - Delete = stop sessions + `rm -rf` container dir + Room delete, reporting
   real freed bytes. System tab storage reflects it on next refresh.
@@ -117,6 +118,20 @@ materializes OCI image layers (`OciLayout`, Fedora only). Wizard names
 auto-default to the selected distro id with a computed
 "e.g. <distro>-mobile" placeholder; user-typed names are preserved
 (`DistroNamePolicy`).
+
+## Step 5f: extract proot to codeCacheDir (fix EACCES)
+
+`nativeLibraryDir` is read-only at runtime (EACCES on copy), so Step 5e's
+copy target never worked. Winners now install to the app-writable
+`codeCacheDir/files/bin/proot` (chmod 700, `-V` + smoke re-validated from
+that absolute path — sessions launch it directly, never via su), with
+`cacheDir/bin/proot` as the no-su fallback. `/data/local/tmp/kuro-proot`
+is attempted ONLY in user-initiated flows with granted root; otherwise both
+failing logs "No executable directory found (noexec on codeCache and
+cache)" as the honest terminal error. The APK-bundled `libkuro-proot.so`
+remains the offline byte source (relocated, never executed in place).
+Settings > Root Access gains a "Test root access" button (`su -c id` with
+a grant hint on failure) so su denials are diagnosable on device.
 
 ## Step 5e: executable location (fix error=13 Permission denied)
 

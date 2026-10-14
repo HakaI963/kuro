@@ -10,11 +10,13 @@ import java.io.File
 
 /**
  * Step 5e: the proot binary is SHARED by all containers — one validated copy
- * at an EXECUTABLE location. Order of preference:
- *   1) nativeLibraryDir/libkuro-proot.so (APK-bundled .so validates in
- *      place; downloaded winners are copied there, chmod 700, re-validated).
- *   2) /data/local/tmp/kuro-proot (su copy + chmod via KernelSU, validated
- *      from there; user-initiated flows only, never background).
+ * at an EXECUTABLE location. Step 5f: nativeLibraryDir is read-only at
+ * runtime (EACCES on copy), so the order of preference is:
+ *   1) codeCacheDir/files/bin/proot (writable, no su),
+ *   2) cacheDir/bin/proot (writable, no su),
+ *   3) /data/local/tmp/kuro-proot (su copy + chmod via KernelSU, validated
+ *      from there; user-initiated flows with granted root only, never
+ *      background).
  * filesDir/bin/proot is LEGACY (Step 5c/5d): app-private storage cannot exec
  * on targetSdk 29+ (error=13), so it is never returned — the gate rejects it
  * and acquisition reinstalls to a real location.
@@ -22,20 +24,21 @@ import java.io.File
  * Flow:
  * - Session start (ensureInstalled, user-initiated): first location passing
  *   the full gate (ELF + `proot -V` + smoke, tightened: PT_INTERP absent) is
- *   returned. Else run ProotAcquisition (apk-lib first, then downloads).
+ *   returned. Else run ProotAcquisition (apk-lib bytes first, then downloads).
  *   All fail → throw with every logged reason (honest error card).
  * - Cold start (revalidateBackground): same, but NEVER su (allowSuCopy=false).
  *   Fresh installs (nothing anywhere) are left for first use.
  */
 object ProotBinary {
     const val ASSET_PATH = "proot/proot-aarch64"
-    const val LIB_NAME = ProotAcquisition.APK_LIB_NAME
 
     private val bgScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** Preferred executable: APK native library dir. */
-    fun libFile(app: Context): File =
-        File(app.applicationInfo.nativeLibraryDir, LIB_NAME)
+    /** Step 5f primary executable: codeCacheDir/files/bin/proot. */
+    fun codeCacheFile(app: Context): File = ProotAcquisition.codeCacheDest(app)
+
+    /** Step 5f fallback executable: cacheDir/bin/proot. */
+    fun cacheFile(app: Context): File = ProotAcquisition.cacheDest(app)
 
     /** su-only fallback executable (user-initiated flows only). */
     fun tmpFile(): File = ProotAcquisition.tmpFallbackFile()
@@ -65,8 +68,8 @@ object ProotBinary {
                     )
                     return@launch
                 }
-                val hadSomething = libFile(app).exists() || tmpFile().exists() ||
-                    legacyFile(app.filesDir).exists()
+                val hadSomething = codeCacheFile(app).exists() || cacheFile(app).exists() ||
+                    tmpFile().exists() || legacyFile(app.filesDir).exists()
                 // Fresh installs (no copy anywhere): leave for first use —
                 // no surprise downloads, no su prompts from background.
                 if (!hadSomething) return@launch
@@ -93,7 +96,8 @@ object ProotBinary {
                 ?: throw ProotUnavailableException(
                     listOf(
                         "acquire reported success but no executable validates at " +
-                            "${libFile(app).absolutePath} or ${tmpFile().absolutePath}"
+                            "${codeCacheFile(app).absolutePath}, " +
+                            "${cacheFile(app).absolutePath} or ${tmpFile().absolutePath}"
                     )
                 )
             is AcquireResult.Failure -> throw ProotUnavailableException(r.reasons)
@@ -102,8 +106,10 @@ object ProotBinary {
 
     /** First executable location passing the full gate, else null. */
     fun resolveValid(app: Context): File? {
-        val lib = libFile(app)
-        if (lib.isFile && fullGate(app, lib, "apk-lib")) return lib
+        val codeCache = codeCacheFile(app)
+        if (codeCache.isFile && fullGate(app, codeCache, "codecache")) return codeCache
+        val cache = cacheFile(app)
+        if (cache.isFile && fullGate(app, cache, "cache")) return cache
         val tmp = tmpFile()
         if (tmp.isFile && fullGate(app, tmp, "tmp-su-fallback")) return tmp
         return null
