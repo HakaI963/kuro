@@ -21,7 +21,7 @@ class AudioSettingsContractTest {
 
     @Test
     fun settingsHub_hasAudioCard() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/ui/screens/SettingsScreen.kt")
+        val src = repoFile("src/main/kotlin/com/kuro/app/ui/screens/SettingsScreen.kt")
             .readText()
         assertTrue(src.contains("onNavigateToAudioSettings"))
         assertTrue(src.contains("title = \"Audio\""))
@@ -30,7 +30,7 @@ class AudioSettingsContractTest {
 
     @Test
     fun mainActivity_wiresAudioScreen() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/MainActivity.kt").readText()
+        val src = repoFile("src/main/kotlin/com/kuro/app/MainActivity.kt").readText()
         assertTrue(src.contains("SETTINGS_AUDIO"))
         assertTrue(src.contains("AudioSettingsScreen"))
         assertTrue(src.contains("onNavigateToAudioSettings"))
@@ -38,7 +38,7 @@ class AudioSettingsContractTest {
 
     @Test
     fun audioScreen_hasRepairGuests() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/ui/screens/AudioSettingsScreen.kt")
+        val src = repoFile("src/main/kotlin/com/kuro/app/ui/screens/AudioSettingsScreen.kt")
             .readText()
         assertTrue(src.contains("Repair guests"))
         assertTrue(src.contains("PulseHost.repairGuests"))
@@ -47,7 +47,7 @@ class AudioSettingsContractTest {
 
     @Test
     fun pulseHost_queryDoesNotPassNldPathToEnv() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/core/terminal/PulseHost.kt")
+        val src = repoFile("src/main/kotlin/com/kuro/app/core/terminal/PulseHost.kt")
             .readText()
         assertFalse(src.contains("env -u LD_PRELOAD"))
         assertTrue(src.contains("PULSE_SERVER"))
@@ -58,7 +58,7 @@ class AudioSettingsContractTest {
 
     @Test
     fun deployer_listsRepairAndSupervisor() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/core/terminal/HostScriptDeployer.kt")
+        val src = repoFile("src/main/kotlin/com/kuro/app/core/terminal/HostScriptDeployer.kt")
             .readText()
         assertTrue(src.contains("start_pulse_host.sh"))
         assertTrue(src.contains("repair_pulse_guests.sh"))

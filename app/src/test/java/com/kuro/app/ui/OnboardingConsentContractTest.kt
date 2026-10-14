@@ -22,7 +22,7 @@ class OnboardingConsentContractTest {
     @Test
     fun optionsPage_requiresDownloadConsentBeforeInstall() {
         val src = repoFile(
-            "src/main/kotlin/com/ivarna/fluxlinux/ui/onboarding/OnboardingFlowScreen.kt"
+            "src/main/kotlin/com/kuro/app/ui/onboarding/OnboardingFlowScreen.kt"
         ).readText()
         assertTrue(src.contains("downloadConsent"))
         assertTrue(src.contains("FluxConsentCheckboxCard"))

@@ -126,7 +126,7 @@ class LegacyTermuxBridgeTest {
 
     @Test
     fun sourceGrep_bridgeRules() {
-        val src = repoFile("src/main/kotlin/com/ivarna/fluxlinux/core/legacy/LegacyTermuxBridge.kt").readText()
+        val src = repoFile("src/main/kotlin/com/kuro/app/core/legacy/LegacyTermuxBridge.kt").readText()
         assertTrue(src.contains("setClassName(spec.packageName, spec.className)"))
         assertFalse(src.contains("TermuxHostPaths.PREFIX"))
         assertFalse(src.contains("fluxlinux-host.env"))

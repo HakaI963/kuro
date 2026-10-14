@@ -121,7 +121,7 @@ class BusyBoxPathsTest {
 
     @Test
     fun termuxIntentFactory_has_no_bare_busybox_chroot() {
-        val src = readRepoFile("app/src/main/kotlin/com/ivarna/fluxlinux/core/data/TermuxIntentFactory.kt")
+        val src = readRepoFile("app/src/main/kotlin/com/kuro/app/core/data/TermuxIntentFactory.kt")
         assertFalse(src.contains("busybox chroot"))
     }
 
@@ -169,7 +169,7 @@ class BusyBoxPathsTest {
 
     @Test
     fun termuxIntentFactory_does_not_default_dead_pin() {
-        val src = readRepoFile("app/src/main/kotlin/com/ivarna/fluxlinux/core/data/TermuxIntentFactory.kt")
+        val src = readRepoFile("app/src/main/kotlin/com/kuro/app/core/data/TermuxIntentFactory.kt")
         assertFalse(
             src.contains("BB=\"\${FLUX_BB:-/data/local/kuro/flux_busybox}\"") ||
                 src.contains("BB=\"\${'$'}{FLUX_BB:-/data/local/kuro/flux_busybox}\"")

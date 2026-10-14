@@ -50,7 +50,7 @@ class OmzPokemonContractTest {
     @Test
     fun onboardingRunner_doesNotHardcodePokemonSkip() {
         val text = repoFile(
-            "src/main/kotlin/com/ivarna/fluxlinux/core/install/OnboardingInstallRunner.kt"
+            "src/main/kotlin/com/kuro/app/core/install/OnboardingInstallRunner.kt"
         ).readText()
         assertFalse(text.contains("FLUX_SKIP_POKEMON=1"))
         assertTrue(text.contains("FLUX_SKIP_POKEMON=0"))
@@ -59,7 +59,7 @@ class OmzPokemonContractTest {
     @Test
     fun chrootPayload_exportsPokemonTry() {
         val text = repoFile(
-            "src/main/kotlin/com/ivarna/fluxlinux/core/install/BaseDesktopInstallPlan.kt"
+            "src/main/kotlin/com/kuro/app/core/install/BaseDesktopInstallPlan.kt"
         ).readText()
         assertTrue(text.contains("FLUX_SKIP_POKEMON='0'"))
     }
@@ -67,7 +67,7 @@ class OmzPokemonContractTest {
     @Test
     fun distroSettings_doesNotDefaultPokemonSkip() {
         val text = repoFile(
-            "src/main/kotlin/com/ivarna/fluxlinux/MainActivity.kt"
+            "src/main/kotlin/com/kuro/app/MainActivity.kt"
         ).readText()
         assertFalse(
             text.contains("merged[\"FLUX_SKIP_POKEMON\"] = \"1\"")

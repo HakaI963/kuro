@@ -21,7 +21,7 @@ class LegacyTermuxMainActivityContractTest {
 
     @Test
     fun mainActivity_callbackContract() {
-        val text = repoFile("src/main/kotlin/com/ivarna/fluxlinux/MainActivity.kt").readText()
+        val text = repoFile("src/main/kotlin/com/kuro/app/MainActivity.kt").readText()
 
         // 1. legacy_termux_ early-return before distro_uninstall_ and before processNextInstallTask
         val handleCallbackBody = text.substringAfter("fun handleScriptCallback(").substringBefore("private val notificationPermissionLauncher")
@@ -45,14 +45,14 @@ class LegacyTermuxMainActivityContractTest {
         assertFalse("onCreate must not call handleScriptCallback", onCreateBody.contains("handleScriptCallback"))
 
         // 4. refreshInstalledAfterUninstall is not referenced from core/legacy/** or LegacyTermuxSettingsScreen.kt
-        val bridgeDir = repoFile("src/main/kotlin/com/ivarna/fluxlinux/core/legacy")
+        val bridgeDir = repoFile("src/main/kotlin/com/kuro/app/core/legacy")
         for (f in bridgeDir.walkTopDown().filter { it.isFile && it.name.endsWith(".kt") }) {
             assertFalse(
                 "${f.name} must not call refreshInstalledAfterUninstall",
                 f.readText().contains("refreshInstalledAfterUninstall")
             )
         }
-        val screenFile = repoFile("src/main/kotlin/com/ivarna/fluxlinux/ui/screens/LegacyTermuxSettingsScreen.kt")
+        val screenFile = repoFile("src/main/kotlin/com/kuro/app/ui/screens/LegacyTermuxSettingsScreen.kt")
         assertFalse(
             "LegacyTermuxSettingsScreen must not call refreshInstalledAfterUninstall",
             screenFile.readText().contains("refreshInstalledAfterUninstall")

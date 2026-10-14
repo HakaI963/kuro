@@ -38,7 +38,7 @@ class LegacyTermuxKotlinGrepTest {
 
     @Test
     fun legacyBridgeFiles_noForbiddenSymbols() {
-        val bridgeDir = repoFile("src/main/kotlin/com/ivarna/fluxlinux/core/legacy")
+        val bridgeDir = repoFile("src/main/kotlin/com/kuro/app/core/legacy")
         val files = bridgeDir.walkTopDown().filter { it.isFile && it.name.endsWith(".kt") }.toList()
         assertTrue("Expected files in core/legacy", files.isNotEmpty())
 
@@ -63,7 +63,7 @@ class LegacyTermuxKotlinGrepTest {
 
     @Test
     fun legacySettingsScreen_noForbiddenSymbols() {
-        val screenFile = repoFile("src/main/kotlin/com/ivarna/fluxlinux/ui/screens/LegacyTermuxSettingsScreen.kt")
+        val screenFile = repoFile("src/main/kotlin/com/kuro/app/ui/screens/LegacyTermuxSettingsScreen.kt")
         val content = screenFile.readText()
 
         for (forbidden in forbiddenSymbols) {

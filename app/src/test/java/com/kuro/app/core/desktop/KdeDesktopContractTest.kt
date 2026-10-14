@@ -29,7 +29,7 @@ class KdeDesktopContractTest {
 
     @Test
     fun kdeLaunch_hasNoExternalTermuxIntent() {
-        val factory = asset("src/main/kotlin/com/ivarna/fluxlinux/core/data/TermuxIntentFactory.kt")
+        val factory = asset("src/main/kotlin/com/kuro/app/core/data/TermuxIntentFactory.kt")
         assertFalse(factory.contains("buildLaunchKdeGui"))
         assertFalse(factory.contains("buildStopKdeGui"))
     }
