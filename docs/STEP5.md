@@ -96,6 +96,26 @@ Typed `InstallFailure` (network / checksum / extract / exec / permission /
 storage), each with title + copyable detail, retry where meaningful, cancel
 anywhere with partial cleanup. Everything also lands in `kuro-engine.log`.
 
+## Step 5d: download resume/416 fix + official-mirror failover
+
+Device-verified defect: resuming from a stale temp (size >= real asset size)
+sent `Range: bytes=<past-EOF>-`, and the server correctly answered HTTP 416.
+The downloader now resolves the expected size per attempt (HEAD, else catalog),
+sends Range ONLY for strictly-partial temps (`DownloadPolicy.shouldResume`),
+deletes stale temps before any GET, retries once with a plain GET on 416/415,
+and re-downloads fully once on completion size mismatch before failing.
+
+If the primary (termux/proot-distro) fails twice with HTTP 4xx/5xx, the install
+continues automatically on the catalog `fallbackUrl` (official vendor rootfs;
+Alpine minirootfs, Ubuntu ubuntu-base, Kali `current` symlink, Fedora Container
+Base OCI) with a UI note ("Primary mirror failed, switched to official
+mirror") + engine-log line. Timeouts/DNS retry the same source and never count
+toward failover. The extractor sniffs gzip vs xz vs plain tar, and
+materializes OCI image layers (`OciLayout`, Fedora only). Wizard names
+auto-default to the selected distro id with a computed
+"e.g. <distro>-mobile" placeholder; user-typed names are preserved
+(`DistroNamePolicy`).
+
 ## Step 5c: validated static proot + kuro-chroot helper
 
 The Step 5 asset (proot-me v5.3.0 static aarch64) was ET_EXEC (non-PIE):

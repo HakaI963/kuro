@@ -43,4 +43,34 @@ class ProotCatalogTest {
         assertEquals("nope", DistroCatalog.displayNameOf("nope"))
         assertNull(DistroCatalog.byId("nope"))
     }
+
+    @Test
+    fun `official fallbacks present except debian`() {
+        val withFallback = setOf("fedora", "kali", "ubuntu", "alpine")
+        DistroCatalog.entries.forEach { entry ->
+            if (entry.id in withFallback) {
+                assertNotNull("fallback for ${entry.id}", entry.fallbackUrl)
+                val fb = entry.fallbackUrl!!
+                assertTrue(fb.startsWith("https://"))
+                assertTrue(fb != entry.tarballUrl)
+                assertTrue("fallback bytes for ${entry.id}", entry.fallbackBytes > 0)
+            } else {
+                // Debian: no stable official direct rootfs tarball exists.
+                assertEquals("debian", entry.id)
+                assertNull(entry.fallbackUrl)
+            }
+        }
+    }
+
+    @Test
+    fun `per-url expectations resolve to the right source`() {
+        val alpine = DistroCatalog.byId("alpine")!!
+        assertEquals(alpine.tarballBytes, alpine.expectedBytesFor(alpine.tarballUrl))
+        assertEquals(alpine.fallbackBytes, alpine.expectedBytesFor(alpine.fallbackUrl!!))
+        assertNull(alpine.sha256For(alpine.tarballUrl))
+        assertEquals(alpine.fallbackSha256, alpine.sha256For(alpine.fallbackUrl!!))
+        val kali = DistroCatalog.byId("kali")!!
+        assertEquals(kali.sha256, kali.sha256For(kali.tarballUrl))
+        assertEquals(kali.fallbackSha256, kali.sha256For(kali.fallbackUrl!!))
+    }
 }
