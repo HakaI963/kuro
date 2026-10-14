@@ -200,6 +200,7 @@ fun RootAccessScreen(
                         }
                     }
                 }
+            }
         }
     }
 }
