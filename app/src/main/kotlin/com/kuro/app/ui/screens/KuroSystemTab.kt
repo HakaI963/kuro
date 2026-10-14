@@ -1,7 +1,6 @@
 package com.kuro.app.ui.screens
 
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateColor
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -54,7 +53,7 @@ fun KuroSystemTab(
     val bg by infiniteTransition.animateColor(
         initialValue = Color(0xFF0A0E14),
         targetValue = Color(0xFF151D2A),
-        animationSpec = infiniteRepeatable(animationSpec = tween(4000), repeatMode = RepeatMode.Reverse),
+        animation = infiniteRepeatable(animation = tween(4000), repeatMode = RepeatMode.Reverse),
         label = "bg"
     )
     Box(modifier = modifier.fillMaxSize().background(bg)) {
