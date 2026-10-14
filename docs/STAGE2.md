@@ -9,7 +9,8 @@ must stay non-functional (no fake progress, no fake success) until its stage.
 
 | Step | Scope | Status |
 |---|---|---|
-| Step 4 | Stage 2 UI shell: System / Terminal / Clones / Settings tabs, distro wizard UI, SAF APK selection UI, root/status/storage/bridge cards | this branch |
+| Step 4 | Stage 2 UI shell: System / Terminal / Clones / Settings tabs, distro wizard UI, SAF APK selection UI, root/status/storage/bridge cards | done |
+| Step 4b | Startup crash fix: global crash.log tooling, splash finally-handoff, per-tile metric isolation, guarded EGL GPU path, exec-based root probe, SessionService manifest hygiene | this branch |
 | Step 5 | proot container engine: real download, install, terminal sessions, foreground-service persistence | next |
 | Step 6 | chroot backend: root via KernelSU, `/data/local/kuro` filesystems | planned |
 | Step 7 | Kuro Bridge + APK install: localhost service, `kuro` CLI in distros, APK-file installs | planned |

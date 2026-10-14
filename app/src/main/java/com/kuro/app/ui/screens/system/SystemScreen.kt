@@ -62,15 +62,15 @@ fun SystemScreen(
         if (!animateListIn) onListShown()
     }
 
-    // Live refresh, 2.5s loop, WHILE VISIBLE ONLY: this effect lives inside the
-    // tab content, so switching tabs drops it from composition and the loop
-    // cancels. Nothing polls when backgrounded.
+    // Live refresh, ~2.5s cycle, WHILE VISIBLE ONLY: this effect lives inside
+    // the tab content, so switching tabs drops it from composition and the
+    // loop — including an in-flight 1s CPU sample — cancels. Nothing polls
+    // when backgrounded. All IO stays off the main thread (see ViewModel).
     LaunchedEffect(Unit) {
         val dir = context.filesDir
-        vm.refresh(dir)
         while (isActive) {
-            delay(2500L)
-            vm.refresh(dir)
+            vm.refreshCycle(dir)
+            delay(1500L)
         }
     }
 
@@ -124,24 +124,33 @@ fun SystemScreen(
 
 @Composable
 private fun MetricsGrid(metrics: SystemMetrics?) {
+    // Per-tile isolation: each tile renders "-" from its own null source.
     val na = stringResource(R.string.system_value_unavailable)
+    val ram = metrics?.let { m ->
+        if (m.ramUsedBytes != null && m.ramTotalBytes != null)
+            "${formatBytes(m.ramUsedBytes)} / ${formatBytes(m.ramTotalBytes)}" else null
+    } ?: na
+    val storage = metrics?.let { m ->
+        if (m.storageFreeBytes != null && m.storageTotalBytes != null)
+            "${formatBytes(m.storageFreeBytes)} / ${formatBytes(m.storageTotalBytes)}" else null
+    } ?: na
     val tiles = listOf(
-        stringResource(R.string.system_metric_ram) to
-            (metrics?.let { "${it.ramUsedLabel} / ${it.ramTotalLabel}" } ?: na),
+        stringResource(R.string.system_metric_ram) to ram,
         stringResource(R.string.system_metric_cpu) to
             (metrics?.cpuLoad01?.let { "${(it * 100).toInt()}%" } ?: na),
         stringResource(R.string.system_metric_temp) to
             (metrics?.cpuTempC?.let { String.format("%.1f°C", it) } ?: na),
         stringResource(R.string.system_metric_gpu) to
             (metrics?.gpuRenderer?.take(28) ?: na),
-        stringResource(R.string.system_metric_storage) to
-            (metrics?.let { "${formatBytes(it.storageFreeBytes)} / ${formatBytes(it.storageTotalBytes)}" } ?: na),
+        stringResource(R.string.system_metric_storage) to storage,
         stringResource(R.string.system_metric_kuro_storage) to
-            (metrics?.let { formatBytes(it.kuroDataBytes) } ?: na),
+            (metrics?.kuroDataBytes?.let { formatBytes(it) } ?: na),
         stringResource(R.string.system_metric_kernel) to
-            (metrics?.let { it.kernelVersion + " • " + it.arch } ?: na),
+            (metrics?.kernelLabel?.let { k ->
+                metrics.arch?.let { "$k • $it" } ?: k
+            } ?: na),
         stringResource(R.string.system_metric_uptime) to
-            (metrics?.let { formatUptime(it.uptimeMillis) } ?: na)
+            (metrics?.uptimeMillis?.let { formatUptime(it) } ?: na)
     )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tiles.chunked(2).forEach { row ->

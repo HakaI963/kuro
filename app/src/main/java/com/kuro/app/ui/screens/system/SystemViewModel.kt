@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -36,12 +35,16 @@ class SystemViewModel : ViewModel() {
     val containers: StateFlow<List<LinuxContainer>> = ContainerStore.containers
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun refresh(appFilesDir: File) {
-        viewModelScope.launch {
-            val read = withContext(Dispatchers.IO) {
-                SystemMetricsReader.read(appFilesDir)
-            }
-            _metrics.value = read
-        }
+    /**
+     * Step 4b: one suspend refresh (~1s for CPU sampling). Called from the
+     * System tab's own coroutine scope, so leaving the tab cancels a
+     * sampling cycle in flight. All IO off-main; never throws (tiles degrade
+     * to null and render "-").
+     */
+    suspend fun refreshCycle(appFilesDir: File) {
+        val read = runCatching {
+            withContext(Dispatchers.IO) { SystemMetricsReader.readCycle(appFilesDir) }
+        }.getOrNull() ?: return
+        _metrics.value = read
     }
 }

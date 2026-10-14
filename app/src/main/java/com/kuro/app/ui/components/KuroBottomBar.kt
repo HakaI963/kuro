@@ -88,7 +88,10 @@ fun KuroBottomBar(
             val cellWidthPx = with(density) { cellWidth.toPx() }
             val targetPx = cellWidthPx * selectedIndex.toFloat()
 
-            // Verify rest position via onGloballyPositioned (bar width hook).
+            // Step 4b: exactly ONE onGloballyPositioned in the bar (on the tab
+            // row). It only records the measured width for rest-position
+            // verification and writes the same value back, so no measure
+            // feedback loop can form. Pill motion stays graphicsLayer-only.
             var barWidthPx by remember { mutableIntStateOf(0) }
 
             // Animate only translation via graphicsLayer, tween 200ms.
@@ -114,9 +117,6 @@ fun KuroBottomBar(
             Box(
                 modifier = Modifier
                     .offset(x = centeredBase, y = 12.dp)
-                    .onGloballyPositioned { coords ->
-                        barWidthPx = coords.size.width
-                    }
                     .size(pillW, pillH)
                     .graphicsLayer {
                         translationX = animatedIndexPx

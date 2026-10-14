@@ -319,4 +319,10 @@
     <string name="settings_bridge_port">Localhost port</string>
     <string name="settings_bridge_token">Token</string>
     <string name="settings_bridge_placeholder_note">Values below are static placeholders until Step 7.</string>
+
+    <!-- Crash reporting -->
+    <string name="settings_crash_title">Last crash</string>
+    <string name="settings_crash_none">No crashes recorded</string>
+    <string name="settings_crash_copy">Copy</string>
+    <string name="settings_crash_copied">Copied to clipboard</string>
 </resources>

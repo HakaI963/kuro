@@ -62,12 +62,19 @@ fun OrbitalIntro(
     }
 
     LaunchedEffect(reduceMotion) {
-        if (reduceMotion) {
-            fade.animateTo(1f, tween(MotionTokens.REDUCED_MS))
-        } else {
-            progress.animateTo(1f, tween(MotionTokens.INTRO_TOTAL_MS - 100, easing = LinearEasing))
+        // Step 4b: completion/finally handoff. If the animation is cancelled
+        // (navigation, config change) or throws, the overlay state still flips
+        // to hidden so the intro can never remain composed over any tab.
+        // The ring animation itself is unchanged; reduce motion still skips it.
+        try {
+            if (reduceMotion) {
+                fade.animateTo(1f, tween(MotionTokens.REDUCED_MS))
+            } else {
+                progress.animateTo(1f, tween(MotionTokens.INTRO_TOTAL_MS - 100, easing = LinearEasing))
+            }
+        } finally {
+            finish()
         }
-        finish()
     }
 
     val skipInteraction = remember { MutableInteractionSource() }

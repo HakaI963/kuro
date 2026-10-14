@@ -29,7 +29,8 @@ object StoragePaths {
     }
 
     fun containerSizeLabel(dir: File?): String =
-        if (dir == null || !dir.exists()) "−" else formatBytes(SystemMetricsReader.dirSize(dir))
+        if (dir == null || !dir.exists()) "−"
+        else formatBytes(SystemMetricsReader.dirSizeNow(dir) ?: 0L)
 }
 
 /**
