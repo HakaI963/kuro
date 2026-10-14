@@ -164,6 +164,14 @@ private fun InstallActiveCard(stage: InstallStage, spec: InstallSpec) {
                 determinate = frac != null,
                 steps = installSteps(downloading, verifying, extracting, bootstrapping, active = 0)
             )
+            if (stage.usedFallback) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.install_mirror_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         is InstallStage.Verifying -> {
             val frac = if (stage.totalBytes > 0) {

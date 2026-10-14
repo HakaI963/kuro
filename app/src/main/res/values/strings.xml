@@ -259,7 +259,7 @@
     <string name="distro_source">Source</string>
     <string name="distro_options_title">Container options</string>
     <string name="distro_name_label">Container name</string>
-    <string name="distro_name_hint">e.g. kali-mobile</string>
+    <string name="install_mirror_note">Primary mirror failed, switched to official mirror.</string>
     <string name="distro_bridge_title">Kuro Bridge</string>
     <string name="distro_bridge_desc">Control Kuro clones from inside this distro via the kuro command</string>
     <string name="distro_interface_label">Interface mode</string>

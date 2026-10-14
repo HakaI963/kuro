@@ -231,9 +231,10 @@ class SessionService : Service() {
         val pct = if (total > 0) (stage.bytes * 100 / total).toInt().coerceIn(0, 100) else -1
         val speed = if (stage.bytesPerSec > 0) "${formatBytes(stage.bytesPerSec)}/s" else "…"
         val eta = stage.etaSec?.let { "${it}s left" } ?: ""
+        val mirror = if (stage.usedFallback) " • official mirror" else ""
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.splash_icon_solid)
-            .setContentTitle("Downloading distro (${formatBytes(stage.bytes)}${if (total > 0) " / ${formatBytes(total)}" else ""})")
+            .setContentTitle("Downloading distro (${formatBytes(stage.bytes)}${if (total > 0) " / ${formatBytes(total)}" else ""})$mirror")
             .setContentText("$speed $eta".trim())
             .setProgress(100, pct.coerceAtLeast(0), pct < 0)
             .setOngoing(true)

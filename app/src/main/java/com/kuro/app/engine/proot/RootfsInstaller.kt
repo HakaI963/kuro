@@ -7,6 +7,8 @@ import android.os.StatFs
 import com.kuro.app.core.system.StoragePaths
 import com.kuro.app.ui.screens.terminal.DistroCatalog
 import com.kuro.app.ui.screens.terminal.DistroEntry
+import com.kuro.app.ui.screens.terminal.expectedBytesFor
+import com.kuro.app.ui.screens.terminal.sha256For
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,7 +27,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.tukaani.xz.XZInputStream
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -58,7 +59,9 @@ sealed interface InstallStage {
         val bytes: Long,
         val totalBytes: Long?,
         val bytesPerSec: Long,
-        val etaSec: Long?
+        val etaSec: Long?,
+        /** Step 5d: true once the primary mirror failed and we continue on the official fallback. */
+        val usedFallback: Boolean = false
     ) : InstallStage
 
     data class Verifying(val bytes: Long, val totalBytes: Long) : InstallStage
@@ -150,7 +153,6 @@ object ContainerProvisioner {
         val distro = DistroCatalog.byId(spec.distroId)
             ?: throw IllegalStateException("unknown distro ${spec.distroId}")
         val filesDir = app.filesDir
-        val tarball = StoragePaths.tarballFile(app.cacheDir, distro.id, distro.tarballUrl)
 
         // Storage pre-check: tarball + ~4x working room.
         val need = distro.tarballBytes * 5
@@ -168,38 +170,28 @@ object ContainerProvisioner {
             return
         }
 
-        // 1) Download (resume + retry).
-        downloadWithRetry(app, spec, distro, tarball)
-        // Size check when the catalog knows the exact byte count.
-        if (distro.tarballBytes > 0 && tarball.length() != distro.tarballBytes) {
-            tarball.delete()
-            setStage(
-                spec.installId,
-                InstallStage.Failed(
-                    InstallFailure.Network(
-                        "size mismatch: got ${tarball.length()} B, expected ${distro.tarballBytes} B"
-                    )
-                )
-            )
-            com.kuro.app.sessions.SessionService.refreshNotifications(app)
-            return
-        }
+        // 1) Download (guarded resume + retry + official-mirror failover).
+        // Throws InstallHaltException after setting the Failed stage.
+        val outcome = downloadWithRetry(app, spec, distro)
+        val tarball = outcome.tarball
 
-        // 2) Verify (only when the catalog publishes a checksum).
-        if (distro.sha256 != null) {
+        // 2) Verify (only when the active source publishes a checksum).
+        val expectedSha = distro.sha256For(outcome.url)
+        if (expectedSha != null) {
             setStage(spec.installId, InstallStage.Verifying(0, tarball.length()))
             val got = withContext(Dispatchers.IO) {
                 Sha256.ofFile(tarball) { done ->
                     setStage(spec.installId, InstallStage.Verifying(done, tarball.length()))
                 }
             }
-            if (!got.equals(distro.sha256, ignoreCase = true)) {
+            if (!got.equals(expectedSha, ignoreCase = true)) {
                 tarball.delete()
+                runCatching { metaFileFor(tarball).delete() }
                 setStage(
                     spec.installId,
                     InstallStage.Failed(
                         InstallFailure.Checksum(
-                            "expected ${distro.sha256.take(16)}…, got ${got.take(16)}…"
+                            "expected ${expectedSha.take(16)}…, got ${got.take(16)}…"
                         )
                     )
                 )
@@ -210,7 +202,8 @@ object ContainerProvisioner {
         } else {
             ContainerEngineLog.append(
                 filesDir, "install",
-                "${spec.installId}: no published checksum; size-verified ${tarball.length()} B"
+                "${spec.installId}: no published checksum for ${outcome.shortSource()}; " +
+                    "size-verified ${tarball.length()} B"
             )
         }
 
@@ -236,77 +229,237 @@ object ContainerProvisioner {
         com.kuro.app.sessions.SessionService.refreshNotifications(app)
     }
 
-    // ——— Download ———
+    // ——— Download (Step 5d: guarded resume + mirror failover) ———
+
+    /** Where the bytes came from and what was expected of them. */
+    data class DownloadOutcome(
+        val url: String,
+        val tarball: File,
+        val expectedBytes: Long,
+        val usedFallback: Boolean
+    ) {
+        fun shortSource(): String =
+            if (usedFallback) "official mirror" else "primary mirror"
+    }
+
+    /** HTTP error status as an exception so retry/failover can inspect it. */
+    class HttpStatusException(val code: Int, url: String) :
+        java.io.IOException("HTTP $code for $url")
+
+    private fun tarballFor(cacheDir: File, distro: DistroEntry, url: String): File =
+        StoragePaths.tarballFile(cacheDir, distro.id, url)
+
+    private fun metaFileFor(tarball: File): File = File(tarball.absolutePath + ".meta")
+
+    private fun writeMeta(tarball: File, url: String, expectedBytes: Long) {
+        runCatching {
+            metaFileFor(tarball).writeText("url=$url\nexpected=$expectedBytes\n")
+        }
+    }
+
+    /**
+     * Expected asset size: a HEAD request (follows redirects) wins; the
+     * catalog constant is the fallback. Never returns <= 0 when the catalog
+     * knows the size. Runs on the caller's IO context (blocking).
+     */
+    private fun resolveExpected(url: String, catalogBytes: Long): Long {
+        val head = runCatching {
+            val req = Request.Builder()
+                .url(url)
+                .head()
+                .header("User-Agent", "Kuro-proot-installer")
+                .build()
+            http.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return@use null
+                resp.header("Content-Length")?.toLongOrNull()?.takeIf { it > 0 }
+                    ?: resp.body?.contentLength()?.takeIf { it > 0 }
+            }
+        }.getOrNull()
+        return head ?: catalogBytes
+    }
 
     private suspend fun downloadWithRetry(
         app: Context,
         spec: InstallSpec,
-        distro: DistroEntry,
-        tarball: File
-    ) {
-        tarball.parentFile?.mkdirs()
-        var attempt = 0
+        distro: DistroEntry
+    ): DownloadOutcome {
+        val tracker = DownloadPolicy.MirrorTracker(distro.fallbackUrl != null)
+        var primaryAttempts = 0
+        var fallbackAttempts = 0
         var lastError: Exception? = null
-        while (attempt < 3) {
-            attempt++
+        while (true) {
+            val usingFallback = tracker.usingFallback
+            val url = if (usingFallback) distro.fallbackUrl!! else distro.tarballUrl
+            val attemptsSoFar = if (usingFallback) fallbackAttempts else primaryAttempts
+            if (attemptsSoFar >= 3) break
+            if (usingFallback) fallbackAttempts++ else primaryAttempts++
+            val attemptNo = attemptsSoFar + 1
             try {
-                downloadOnce(app, spec, distro, tarball)
-                return
+                return attemptDownload(app, spec, distro, url, usingFallback)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (e: HttpStatusException) {
                 lastError = e
                 ContainerEngineLog.append(
                     app.filesDir, "install",
-                    "${spec.installId}: download attempt $attempt failed: ${e.message}"
+                    "${spec.installId}: download attempt $attemptNo " +
+                        "(${if (usingFallback) "official mirror" else "primary"}) " +
+                        "failed: ${e.message}"
                 )
-                if (attempt < 3) delay(1000L * attempt)
+                if (tracker.recordHttpFailure(e.code)) {
+                    ContainerEngineLog.append(
+                        app.filesDir, "install",
+                        "${spec.installId}: primary mirror failed, switched to official mirror"
+                    )
+                    setStage(
+                        spec.installId,
+                        InstallStage.Downloading(0, null, 0, null, usedFallback = true)
+                    )
+                    continue
+                }
+                if (attemptsSoFar + 1 < 3) delay(1000L * attemptNo)
+            } catch (e: Exception) {
+                // Non-HTTP errors (timeout, DNS, reset): retry the same source,
+                // never count toward mirror failover.
+                lastError = e
+                ContainerEngineLog.append(
+                    app.filesDir, "install",
+                    "${spec.installId}: download attempt $attemptNo failed: ${e.message}"
+                )
+                if (attemptsSoFar + 1 < 3) delay(1000L * attemptNo)
             }
         }
+        val hint = if (tracker.usingFallback) " (official mirror)" else ""
         setStage(
             spec.installId,
             InstallStage.Failed(
-                InstallFailure.Network(lastError?.message ?: "download failed after 3 attempts")
+                InstallFailure.Network(
+                    (lastError?.message ?: "download failed") + hint
+                )
             )
         )
         com.kuro.app.sessions.SessionService.refreshNotifications(app)
         throw InstallHaltException()
     }
 
-    private suspend fun downloadOnce(
+    /**
+     * One source, one attempt: resolve expectation, drop stale temps, GET
+     * (ranged only into a strictly-partial temp), recover once from 416/415,
+     * then verify completion size with one full re-download on mismatch.
+     */
+    private suspend fun attemptDownload(
         app: Context,
         spec: InstallSpec,
         distro: DistroEntry,
-        tarball: File
-    ) {
+        url: String,
+        usedFallback: Boolean
+    ): DownloadOutcome {
+        currentCoroutineContext().ensureActive()
+        val tarball = tarballFor(app.cacheDir, distro, url)
+        tarball.parentFile?.mkdirs()
+        val catalogBytes = distro.expectedBytesFor(url)
+        val expected = resolveExpected(url, catalogBytes)
+        currentCoroutineContext().ensureActive()
+        writeMeta(tarball, url, expected)
+
+        if (tarball.exists()) {
+            val len = tarball.length()
+            if (DownloadPolicy.isStaleTemp(len, expected)) {
+                // Never resume from a temp at/over the expected size — this
+                // was the 416 root cause (stale offset >= real asset size).
+                ContainerEngineLog.append(
+                    app.filesDir, "install",
+                    "${spec.installId}: stale temp ${len}B >= expected ${expected}B, deleting"
+                )
+                tarball.delete()
+                runCatching { metaFileFor(tarball).delete() }
+            }
+        }
         val have = if (tarball.exists()) tarball.length() else 0L
+        val resume = DownloadPolicy.shouldResume(have, expected)
+        try {
+            getOnce(app, spec, url, tarball, rangeFrom = if (resume) have else null,
+                expected = expected, usedFallback = usedFallback)
+        } catch (e: HttpStatusException) {
+            if (resume && DownloadPolicy.isResumeRejected(e.code)) {
+                // 416/415 = our offset is unsatisfiable: drop the temp and
+                // retry ONCE with a plain GET on the same source.
+                ContainerEngineLog.append(
+                    app.filesDir, "install",
+                    "${spec.installId}: HTTP ${e.code} for $url: stale resume offset " +
+                        "$have, deleted temp, retrying plain GET"
+                )
+                tarball.delete()
+                runCatching { metaFileFor(tarball).delete() }
+                getOnce(app, spec, url, tarball, rangeFrom = null,
+                    expected = expected, usedFallback = usedFallback)
+            } else {
+                throw e
+            }
+        }
+
+        // Completion check: actual must equal expected, else corrupt → delete
+        // and do ONE full re-download before calling it a failure.
+        if (!DownloadPolicy.sizeMatches(tarball.length(), expected)) {
+            ContainerEngineLog.append(
+                app.filesDir, "install",
+                "${spec.installId}: size mismatch after download: got ${tarball.length()}B, " +
+                    "expected ${expected}B — full re-download once"
+            )
+            tarball.delete()
+            runCatching { metaFileFor(tarball).delete() }
+            getOnce(app, spec, url, tarball, rangeFrom = null,
+                expected = expected, usedFallback = usedFallback)
+            if (!DownloadPolicy.sizeMatches(tarball.length(), expected)) {
+                runCatching {
+                    tarball.delete()
+                    metaFileFor(tarball).delete()
+                }
+                throw java.io.IOException(
+                    "size mismatch: got ${tarball.length()} B, expected $expected B"
+                )
+            }
+        }
+        writeMeta(tarball, url, expected)
+        return DownloadOutcome(url, tarball, expected, usedFallback)
+    }
+
+    private suspend fun getOnce(
+        app: Context,
+        spec: InstallSpec,
+        url: String,
+        tarball: File,
+        rangeFrom: Long?,
+        expected: Long,
+        usedFallback: Boolean
+    ) {
         val request = Request.Builder()
-            .url(distro.tarballUrl)
+            .url(url)
             .header("User-Agent", "Kuro-proot-installer")
-            .apply { if (have > 0) header("Range", "bytes=$have-") }
+            .apply { if (rangeFrom != null) header("Range", "bytes=$rangeFrom-") }
             .build()
         // Network on IO; progress callbacks hop to setStage (thread-safe).
         withContext(Dispatchers.IO) {
             http.newCall(request).execute().use { response ->
                 val code = response.code
-                val append = code == 206 && have > 0
                 if (code != 200 && code != 206) {
-                    throw java.io.IOException("HTTP $code for ${distro.tarballUrl}")
+                    throw HttpStatusException(code, url)
                 }
-                if (code == 200 && have > 0) {
+                val append = code == 206 && rangeFrom != null
+                if (code == 200 && rangeFrom != null) {
                     // Server ignored Range: restart from zero.
                     tarball.delete()
                 }
                 val body = response.body ?: throw java.io.IOException("empty body")
                 val total = body.contentLength().let { len ->
                     when {
-                        len > 0 && append -> have + len
+                        len > 0 && append -> rangeFrom!! + len
                         len > 0 -> len
-                        distro.tarballBytes > 0 -> distro.tarballBytes
+                        expected > 0 -> expected
                         else -> null
                     }
                 }
-                val startBytes = if (append) have else 0L
+                val startBytes = if (append) rangeFrom!! else 0L
                 FileOutputStream(tarball, append).use { out ->
                     val buf = ByteArray(128 * 1024)
                     var done = startBytes
@@ -327,7 +480,7 @@ object ContainerProvisioner {
                             val eta = if (total != null && speed > 0) (total - done) / speed else null
                             setStage(
                                 spec.installId,
-                                InstallStage.Downloading(done, total, speed, eta)
+                                InstallStage.Downloading(done, total, speed, eta, usedFallback)
                             )
                             lastEmit = now
                             windowBytes = 0L
@@ -336,7 +489,10 @@ object ContainerProvisioner {
                     }
                     out.fd.sync()
                 }
-                setStage(spec.installId, InstallStage.Downloading(tarball.length(), total, 0, 0))
+                setStage(
+                    spec.installId,
+                    InstallStage.Downloading(tarball.length(), total, 0, 0, usedFallback)
+                )
             }
         }
     }
@@ -348,7 +504,17 @@ object ContainerProvisioner {
         runCatching {
             val distro = DistroCatalog.byId(spec.distroId)
             if (distro != null) {
-                StoragePaths.tarballFile(app.cacheDir, distro.id, distro.tarballUrl).delete()
+                // Drop every cached partial for this distro (both mirrors +
+                // metadata sidecars); the next run starts clean, never 416.
+                tarballFor(app.cacheDir, distro, distro.tarballUrl).delete()
+                runCatching {
+                    metaFileFor(tarballFor(app.cacheDir, distro, distro.tarballUrl)).delete()
+                }
+                val fb = distro.fallbackUrl
+                if (fb != null) {
+                    tarballFor(app.cacheDir, distro, fb).delete()
+                    runCatching { metaFileFor(tarballFor(app.cacheDir, distro, fb)).delete() }
+                }
             }
             StoragePaths.prootContainerDir(app.filesDir, spec.containerId).deleteRecursively()
         }
@@ -371,8 +537,11 @@ object ContainerProvisioner {
         var skipped = 0
         try {
             BufferedInputStream(FileInputStream(tarball)).use { fileIn ->
-                XZInputStream(fileIn).use { xzIn ->
-                    TarArchiveInputStream(xzIn).use { tarIn ->
+                // Step 5d: official fallbacks ship gzip (Alpine minirootfs,
+                // Ubuntu ubuntu-base) or xz (proot-distro, Kali, Fedora OCI);
+                // sniff the magic instead of assuming xz.
+                OciLayout.openDecompressed(fileIn).use { decIn ->
+                    TarArchiveInputStream(decIn).use { tarIn ->
                         var entry = tarIn.nextEntry
                         while (entry != null) {
                             val target = TarPathGuard.resolve(staging, (entry as TarArchiveEntry).name)
@@ -444,6 +613,30 @@ object ContainerProvisioner {
                         }
                     }
                 }
+            }
+            // Step 5d: official Fedora fallback ships as an OCI image layout —
+            // materialize its layers into a plain rootfs. Primary tarballs
+            // never contain a layout, so this is a strict no-op for them.
+            if (OciLayout.isOciStaging(staging)) {
+                ContainerEngineLog.append(
+                    app.filesDir, "install",
+                    "${spec.installId}: oci image layout detected, materializing layers"
+                )
+                val layerFiles = try {
+                    OciLayout.materialize(staging)
+                } catch (e: CancellationException) {
+                    runCatching { staging.deleteRecursively() }
+                    throw e
+                } catch (e: Exception) {
+                    fail(spec, app, "oci layers: ${e.message ?: e.javaClass.simpleName}")
+                    runCatching { staging.deleteRecursively() }
+                    return false
+                }
+                files += layerFiles
+                ContainerEngineLog.append(
+                    app.filesDir, "install",
+                    "${spec.installId}: oci layers materialized ($layerFiles files)"
+                )
             }
             // Collapse a single top-level wrapper dir (proot-distro + NetHunter).
             collapseWrapper(staging)

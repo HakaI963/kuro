@@ -82,6 +82,17 @@ fun AddDistroScreen(
     var type by remember { mutableStateOf(ContainerType.PROOT) }
     var distroId by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
+    // Step 5d: last auto-default applied. The field follows the selected
+    // distro id while pristine (blank) or still holding the previous
+    // auto-default; user-typed text is preserved across distro changes.
+    var nameAuto by remember { mutableStateOf<String?>(null) }
+    fun onDistroSelected(newId: String) {
+        val next = DistroNamePolicy.onDistroSelected(name, nameAuto, newId)
+        // Still an auto-default only when the value equals the new id.
+        if (next == newId) nameAuto = newId
+        name = next
+        distroId = newId
+    }
     var bridgeOn by remember { mutableStateOf(true) }
     var interfaceMode by remember { mutableStateOf(InterfaceMode.TUI) }
     var keepAlive by remember { mutableStateOf(true) }
@@ -141,13 +152,14 @@ fun AddDistroScreen(
             )
             DistroStep.DISTRO -> DistroStepUi(
                 selectedId = distroId,
-                onSelect = { distroId = it },
+                onSelect = { onDistroSelected(it) },
                 onBack = { step = DistroStep.TYPE },
                 onContinue = { step = DistroStep.OPTIONS }
             )
             DistroStep.OPTIONS -> OptionsStepUi(
                 name = name,
                 onName = { name = it },
+                namePlaceholder = DistroNamePolicy.placeholder(distroId),
                 bridgeOn = bridgeOn,
                 onBridge = { bridgeOn = it },
                 interfaceMode = interfaceMode,
@@ -436,6 +448,7 @@ private fun SelectableDistroCard(entry: DistroEntry, selected: Boolean, onClick:
 private fun OptionsStepUi(
     name: String,
     onName: (String) -> Unit,
+    namePlaceholder: String,
     bridgeOn: Boolean,
     onBridge: (Boolean) -> Unit,
     interfaceMode: InterfaceMode,
@@ -465,7 +478,8 @@ private fun OptionsStepUi(
                 value = name,
                 onValueChange = onName,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.distro_name_hint)) },
+                // Step 5d: computed from the selection, never hardcoded.
+                placeholder = { Text(namePlaceholder) },
                 singleLine = true,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
             )
