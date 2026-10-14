@@ -41,6 +41,8 @@ data class ElfReport(
         const val ET_DYN = 3
         const val EM_AARCH64 = 183
         const val PT_INTERP = 3
+        // Retained for log/test reference only — Step 5e rejects every
+        // PT_INTERP, including these; see verdict().
         const val ANDROID_LINKER_64 = "/system/bin/linker64"
         const val ANDROID_LINKER = "/system/bin/linker"
     }
@@ -99,7 +101,10 @@ object ElfProbe {
 
     /**
      * Android execution verdict: null = runnable, otherwise the logged reason.
-     * A Linux-loader INTERP is an instant reject; the Android linker is fine.
+     * Step 5e: ANY PT_INTERP is an instant reject — only truly static
+     * binaries (interpreter absent) are allowed. Even the Android linker
+     * path is rejected: a dynamically-linked candidate can never be trusted
+     * to exec from an app context, and the proof log shows the exact state.
      */
     fun verdict(report: ElfReport): String? {
         if (!report.is64Bit) return "not a 64-bit ELF (EI_CLASS=${report.eiClass})"
@@ -110,11 +115,8 @@ object ElfProbe {
             return "non-PIE executable (ET_EXEC); Android only executes PIE"
         }
         val interp = report.interpPath
-        if (interp != null &&
-            interp != ElfReport.ANDROID_LINKER_64 &&
-            interp != ElfReport.ANDROID_LINKER
-        ) {
-            return "Linux loader PT_INTERP ($interp) can never exec on Android"
+        if (interp != null) {
+            return "PT_INTERP present ($interp): only fully static binaries can exec on Android"
         }
         return null
     }

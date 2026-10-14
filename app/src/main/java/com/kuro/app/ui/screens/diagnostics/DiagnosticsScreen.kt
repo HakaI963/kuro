@@ -167,6 +167,7 @@ private fun ProotDiagnosticsCard() {
             return@KuroCard
         }
         DetailRow(stringResource(R.string.diagnostics_proot_source), prov.source)
+        DetailRow(stringResource(R.string.diagnostics_proot_path), prov.path ?: "?")
         DetailRow(stringResource(R.string.diagnostics_proot_version), prov.versionLine)
         DetailRow(
             stringResource(R.string.diagnostics_proot_sha),

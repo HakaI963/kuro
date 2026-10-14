@@ -39,8 +39,13 @@ device, and update the SHA-256 line in this file.
 
 ## At first use (on device)
 
-`engine.proot.ProotBinary` runs the installed copy through the full gate, else
-`engine.proot.ProotAcquisition` tries (in order): Alpine .apk, NDK builds,
-proot-static-build assets, bundled asset. Winner installs to
-`filesDir/bin/proot` (chmod 700) with provenance recorded; all-fail yields an
-honest error card listing each logged reason.
+`engine.proot.ProotBinary` runs the executable locations through the full
+gate (`nativeLibraryDir/libkuro-proot.so` first, then
+`/data/local/tmp/kuro-proot`), else `engine.proot.ProotAcquisition` tries
+(in order): APK-bundled lib (in place), Alpine .apk, NDK builds,
+proot-static-build assets, bundled asset. Downloaded winners are copied to
+`nativeLibraryDir/libkuro-proot.so` (chmod 700) and re-validated from there
+(su copy to `/data/local/tmp/kuro-proot` only in user-initiated flows);
+provenance records the final path. `filesDir/bin/proot` is legacy (Step 5e:
+app-private storage cannot exec — error=13) and is never executed.
+All-fail yields an honest error card listing each logged reason.
