@@ -8,39 +8,28 @@ import org.junit.Test
 class HostBootstrapTest {
 
     @Test
-    fun pins_areDistinctAndOnRootfsTag() {
+    fun pin_isOnRootfsTag() {
         assertEquals(
             "bootstrap_com.kuro.app.tar",
-            HostBootstrap.IVARNA.fileName
+            HostBootstrap.KURO.fileName
         )
-        assertEquals(
-            "bootstrap_com.kuro.app.tar",
-            HostBootstrap.ZENITHBLUE.fileName
-        )
-        assertTrue(HostBootstrap.IVARNA.sha256.matches(Regex("[0-9a-f]{64}")))
-        assertTrue(HostBootstrap.ZENITHBLUE.sha256.matches(Regex("[0-9a-f]{64}")))
-        assertTrue(HostBootstrap.IVARNA.sha256 != HostBootstrap.ZENITHBLUE.sha256)
-        assertTrue(HostBootstrap.IVARNA.url.startsWith(HostBootstrap.RELEASE_BASE))
-        assertTrue(HostBootstrap.ZENITHBLUE.url.endsWith(HostBootstrap.ZENITHBLUE.fileName))
-        assertTrue(HostBootstrap.IVARNA.minBytes >= 50L * 1024L * 1024L)
+        assertTrue(HostBootstrap.KURO.sha256.matches(Regex("[0-9a-f]{64}")))
+        assertTrue(HostBootstrap.KURO.url.startsWith(HostBootstrap.RELEASE_BASE))
+        assertTrue(HostBootstrap.KURO.url.endsWith(HostBootstrap.KURO.fileName))
+        assertTrue(HostBootstrap.KURO.minBytes >= 50L * 1024L * 1024L)
     }
 
     @Test
-    fun forApplicationId_selectsFlavorPin() {
+    fun forApplicationId_selectsKuroPin() {
         assertEquals(
-            HostBootstrap.IVARNA,
-            HostBootstrap.forApplicationId(HostBootstrap.IVARNA_PACKAGE)
+            HostBootstrap.KURO,
+            HostBootstrap.forApplicationId("com.kuro.app")
         )
-        assertEquals(
-            HostBootstrap.ZENITHBLUE,
-            HostBootstrap.forApplicationId(HostBootstrap.ZENITHBLUE_PACKAGE)
-        )
-        assertEquals(HostBootstrap.IVARNA, HostBootstrap.forApplicationId("unknown"))
+        assertEquals(HostBootstrap.KURO, HostBootstrap.forApplicationId("unknown"))
     }
 
     @Test
-    fun downloadsFromRelease_neverBothFlavorsShipBootstrap() {
-        assertFalse(HostBootstrap.downloadsFromRelease(HostBootstrap.IVARNA_PACKAGE))
-        assertFalse(HostBootstrap.downloadsFromRelease(HostBootstrap.ZENITHBLUE_PACKAGE))
+    fun downloadsFromRelease_singleAppShipsBootstrap() {
+        assertFalse(HostBootstrap.downloadsFromRelease("com.kuro.app"))
     }
 }
