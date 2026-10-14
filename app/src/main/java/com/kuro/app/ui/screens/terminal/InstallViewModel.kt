@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuro.app.core.system.StoragePaths
 import com.kuro.app.core.system.SystemMetricsReader
-import com.kuro.app.data.containers.ContainerRecord
 import com.kuro.app.data.containers.ContainerRepository
 import com.kuro.app.data.containers.ContainerStore
 import com.kuro.app.data.containers.ContainerType
+import com.kuro.app.data.local.ContainerRecord
 import com.kuro.app.data.containers.LinuxContainer
 import com.kuro.app.di.ServiceLocator
 import com.kuro.app.engine.proot.ContainerProvisioner
