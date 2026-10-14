@@ -605,7 +605,7 @@ class MainActivity : ComponentActivity() {
                         if (currentScreen == Screen.HOME && currentTab == BottomTab.TERMINAL && showSessions) {
                             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                         } else {
-                            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                         }
                 }
 

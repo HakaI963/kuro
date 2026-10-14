@@ -231,99 +231,111 @@ fun KuroHomeScreen(
             .background(Color(0xFF0A0E14))
     ) {
         AnimatedBackground()
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
-            KuroLogoAnimation()
-            Text(
-                "Kuro",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFF8FAFC)
-            )
-            Text(
-                "Isolated Linux & App Spaces",
-                fontSize = 14.sp,
-                color = Color(0xFF94A3B8)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = { showWhatIs = true },
-                interactionSource = ctaInteraction,
+            val isLandscape = maxWidth > maxHeight
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 280.dp)
-                    .height(56.dp)
-                    .graphicsLayer {
-                        scaleX = ctaScale
-                        scaleY = ctaScale
-                    },
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6366F1),
-                    contentColor = Color.White
-                )
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    "Explore Kuro",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 920.dp)
+                        .align(Alignment.CenterHorizontally),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    KuroLogoAnimation()
+                    Text(
+                        "Kuro",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF8FAFC)
+                    )
+                    Text(
+                        "Isolated Linux & App Spaces",
+                        fontSize = 14.sp,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = { showWhatIs = true },
+                        interactionSource = ctaInteraction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 280.dp)
+                            .height(56.dp)
+                            .graphicsLayer {
+                                scaleX = ctaScale
+                                scaleY = ctaScale
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6366F1),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            "Explore Kuro",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    LazyVerticalGrid(
+                        columns = if (isLandscape) GridCells.Fixed(4) else GridCells.Fixed(2),
+                        modifier = Modifier.height(if (isLandscape) 140.dp else 312.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        userScrollEnabled = false
+                    ) {
+                        item {
+                            DashboardCard(
+                                title = "Get Distro",
+                                icon = Icons.Rounded.Download,
+                                color = Color(0xFF10B981),
+                                onClick = onOpenDistroCatalog
+                            )
+                        }
+                        item {
+                            DashboardCard(
+                                title = "My Containers",
+                                icon = Icons.Rounded.Terminal,
+                                color = Color(0xFF6366F1),
+                                onClick = onOpenTerminalTab
+                            )
+                        }
+                        item {
+                            DashboardCard(
+                                title = "App Clones",
+                                icon = Icons.Rounded.Apps,
+                                color = Color(0xFFF59E0B),
+                                onClick = onOpenClonesTab
+                            )
+                        }
+                        item {
+                            DashboardCard(
+                                title = "Tools",
+                                icon = Icons.Rounded.Settings,
+                                color = Color(0xFF94A3B8),
+                                onClick = onOpenSettingsTab
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    val (statusText, statusColor) = when (engineReady) {
+                        true -> "Ready" to Color(0xFF10B981)
+                        null -> "Setting up..." to Color(0xFFF59E0B)
+                        false -> "Not ready" to Color(0xFF94A3B8)
+                    }
+                    Text(statusText, color = statusColor, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(48.dp))
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.height(312.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                userScrollEnabled = false
-            ) {
-                item {
-                    DashboardCard(
-                        title = "Get Distro",
-                        icon = Icons.Rounded.Download,
-                        color = Color(0xFF10B981),
-                        onClick = onOpenDistroCatalog
-                    )
-                }
-                item {
-                    DashboardCard(
-                        title = "My Containers",
-                        icon = Icons.Rounded.Terminal,
-                        color = Color(0xFF6366F1),
-                        onClick = onOpenTerminalTab
-                    )
-                }
-                item {
-                    DashboardCard(
-                        title = "App Clones",
-                        icon = Icons.Rounded.Apps,
-                        color = Color(0xFFF59E0B),
-                        onClick = onOpenClonesTab
-                    )
-                }
-                item {
-                    DashboardCard(
-                        title = "Tools",
-                        icon = Icons.Rounded.Settings,
-                        color = Color(0xFF94A3B8),
-                        onClick = onOpenSettingsTab
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            val (statusText, statusColor) = when (engineReady) {
-                true -> "Engine Status: Ready" to Color(0xFF10B981)
-                null -> "Engine Status: Setting up..." to Color(0xFFF59E0B)
-                false -> "Engine Status: Unavailable" to Color(0xFF94A3B8)
-            }
-            Text(statusText, color = statusColor, fontSize = 12.sp)
-            Spacer(modifier = Modifier.height(48.dp))
         }
         Box(
             modifier = Modifier
@@ -344,9 +356,9 @@ fun KuroHomeScreen(
 
     if (showWhatIs) {
         val engineLine = when (engineReady) {
-            true -> "Engine: Ready"
-            null -> "Engine: Setting up..."
-            false -> "Engine: Unavailable"
+            true -> "Status: Ready"
+            null -> "Status: Setting up..."
+            false -> "Status: Not ready"
         }
         AlertDialog(
             onDismissRequest = { showWhatIs = false },

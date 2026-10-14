@@ -210,15 +210,15 @@ fun InstallConfigScreen(
                 val profile = DistroInstallProfile.forId(distro.id)
                 val rootfsLine = when {
                     distro.id.startsWith("alpine") ->
-                        "Installs Alpine 3.24 minirootfs, XFCE4 (apk), and Flux customization. "
+                        "Installs Alpine 3.24 minirootfs, XFCE4 (apk), and Kuro customization. "
                     distro.id.startsWith("fedora") ->
-                        "Installs Fedora 44 rootfs, XFCE4 (dnf), Mesa, and Flux customization. "
+                        "Installs Fedora 44 rootfs, XFCE4 (dnf), Mesa, and Kuro customization. "
                     distro.id.startsWith("void") ->
-                        "Installs Void Linux rootfs, XFCE4 (xbps), Mesa, and Flux customization. "
+                        "Installs Void Linux rootfs, XFCE4 (xbps), Mesa, and Kuro customization. "
                     distro.id.startsWith("opensuse") ->
-                        "Installs openSUSE Tumbleweed rootfs, XFCE4 (zypper), Mesa, and Flux customization. "
+                        "Installs openSUSE Tumbleweed rootfs, XFCE4 (zypper), Mesa, and Kuro customization. "
                     else ->
-                        "Installs ${profile?.displayName ?: distro.name} rootfs, XFCE4, and Flux customization. "
+                        "Installs ${profile?.displayName ?: distro.name} rootfs, XFCE4, and Kuro customization. "
                 }
                 Text(
                     rootfsLine +
@@ -359,7 +359,7 @@ fun InstallConfigScreen(
                                 color = bulletColor
                             )
                         }
-                        Text("• Flux theme / wallpapers / fonts", fontSize = 13.sp, color = bulletColor)
+                        Text("• Kuro theme / wallpapers / fonts", fontSize = 13.sp, color = bulletColor)
                         if (distro.id.contains("chroot")) {
                             Text("• Requires root (KernelSU / Magisk)", fontSize = 13.sp, color = bulletColor)
                         }

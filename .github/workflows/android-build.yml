@@ -3,7 +3,7 @@ name: Android Build
 on:
   push:
     branches:
-      - kuro/step9-droiddeck-ui
+      - kuro/step10-droiddeck-parity
   workflow_dispatch:
 
 jobs:

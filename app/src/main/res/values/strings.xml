@@ -11,8 +11,8 @@
     <string name="add_clone_creating_subtitle">Copying into Kuro space…</string>
     <string name="add_clone_creating_title">Creating your clone</string>
     <string name="add_clone_done">Done</string>
-    <string name="add_clone_engine_not_ready_body">Clone creation needs the virtual engine. Check Settings for status.</string>
-    <string name="add_clone_engine_not_ready_title">Engine not ready</string>
+    <string name="add_clone_engine_not_ready_body">Clone creation isn\'t available right now. Check Settings.</string>
+    <string name="add_clone_engine_not_ready_title">Not ready</string>
     <string name="add_clone_error_body">Install failed. You can retry safely.</string>
     <string name="add_clone_error_title">Something went wrong</string>
     <string name="add_clone_name_hint">e.g. Notes • Work</string>

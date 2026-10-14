@@ -73,7 +73,7 @@ fun DistroScreen(
     }
     
     val availableDistros = DistroRepository.supportedDistros.filter { 
-        !installedDistroIds.contains(it.id)
+        !installedDistroIds.contains(it.id) && !it.comingSoon
     }
 
     var methodTab by remember { mutableStateOf(MethodTab.PROOT) }
@@ -162,29 +162,23 @@ fun DistroScreen(
                 key = { _, item -> item.id },
                 contentType = { _, item -> if (item.comingSoon) "soon" else "full" }
             ) { index, distro ->
-                if (distro.comingSoon) {
-                    com.kuro.app.ui.components.CompactDistroCard(
-                        distro = distro
-                    )
-                } else {
-                    com.kuro.app.ui.components.DistroCard(
-                        distro = distro,
-                        isInstalled = false,
-                        isGlobalInstalling = installState.isInstalling,
-                        isCurrentlyInstalling = installState.isInstalling && installState.currentDistroId == distro.id,
-                        onInstall = {
-                            if (installState.isInstalling && installState.currentDistroId != distro.id) {
-                                Toast.makeText(context, "Installation already in progress for another distro", Toast.LENGTH_LONG).show()
-                            } else {
-                                onNavigateToInstall(distro)
-                            }
-                        },
-                        onUninstall = {},
-                        onNavigateToSettings = {},
-                        onNavigateToStart = {},
-                        entranceIndex = index
-                    )
-                }
+                com.kuro.app.ui.components.DistroCard(
+                    distro = distro,
+                    isInstalled = false,
+                    isGlobalInstalling = installState.isInstalling,
+                    isCurrentlyInstalling = installState.isInstalling && installState.currentDistroId == distro.id,
+                    onInstall = {
+                        if (installState.isInstalling && installState.currentDistroId != distro.id) {
+                            Toast.makeText(context, "Installation already in progress for another distro", Toast.LENGTH_LONG).show()
+                        } else {
+                            onNavigateToInstall(distro)
+                        }
+                    },
+                    onUninstall = {},
+                    onNavigateToSettings = {},
+                    onNavigateToStart = {},
+                    entranceIndex = index
+                )
             }
         }
     }

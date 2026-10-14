@@ -35,14 +35,14 @@ object BaseDesktopInstallPlan {
                 Phase("DL", "Downloading $displayName rootfs…", 10),
                 Phase("ROOTFS", "Installing $displayName chroot rootfs…", 30),
                 Phase("XFCE", "Installing XFCE desktop…", 25),
-                Phase("CUSTOM", "Applying Flux customization…", 15),
+                Phase("CUSTOM", "Applying Kuro customization…", 15),
             )
         } else {
             listOf(
                 Phase("HOST", "Preparing host (may download bootstrap from GitHub)…", 20),
                 Phase("DL", "Downloading $displayName rootfs…", 15),
                 Phase("ROOTFS", "Installing $displayName rootfs + XFCE…", 35),
-                Phase("CUSTOM", "Applying Flux customization…", 30),
+                Phase("CUSTOM", "Applying Kuro customization…", 30),
             )
         }
 
