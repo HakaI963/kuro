@@ -46,6 +46,12 @@ jobs:
           python3 scripts/assemble_bootstrap.py --package-name com.ivarna.fluxlinux --mode full
           bash scripts/verify_bootstrap.sh com.ivarna.fluxlinux
 
+      - name: Gradle resolve test classpath (dependency check)
+        run: ./gradlew :app:dependencies --configuration ivarnaDebugUnitTestRuntimeClasspath --stacktrace
+
+      - name: Compile app Kotlin (ivarna debug)
+        run: ./gradlew :app:compileIvarnaDebugKotlin --stacktrace
+
       - name: Run unit tests (ivarna debug)
         run: ./gradlew :app:testIvarnaDebugUnitTest --stacktrace
 
