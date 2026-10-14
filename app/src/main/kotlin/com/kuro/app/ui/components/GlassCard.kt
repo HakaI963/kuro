@@ -169,7 +169,8 @@ fun DistroCard(
                             }
                         }
                         Text(
-                            text = statusMessage ?: distro.id,
+                            text = statusMessage
+                                ?: "${distro.id} • ${distro.sizeEstimate}",
                             color = if (statusIsError) colors.error else colors.onSurfaceVariant,
                             fontSize = 11.sp,
                             maxLines = 1,

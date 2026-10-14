@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,8 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.DisplaySettings
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.VolumeUp
@@ -105,12 +108,7 @@ fun SettingsScreen(
     val _onStartService = onStartService
     @Suppress("UNUSED_PARAMETER")
     val _onStartActivity = onStartActivity
-    @Suppress("UNUSED_PARAMETER")
-    val _onThemeChanged = onThemeChanged
-    @Suppress("UNUSED_PARAMETER")
-    val _currentTheme = currentTheme
-    @Suppress("UNUSED_PARAMETER")
-    val _onNavigateToRootCheck = onNavigateToRootCheck
+
 
     val context = LocalContext.current
 
@@ -228,6 +226,58 @@ fun SettingsScreen(
                 title = "Legacy Termux",
                 subtitle = "Leftover PRoot installs from Kuro ≤ v1.8.0 live in the Termux app",
                 onClick = { onNavigateToLegacyTermuxSettings?.invoke() }
+            )
+            var showThemePicker by remember { mutableStateOf(false) }
+            SettingsNavCard(
+                icon = Icons.Default.Palette,
+                title = "Theme",
+                subtitle = "Appearance: " + when (currentTheme) {
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                    else -> "System"
+                },
+                onClick = { showThemePicker = true }
+            )
+            if (showThemePicker) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showThemePicker = false },
+                    title = { Text("Theme") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf(
+                                ThemeMode.SYSTEM to "System",
+                                ThemeMode.LIGHT to "Light",
+                                ThemeMode.DARK to "Dark"
+                            ).forEach { (mode, label) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onThemeChanged?.invoke(mode) }
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    androidx.compose.material3.RadioButton(
+                                        selected = currentTheme == mode,
+                                        onClick = { onThemeChanged?.invoke(mode) }
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(label, fontSize = 16.sp)
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = { showThemePicker = false }) {
+                            Text("Done")
+                        }
+                    }
+                )
+            }
+            SettingsNavCard(
+                icon = Icons.Default.Security,
+                title = "Root access",
+                subtitle = "Chroot status, su check, rooted helpers",
+                onClick = { onNavigateToRootCheck?.invoke() }
             )
 
             Text(

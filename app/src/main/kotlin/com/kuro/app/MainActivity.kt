@@ -548,8 +548,12 @@ class MainActivity : ComponentActivity() {
         }
         requestNotificationPermissionIfNeeded()
         setContent {
-            // Force Permanent Dark Mode
-            val currentThemeMode = com.kuro.app.core.utils.ThemeMode.DARK
+            // Step 7: user-selected theme (System default), persisted.
+            var currentThemeMode by remember {
+                mutableStateOf(
+                    com.kuro.app.core.utils.ThemePreferences(this@MainActivity).getThemeMode()
+                )
+            }
             
             KuroTheme(themeMode = currentThemeMode) {
                 val onboardingComplete = StateManager.isOnboardingComplete(this@MainActivity)
@@ -853,7 +857,13 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToLegacyTermuxSettings = {
                                     currentScreen = Screen.SETTINGS_LEGACY_TERMUX
-                                }
+                                },
+                                onThemeChanged = { mode ->
+                                    currentThemeMode = mode
+                                    com.kuro.app.core.utils.ThemePreferences(this@MainActivity)
+                                        .setThemeMode(mode)
+                                },
+                                currentTheme = currentThemeMode
                             )
                         }
                     }
@@ -951,8 +961,22 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 
-                // Show appropriate screen based on state
-                when (currentScreen) {
+                // Show appropriate screen based on state (Step 7: slide + fade).
+                AnimatedContent(
+                    targetState = currentScreen,
+                    transitionSpec = {
+                        slideInHorizontally(
+                            animationSpec = androidx.compose.animation.core.tween(200),
+                            initialOffsetX = { fullWidth -> fullWidth / 4 }
+                        ) + fadeIn(
+                            animationSpec = androidx.compose.animation.core.tween(200)
+                        ) togetherWith androidx.compose.animation.fadeOut(
+                            animationSpec = androidx.compose.animation.core.tween(200)
+                        )
+                    },
+                    label = "kuro-screen-switch"
+                ) { screen ->
+                when (screen) {
                     Screen.ONBOARDING -> {
                         com.kuro.app.ui.onboarding.OnboardingFlowScreen(
                             onFinished = {
@@ -1068,7 +1092,13 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToLegacyTermuxSettings = {
                                 currentScreen = Screen.SETTINGS_LEGACY_TERMUX
-                            }
+                            },
+                            onThemeChanged = { mode ->
+                                currentThemeMode = mode
+                                com.kuro.app.core.utils.ThemePreferences(this@MainActivity)
+                                    .setThemeMode(mode)
+                            },
+                            currentTheme = currentThemeMode
                         )
                     }
                     Screen.SETTINGS_TERMINAL -> {
@@ -1290,6 +1320,7 @@ class MainActivity : ComponentActivity() {
                              currentScreen = Screen.HOME
                          }
                     }
+                }
                 }
             }
         }
