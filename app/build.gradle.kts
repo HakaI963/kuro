@@ -146,7 +146,7 @@ tasks.withType<AbstractArchiveTask>().configureEach {
 // on demand from the GitHub release tag `rootfs` at install time
 // (docs/plans/rootfs-github-release-no-apk-bloat.md).
 // ─────────────────────────────────────────────────────────────────────────────
-const val KURO_APP_ID = "com.kuro.app"
+val KURO_APP_ID = "com.kuro.app"
 
 // assets/loader.apk is built from native/loader/Loader.java by
 // scripts/build_loader_apk.sh (F-Droid rebuilds it after the scanner).
