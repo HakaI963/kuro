@@ -1,46 +1,47 @@
 package com.ivarna.fluxlinux.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import com.kuro.app.ui.screens.addclone.AddCloneScreen
+import com.kuro.app.ui.screens.details.CloneDetailsScreen
+import com.kuro.app.ui.screens.library.LibraryScreen
 
 /**
- * Step 6 interim: honest pending state — replaced by the real Clones tab
- * (BlackBox clone engine + list/new-clone/detail flows) before this PR
- * lands. No fake list, no fake actions.
+ * Step 6: Kuro Clones tab — the working BlackBox clone stack (list, new
+ * clone from installed apps or APK via SAF, detail with launch/delete),
+ * hosted with local list/add/detail navigation. Opaque root.
  */
 @Composable
 fun CloneTabScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Clones",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
+    var route by remember { mutableStateOf<CloneRoute>(CloneRoute.List) }
+    when (val r = route) {
+        is CloneRoute.List -> LibraryScreen(
+            onOpenClone = { route = CloneRoute.Detail(it) },
+            onNewClone = { route = CloneRoute.Add },
+            modifier = modifier.background(MaterialTheme.colorScheme.background)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "The app-clone engine integration lands next in this branch — nothing here yet.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+        is CloneRoute.Add -> AddCloneScreen(
+            onDone = { route = CloneRoute.List },
+            onOpenClone = { route = CloneRoute.Detail(it) },
+            modifier = modifier.background(MaterialTheme.colorScheme.background)
+        )
+        is CloneRoute.Detail -> CloneDetailsScreen(
+            cloneId = r.cloneId,
+            onBack = { route = CloneRoute.List },
+            onDeleted = { route = CloneRoute.List },
+            modifier = modifier.background(MaterialTheme.colorScheme.background)
         )
     }
+}
+
+private sealed interface CloneRoute {
+    data object List : CloneRoute
+    data object Add : CloneRoute
+    data class Detail(val cloneId: String) : CloneRoute
 }

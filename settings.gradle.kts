@@ -22,6 +22,14 @@ dependencyResolutionManagement {
 
 rootProject.name = "FluxLinux"
 include(":app")
+include(":clone-engine")
+include(":blackbox")
+include(":blackbox-reflection")
+include(":blackbox-compiler")
 include(":termux-x11")
 include(":terminal-emulator")
 include(":stub")
+
+project(":blackbox").projectDir = file("third_party/NewBlackbox/Bcore")
+project(":blackbox-reflection").projectDir = file("third_party/NewBlackbox/black-reflection")
+project(":blackbox-compiler").projectDir = file("third_party/NewBlackbox/compiler")

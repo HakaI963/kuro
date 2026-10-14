@@ -125,11 +125,23 @@ fun KuroSystemTab(
         }
         item {
             SectionCard(title = "Clones") {
-                Text(
-                    text = "Clone engine integration lands with the Clones tab.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                val clonesService = remember {
+                    runCatching { com.kuro.app.di.ServiceLocator.cloneRepository }.getOrNull()
+                }
+                if (clonesService == null) {
+                    Text(
+                        text = "Clone service unavailable.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    val clones by clonesService.clones.collectAsState()
+                    Text(
+                        text = "${clones.size} installed",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row {
                     TextButton(onClick = onOpenClonesTab) { Text("Open Clones") }
@@ -138,14 +150,25 @@ fun KuroSystemTab(
         }
         item {
             SectionCard(title = "Recent events") {
-                Text(
-                    text = "Install and session events appear here once the event log lands.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row {
-                    TextButton(onClick = onOpenSettingsTab) { Text("Open Settings") }
+                val activityService = remember {
+                    runCatching { com.kuro.app.di.ServiceLocator.activityRepository }.getOrNull()
+                }
+                val events = activityService?.events?.collectAsState()?.value.orEmpty().take(5)
+                if (events.isEmpty()) {
+                    Text(
+                        text = "No events yet — clone activity will appear here.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    events.forEach { event ->
+                        Text(
+                            text = "${event.type}: ${event.cloneName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                    }
                 }
             }
         }

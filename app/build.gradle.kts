@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -248,6 +249,15 @@ dependencies {
 
     // Embedded Termux:X11 (cloned + integrated directly, same-package rendering)
     implementation(project(":termux-x11"))
+
+    // Kuro app-clone engine (BlackBox-family virtual engine, Apache-2.0 vendored)
+    implementation(project(":clone-engine"))
+    implementation(project(":blackbox"))
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
