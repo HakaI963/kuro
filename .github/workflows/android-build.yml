@@ -54,8 +54,12 @@ jobs:
           if [ "$code" -ne "0" ]; then
             python3 -c "
           t = open('/tmp/g-help.log', errors='replace').read()
-          tail = t[-3500:].replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A')
-          print('::error::gradle-configure failed:%0A' + tail)
+          i = t.find('* What went wrong:')
+          head = (t[i:i+1500] if i >= 0 else t[:1500])
+          j = t.find('Caused by:')
+          caused = (t[j:j+800] if j >= 0 else '')
+          msg = (head + '%0A...' + caused).replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A')
+          print('::error::gradle-configure failed:%0A' + msg)
           "
             exit "$code"
           fi

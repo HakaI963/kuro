@@ -3,7 +3,7 @@
 // Built here so libtermux.so is compiled from source with 16 KB page alignment
 // (jitpack's prebuilt ships 4 KB LOAD alignment).
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
 
 android {
