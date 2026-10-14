@@ -36,8 +36,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kuro.app.R
+import com.kuro.app.di.ServiceLocator
 import com.kuro.app.engine.proot.InstallFailure
 import com.kuro.app.engine.proot.LiveSession
+import com.kuro.app.engine.proot.ProotSessions
 import com.kuro.app.ui.components.KuroCard
 import com.kuro.app.ui.components.KuroPrimaryButton
 
@@ -166,6 +168,13 @@ fun TerminalSessionScreen(
                 KuroTerminalView(
                     session = selected.terminalSession,
                     filesDir = context.filesDir,
+                    onAttached = {
+                        ProotSessions.noteSpawned(
+                            context,
+                            ServiceLocator.database,
+                            selected.sessionId
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)

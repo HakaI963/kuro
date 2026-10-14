@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuro.app.core.system.StoragePaths
 import com.kuro.app.core.system.SystemMetricsReader
-import com.kuro.app.data.containers.ContainerRepositories
+import com.kuro.app.data.containers.ContainerRepository
 import com.kuro.app.data.containers.ContainerStatus
 import com.kuro.app.data.containers.ContainerStore
 import com.kuro.app.data.containers.ContainerSync
@@ -132,7 +132,7 @@ class TerminalViewModel : ViewModel() {
             val after = SystemMetricsReader.dirSizeNow(
                 StoragePaths.prootContainerDir(app.filesDir, id)
             ) ?: 0L
-            runCatching { ContainerRepositories(db).delete(id) }
+            runCatching { ContainerRepository(db).delete(id) }
             ContainerStore.remove(id)
             ContainerEngineLog.append(app.filesDir, "delete", "$id removed")
             SessionService.refreshNotifications(app)
@@ -160,7 +160,7 @@ class TerminalViewModel : ViewModel() {
 
     fun saveInstalled(record: ContainerRecord) {
         viewModelScope.launch {
-            runCatching { ContainerRepositories(db).save(record) }
+            runCatching { ContainerRepository(db).save(record) }
         }
     }
 

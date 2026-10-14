@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kuro.app.core.system.StoragePaths
 import com.kuro.app.core.system.SystemMetricsReader
 import com.kuro.app.data.containers.ContainerRecord
-import com.kuro.app.data.containers.ContainerRepositories
+import com.kuro.app.data.containers.ContainerRepository
 import com.kuro.app.data.containers.ContainerStore
 import com.kuro.app.data.containers.ContainerType
 import com.kuro.app.data.containers.LinuxContainer
@@ -46,7 +46,7 @@ class InstallViewModel : ViewModel() {
             val distroName = DistroCatalog.displayNameOf(spec.distroId)
             withContext(Dispatchers.IO) {
                 runCatching {
-                    ContainerRepositories(ServiceLocator.database).save(
+                    ContainerRepository(ServiceLocator.database).save(
                         ContainerRecord(
                             id = spec.containerId,
                             name = spec.containerName,
@@ -75,7 +75,8 @@ class InstallViewModel : ViewModel() {
                         sizeBytes = size,
                         withGui = spec.interfaceMode != "TUI",
                         bridgeEnabled = spec.bridgeEnabled,
-                        interfaceMode = spec.interfaceMode
+                        interfaceMode = spec.interfaceMode,
+                        wakeLock = spec.wakeLock
                     )
                 )
             }

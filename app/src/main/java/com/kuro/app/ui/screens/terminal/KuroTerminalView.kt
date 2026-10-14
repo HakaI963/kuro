@@ -25,6 +25,7 @@ import java.io.File
 fun KuroTerminalView(
     session: TerminalSession,
     filesDir: File,
+    onAttached: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val holder = remember { ViewHolder() }
@@ -42,13 +43,13 @@ fun KuroTerminalView(
                 view.setTextSize(13)
                 view.isFocusable = true
                 view.isFocusableInTouchMode = true
-                view.attachSession(session)
+                if (view.attachSession(session)) onAttached()
                 holder.view = view
             }
         },
         update = { view ->
             holder.view = view
-            view.attachSession(session)
+            if (view.attachSession(session)) onAttached()
         },
         modifier = modifier
     )
@@ -107,7 +108,7 @@ private class KuroTerminalViewClient(
 
     override fun readFnKey(): Boolean = false
 
-    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession) {
+    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean {
         var toWrite = codePoint
         if (ctrlDown) {
             // Mirror Termux behavior: Ctrl+letter -> control character.
@@ -115,6 +116,7 @@ private class KuroTerminalViewClient(
             else if (toWrite in 'A'.code..'Z'.code) toWrite -= 'A'.code - 1
         }
         session.writeCodePoint(false, toWrite)
+        return true
     }
 
     override fun onEmulatorSet() {

@@ -62,13 +62,12 @@ object ProotSessions {
         containerId: String,
         plan: ProotLauncher.LaunchPlan,
         sessionId: String = "sess-" + UUID.randomUUID().toString().take(8),
-        db: com.kuro.app.data.local.KuroDatabase,
-        onPid: (Int) -> Unit = {}
+        db: com.kuro.app.data.local.KuroDatabase
     ): LiveSession {
         existing(sessionId)?.let { return it }
         val startedAt = System.currentTimeMillis()
         val filesDir = appContext.filesDir
-        val client = SessionEvents(sessionId, containerId, filesDir, appContext, db, onPid)
+        val client = SessionEvents(sessionId, containerId, filesDir, appContext, db)
         val session = TerminalSession(
             plan.shellPath,
             plan.cwd,
@@ -123,33 +122,29 @@ object ProotSessions {
         ContainerStore.stopAll()
     }
 
-    internal fun onPid(
-        appContext: Context,
-        db: com.kuro.app.data.local.KuroDatabase,
-        sessionId: String,
-        pid: Int,
-        onPid: (Int) -> Unit
-    ) {
-        _live.update { map ->
-            map[sessionId]?.let { map + (sessionId to it.copy(pid = pid)) } ?: map
-        }
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                val repo = com.kuro.app.data.containers.SessionRepository(db)
-                val rec = SessionRecord(sessionId, "", pid, 0L, "RUNNING")
-                // Preserve containerId/startedAt if we already saved them.
-                val live = existing(sessionId)
-                repo.save(
-                    rec.copy(
-                        containerId = live?.containerId ?: "",
-                        startedAt = live?.startedAt ?: System.currentTimeMillis()
-                    )
-                )
+    /**
+     * Record a spawn AFTER the first TerminalView attach (attachSession runs
+     * initializeEmulator synchronously, so getPid() is valid right after).
+     * Persists metadata, starts the foreground service, refreshes its state.
+     */
+    fun noteSpawned(appContext: Context, db: com.kuro.app.data.local.KuroDatabase, sessionId: String) {
+        val live = existing(sessionId) ?: return
+        val pid = runCatching { live.terminalSession.getPid() }.getOrNull() ?: -1
+        if (pid > 0) {
+            _live.update { map ->
+                map[sessionId]?.let { map + (sessionId to it.copy(pid = pid)) } ?: map
             }
+            scope.launch(Dispatchers.IO) {
+                runCatching {
+                    com.kuro.app.data.containers.SessionRepository(db).save(
+                        SessionRecord(sessionId, live.containerId, pid, live.startedAt, "RUNNING")
+                    )
+                }
+            }
+            ContainerEngineLog.append(appContext.filesDir, "session", "$sessionId spawned pid=$pid")
         }
-        ContainerEngineLog.append(appContext.filesDir, "session", "$sessionId spawned pid=$pid")
+        com.kuro.app.sessions.SessionService.ensureSessions(appContext)
         com.kuro.app.sessions.SessionService.refreshNotifications(appContext)
-        onPid(pid)
     }
 
     internal fun finish(
@@ -187,8 +182,7 @@ object ProotSessions {
         val containerId: String,
         val filesDir: File,
         val appContext: Context,
-        val db: com.kuro.app.data.local.KuroDatabase,
-        val onPid: (Int) -> Unit
+        val db: com.kuro.app.data.local.KuroDatabase
     ) : TerminalSessionClient {
         override fun onTextChanged(changedSession: TerminalSession) = Unit
         override fun onTitleChanged(changedSession: TerminalSession) = Unit
@@ -201,9 +195,9 @@ object ProotSessions {
         override fun onBell(session: TerminalSession) = Unit
         override fun onColorsChanged(session: TerminalSession) = Unit
         override fun onTerminalCursorStateChange(state: Boolean) = Unit
-        override fun setTerminalShellPid(session: TerminalSession, pid: Int) {
-            ProotSessions.onPid(appContext, db, sessionId, pid, onPid)
-        }
+
+        override fun getTerminalCursorStyle(): Int =
+            com.termux.terminal.TerminalEmulator.TERMINAL_CURSOR_STYLE_BLOCK
 
         override fun logError(tag: String, message: String) {
             ContainerEngineLog.append(filesDir, "termux", "E/$tag: $message")

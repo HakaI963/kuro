@@ -25,7 +25,8 @@ data class LinuxContainer(
     val sizeBytes: Long,
     val withGui: Boolean,
     val bridgeEnabled: Boolean,
-    val interfaceMode: String = "TUI"
+    val interfaceMode: String = "TUI",
+    val wakeLock: Boolean = false
 )
 
 object ContainerStore {
