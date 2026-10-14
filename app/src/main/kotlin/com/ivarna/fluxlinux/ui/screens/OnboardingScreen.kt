@@ -104,7 +104,7 @@ private fun PortraitLayout(
                 Spacer(modifier = Modifier.height(60.dp))
 
                 Text(
-                    text = "FluxLinux",
+                    text = "Kuro",
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold
@@ -155,7 +155,7 @@ private fun LandscapeLayout(
             Spacer(modifier = Modifier.height(40.dp))
 
             Text(
-                text = "FluxLinux",
+                text = "Kuro",
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold

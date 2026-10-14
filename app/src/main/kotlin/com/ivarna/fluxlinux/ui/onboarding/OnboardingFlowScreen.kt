@@ -277,7 +277,7 @@ private fun WelcomePage(onNext: () -> Unit) {
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_logo),
-                    contentDescription = "FluxLinux Logo",
+                    contentDescription = "Kuro Logo",
                     modifier = Modifier.size(44.dp)
                 )
             }
@@ -285,7 +285,7 @@ private fun WelcomePage(onNext: () -> Unit) {
             Spacer(Modifier.height(14.dp))
 
             Text(
-                text = "FluxLinux",
+                text = "Kuro",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = colors.onBackground,
@@ -499,7 +499,7 @@ private fun ConsentPage(onBack: () -> Unit, onNext: () -> Unit) {
                     Spacer(Modifier.height(12.dp))
 
                     Text(
-                        text = "The F-Droid APK is intentionally lightweight and does not bundle large Linux OS archives. To provide a complete Linux environment, FluxLinux downloads the required system components directly from GitHub Releases upon continuation:",
+                        text = "The F-Droid APK is intentionally lightweight and does not bundle large Linux OS archives. To provide a complete Linux environment, Kuro downloads the required system components directly from GitHub Releases upon continuation:",
                         color = colors.onSurface.copy(alpha = 0.75f),
                         fontSize = 13.5.sp,
                         lineHeight = 19.sp
@@ -896,7 +896,7 @@ private fun DistroPickPage(
                     Spacer(Modifier.width(10.dp))
                     Text(
                         text = if (probingRoot) "Checking superuser access…"
-                        else "Grant superuser to FluxLinux in Magisk/KernelSU, then tap Chroot again.",
+                        else "Grant superuser to Kuro in Magisk/KernelSU, then tap Chroot again.",
                         color = colors.error,
                         fontSize = 12.5.sp,
                         lineHeight = 16.sp,

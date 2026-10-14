@@ -228,7 +228,7 @@ fun HomeScreen(
 
         if (methodTab == MethodTab.CHROOT && !rootAvailable && chrootInstalled.isNotEmpty()) {
             Text(
-                text = "Installed, but no root given to the app. Grant superuser to FluxLinux to start these guests.",
+                text = "Installed, but no root given to the app. Grant superuser to Kuro to start these guests.",
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.92f),
                 fontSize = 12.sp,
                 modifier = Modifier
@@ -315,7 +315,7 @@ fun HomeScreen(
                         if (!canStart) {
                             android.widget.Toast.makeText(
                                 context,
-                                "Grant superuser to FluxLinux first",
+                                "Grant superuser to Kuro first",
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
                         } else if (session != null && session.distroId != distro.id) {

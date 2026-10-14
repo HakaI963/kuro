@@ -291,14 +291,14 @@ fun SettingsScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_logo),
-                            contentDescription = "FluxLinux Logo",
+                            contentDescription = "Kuro Logo",
                             modifier = Modifier.size(48.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "FluxLinux",
+                        "Kuro",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary

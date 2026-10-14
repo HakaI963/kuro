@@ -155,7 +155,7 @@ fun AudioSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Host PulseAudio in the FluxLinux prefix. Guests connect with PULSE_SERVER=tcp:127.0.0.1. Stopping the desktop does not stop this service.",
+                "Host PulseAudio in the Kuro prefix. Guests connect with PULSE_SERVER=tcp:127.0.0.1. Stopping the desktop does not stop this service.",
                 fontSize = 13.sp,
                 color = fluxMutedText()
             )

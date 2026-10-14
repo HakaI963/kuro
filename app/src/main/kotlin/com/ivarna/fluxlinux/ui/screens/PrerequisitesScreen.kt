@@ -180,7 +180,7 @@ fun PrerequisitesScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "FluxLinux requires these to function",
+                    text = "Kuro requires these to function",
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
@@ -352,7 +352,7 @@ private fun PrerequisitesLandscapeLayout(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "FluxLinux requires these to function",
+                text = "Kuro requires these to function",
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
@@ -527,7 +527,7 @@ fun HostBootstrapStep(
 
         // Embedded host card (ivarna: download bootstrap.tar from GitHub; zenithblue: APK asset)
         PrerequisiteItem(
-            name = "FluxLinux Host (embedded)",
+            name = "Kuro Host (embedded)",
             isInstalled = bootstrapDone,
             isOutdated = false,
             version = if (bootstrapDone) "v1 (extracted)" else null,
@@ -620,7 +620,7 @@ fun TermuxConfigurationStep(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "Allow FluxLinux to communicate with Termux",
+            text = "Allow Kuro to communicate with Termux",
             color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha=0.7f),
             fontSize = 14.sp
         )
@@ -760,7 +760,7 @@ fun PermissionRequestStep(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "FluxLinux needs permission to communicate with Termux",
+            text = "Kuro needs permission to communicate with Termux",
             color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha=0.7f),
             fontSize = 14.sp
         )
@@ -1791,7 +1791,7 @@ fun FinalInstructionsStep(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "FluxLinux runs on top of Termux.",
+                    text = "Kuro runs on top of Termux.",
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
@@ -2284,7 +2284,7 @@ fun HelpAndSupportStep(
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        // FluxLinux Setup Link
+        // Kuro Setup Link
         androidx.compose.material3.Card(
             colors = androidx.compose.material3.CardDefaults.cardColors(
                 containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
@@ -2299,7 +2299,7 @@ fun HelpAndSupportStep(
                 androidx.compose.foundation.Image(painter = painterResource(id = R.drawable.logo), contentDescription = null, modifier = Modifier.size(32.dp))
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text("FluxLinux Setup", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Kuro Setup", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text("Step-by-Step Installation", color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
             }

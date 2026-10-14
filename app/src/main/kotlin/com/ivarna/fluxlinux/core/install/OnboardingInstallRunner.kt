@@ -116,7 +116,7 @@ class OnboardingInstallRunner(private val ctx: Context) {
         try {
             BaseInstallService.start(
                 appCtx,
-                title = "FluxLinux — Installing",
+                title = "Kuro Engine — Installing",
                 text = "${profile.displayName} base desktop",
                 percent = 0
             )
@@ -862,7 +862,7 @@ class OnboardingInstallRunner(private val ctx: Context) {
         try {
             BaseInstallService.update(
                 appCtx,
-                title = "FluxLinux — $label",
+                title = "Kuro Engine — $label",
                 text = detail,
                 percent = percent
             )

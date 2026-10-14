@@ -56,7 +56,7 @@ class InstallServerService : Service() {
         const val ACTION_STOP = "com.ivarna.fluxlinux.STOP_INSTALL_SERVER"
         const val EXTRA_SCRIPT = "extra_script"
 
-        private const val CHANNEL_ID = "fluxlinux_install_server"
+        private const val CHANNEL_ID = "kuro_engine_install_server"
         private const val NOTIF_ID = 4711
         private val FOREGROUND_TYPE_DATA_SYNC =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -262,10 +262,10 @@ class InstallServerService : Service() {
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Install server",
+            "Kuro Engine — Install Server",
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Shows the active install — keeps FluxLinux alive during the install"
+            description = "Shows the active install — keeps Kuro alive during the install"
             setShowBadge(true)
         }
         nm.createNotificationChannel(channel)

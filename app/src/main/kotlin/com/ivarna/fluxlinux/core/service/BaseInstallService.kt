@@ -149,11 +149,11 @@ class BaseInstallService : Service() {
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Base desktop install",
+            "Kuro Engine — Install",
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             description =
-                "Shows while Debian rootfs / XFCE install is running so the system does not kill FluxLinux"
+                "Shows while a distro rootfs / desktop install is running so the system does not kill Kuro"
             setShowBadge(false)
         }
         nm.createNotificationChannel(channel)
@@ -163,7 +163,7 @@ class BaseInstallService : Service() {
 
     companion object {
         private const val TAG = "BaseInstallService"
-        const val CHANNEL_ID = "FluxLinuxBaseInstall_v1"
+        const val CHANNEL_ID = "KuroEngineInstall_v1"
         private const val NOTIF_ID = 4712
 
         const val ACTION_START = "com.ivarna.fluxlinux.BASE_INSTALL_START"

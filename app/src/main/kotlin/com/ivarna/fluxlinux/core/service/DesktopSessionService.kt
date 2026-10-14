@@ -55,7 +55,7 @@ class DesktopSessionService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("FluxLinux — Desktop Session")
+            .setContentTitle("Kuro Engine — Desktop Session")
             .setContentText("XFCE / GUI host services are active. Open app to stop.")
             .setSmallIcon(R.drawable.ic_stat_flux)
             .setContentIntent(pendingIntent)
@@ -72,7 +72,7 @@ class DesktopSessionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "FluxLinux Desktop Session",
+                "Kuro Engine — Desktop Session",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Shows while XFCE / graphical desktop is running"
@@ -84,7 +84,7 @@ class DesktopSessionService : Service() {
 
     companion object {
         private const val TAG = "DesktopSessionService"
-        const val CHANNEL_ID = "FluxLinuxDesktopSession_v1"
+        const val CHANNEL_ID = "KuroEngineDesktopSession_v1"
         private const val NOTIF_ID = 42
     }
 }
