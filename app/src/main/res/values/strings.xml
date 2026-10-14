@@ -341,7 +341,6 @@
     <string name="install_copied">Copied</string>
     <string name="install_open_terminal">Open terminal</string>
     <string name="install_back">Back to Terminal</string>
-    <string name="install_no_checksum">No published checksum — size verified</string>
     <string name="distro_chroot_step6_title">Chroot arrives in Step 6</string>
     <string name="distro_chroot_step6_body">Chroot containers need root via KernelSU and land in Step 6. Proot containers work today with no root.</string>
 
@@ -354,6 +353,7 @@
     <string name="terminal_delete_keep">Keep</string>
     <string name="terminal_freed_title">Container deleted</string>
     <string name="session_ended_title">Session ended</string>
+    <string name="session_ended_body">The process exited. Start a new session to continue.</string>
     <string name="session_start_new">Start new session</string>
     <string name="session_starting">Starting…</string>
     <string name="terminal_open_new">New session</string>

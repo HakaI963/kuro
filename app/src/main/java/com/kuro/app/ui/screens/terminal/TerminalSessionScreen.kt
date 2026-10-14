@@ -212,7 +212,10 @@ fun TerminalSessionScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.session_no_session_body),
+                            text = if (exit != null)
+                                stringResource(R.string.session_ended_body)
+                            else
+                                stringResource(R.string.session_no_session_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
