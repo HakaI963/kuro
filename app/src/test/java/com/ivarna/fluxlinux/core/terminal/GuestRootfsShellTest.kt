@@ -16,7 +16,10 @@ class GuestRootfsShellTest {
         val root = tmp.newFolder("alpine-rootfs")
         File(root, "bin").mkdirs()
         File(root, "bin/busybox").writeBytes(byteArrayOf(0x7f, 0x45, 0x4c, 0x46))
-        Files.createSymbolicLink(File(root, "bin/sh").toPath(), File("/bin/busybox").toPath())
+        // Absolute target that cannot exist on any host (the old /bin/busybox
+        // target exists on some CI images, making exists() host-dependent).
+        val missingTarget = File("/nonexistent-kuro-test-target-9f8c/busybox").toPath()
+        Files.createSymbolicLink(File(root, "bin/sh").toPath(), missingTarget)
         // Host-style exists() is false for absolute guest symlink
         assertFalse(File(root, "bin/sh").exists())
         assertTrue(TerminalLauncher.guestRootfsHasShell(root))
