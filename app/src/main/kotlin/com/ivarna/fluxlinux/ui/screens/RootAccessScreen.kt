@@ -29,6 +29,29 @@ fun RootAccessScreen(
 ) {
     var isRooted by remember { mutableStateOf(false) }
     var checkComplete by remember { mutableStateOf(false) }
+    // Step 6: explicit su validation (user-initiated only).
+    var testing by remember { mutableStateOf(false) }
+    var suResult by remember { mutableStateOf<String?>(null) }
+    var suFailed by remember { mutableStateOf(false) }
+
+    fun runSuTest() {
+        if (testing) return
+        testing = true
+        suResult = null
+        suFailed = false
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main.immediate).launch {
+            val (out, err, code) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runSuId()
+            }
+            testing = false
+            if (code == 0 && "uid=" in out) {
+                suResult = out.trim().take(120)
+            } else {
+                suFailed = true
+                suResult = err.trim().take(120).ifBlank { null }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         isRooted = checkForRoot()
@@ -139,9 +162,68 @@ fun RootAccessScreen(
                             Text("Return to Settings", color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary)
                         }
                     }
+                    // Step 6: explicit su check — runs only when tapped, so the
+                    // KernelSU grant prompt appears only on user action.
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = { runSuTest() },
+                        enabled = !testing,
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text(if (testing) "Testing…" else "Test root access (su -c id)")
+                    }
+                    val suOut = suResult
+                    if (suOut != null && !suFailed) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            suOut,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.secondary,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    } else if (suFailed) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Grant root access to Kuro in KernelSU settings.",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        if (suOut != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                suOut,
+                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                 }
-            }
         }
+    }
+}
+
+/** Step 6: runs `su -c id` with a timeout. Never throws; caller is user-initiated. */
+private fun runSuId(): Triple<String, String, Int> {
+    val proc = try {
+        ProcessBuilder("su", "-c", "id").redirectErrorStream(false).start()
+    } catch (e: Exception) {
+        return Triple("", "exec: ${e.message}".take(120), -1)
+    }
+    try {
+        val finished = try {
+            proc.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (_: Exception) {
+            false
+        }
+        if (!finished) return Triple("", "timeout after 10s", -2)
+        val out = runCatching { proc.inputStream.readBytes().toString(Charsets.UTF_8) }.getOrDefault("")
+        val err = runCatching { proc.errorStream.readBytes().toString(Charsets.UTF_8) }.getOrDefault("")
+        val code = runCatching { proc.exitValue() }.getOrDefault(-3)
+        return Triple(out, err.take(120), code)
+    } finally {
+        runCatching { proc.destroy() }
     }
 }
 

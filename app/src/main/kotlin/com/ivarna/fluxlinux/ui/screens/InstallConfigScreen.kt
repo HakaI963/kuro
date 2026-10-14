@@ -65,6 +65,18 @@ fun InstallConfigScreen(
     val context = LocalContext.current
     val appCtx = context.applicationContext
     var selectedTheme by remember { mutableStateOf("dark") }
+    // Step 6: Kuro container config — name auto-defaults to the selected
+    // distro (placeholder "e.g. <id>-mobile"); user edits are preserved
+    // (nothing overwrites the field after entry). Saved per distro on start.
+    val autoDefault = remember(distro.id) {
+        com.ivarna.fluxlinux.core.data.ContainerUiConfig.defaultName(distro.id)
+    }
+    val saved = remember(distro.id) {
+        com.ivarna.fluxlinux.core.data.ContainerUiConfig.load(context, distro.id)
+    }
+    var containerName by remember(distro.id) { mutableStateOf(saved.containerName) }
+    var bridgeEnabled by remember(distro.id) { mutableStateOf(saved.bridgeEnabled) }
+    var interfaceMode by remember(distro.id) { mutableStateOf(saved.interfaceMode) }
     var phase by remember { mutableStateOf(InstallPhase.OPTIONS) }
     var percent by remember { mutableIntStateOf(0) }
     var phaseLabel by remember { mutableStateOf("") }
@@ -84,6 +96,15 @@ fun InstallConfigScreen(
         detail = ""
         logText = ""
         phase = InstallPhase.RUNNING
+        com.ivarna.fluxlinux.core.data.ContainerUiConfig.save(
+            context,
+            distro.id,
+            com.ivarna.fluxlinux.core.data.ContainerUiConfig.Config(
+                containerName = containerName.ifBlank { autoDefault },
+                bridgeEnabled = bridgeEnabled,
+                interfaceMode = interfaceMode
+            )
+        )
         runner.start(distro.id, selectedTheme) { progress ->
             percent = progress.overallPercent
             phaseLabel = progress.phaseLabel
@@ -225,6 +246,76 @@ fun InstallConfigScreen(
                     selected = selectedTheme == "light",
                     onSelect = { selectedTheme = "light" }
                 )
+                Text(
+                    "Container name",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = containerName,
+                    onValueChange = { containerName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            com.ivarna.fluxlinux.core.data.ContainerUiConfig
+                                .placeholder(distro.id)
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Kuro Bridge",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Expose a kuro CLI inside this distro to manage clones. " +
+                                "The CLI arrives in a later update; this toggle is saved now.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    androidx.compose.material3.Switch(
+                        checked = bridgeEnabled,
+                        onCheckedChange = { bridgeEnabled = it }
+                    )
+                }
+                Text(
+                    "Interface mode",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+                com.ivarna.fluxlinux.core.data.ContainerUiConfig.MODES.forEach { mode ->
+                    val modeDesc = when (mode) {
+                        com.ivarna.fluxlinux.core.data.ContainerUiConfig.TUI ->
+                            "Terminal sessions, available immediately"
+                        com.ivarna.fluxlinux.core.data.ContainerUiConfig.XFCE4 ->
+                            "Desktop via the embedded X11 display after install"
+                        else ->
+                            "Desktop via the embedded X11 display after install"
+                    }
+                    InstallThemePickRow(
+                        id = mode,
+                        title = if (mode == com.ivarna.fluxlinux.core.data.ContainerUiConfig.KDE) {
+                            "KDE (Plasma)"
+                        } else {
+                            mode
+                        },
+                        desc = modeDesc,
+                        selected = interfaceMode == mode,
+                        onSelect = { interfaceMode = mode }
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

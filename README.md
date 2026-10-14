@@ -1,7 +1,11 @@
 <div align="center">
   <img src="assets/logo/logo.webp" width="150" />
-  <h1>FluxLinux</h1>
-  <p><strong>Run full Linux desktops on Android — 12 distros, PRoot or Chroot, XFCE4, X11, and PulseAudio</strong></p>
+  <h1>Kuro</h1>
+  <p><strong>Linux containers (PRoot/Chroot, XFCE4, X11) and isolated app clones — dark-first, honest, no fake progress</strong></p>
+
+> Step 6 architecture: **FluxLinux engine for Linux containers** (proot/chroot execution, rootfs pipeline, terminal + X11)
+> plus **BlackBox-family virtual engine for app cloning**, behind Kuro's 4-tab UI (System | Terminal | Clones | Settings)
+> with **Kuro Engine** notifications. Upstream projects are credited in-app and in `docs/`.
 
   <a href="https://github.com/abhay-byte/fluxlinux">
     <img src="docs/readme/showcase.gif" alt="FluxLinux Showcase" width="100%" />
